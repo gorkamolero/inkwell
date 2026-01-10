@@ -16,6 +16,7 @@ import { auth } from "@/lib/auth";
 import { db, projects, projectCollaborators } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { cn } from "@/lib/utils";
+import { SyncButton } from "@/components/dashboard/SyncButton";
 
 interface ProjectPageProps {
   params: Promise<{ projectId: string }>;
@@ -165,6 +166,7 @@ interface DocumentsTabProps {
   project: {
     id: string;
     slug: string;
+    githubRepo: string | null;
     documents: Array<{
       id: string;
       path: string;
@@ -184,15 +186,22 @@ function DocumentsTab({ project }: DocumentsTabProps) {
           No documents yet
         </h3>
         <p className="mx-auto mb-6 max-w-md text-gray-600">
-          Create your first document or sync from your GitHub repository.
+          {project.githubRepo
+            ? "Sync documents from your GitHub repository to get started."
+            : "Create your first document to get started."}
         </p>
-        <Link
-          href={`/${project.slug}/new`}
-          className="inline-flex items-center gap-2 border-3 border-black bg-brutal-yellow px-6 py-3 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
-        >
-          <Plus className="h-5 w-5" strokeWidth={3} />
-          New Document
-        </Link>
+        <div className="flex justify-center gap-4">
+          {project.githubRepo && (
+            <SyncButton projectSlug={project.slug} />
+          )}
+          <Link
+            href={`/${project.slug}/new`}
+            className="inline-flex items-center gap-2 border-3 border-black bg-brutal-yellow px-6 py-3 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+          >
+            <Plus className="h-5 w-5" strokeWidth={3} />
+            New Document
+          </Link>
+        </div>
       </div>
     );
   }
@@ -235,14 +244,19 @@ function DocumentsTab({ project }: DocumentsTabProps) {
       </div>
 
       {/* Footer with Add Document button */}
-      <div className="border-t-3 border-black p-4">
-        <Link
-          href={`/${project.slug}/new`}
-          className="inline-flex items-center gap-2 border-3 border-black bg-brutal-yellow px-4 py-2 font-bold text-black transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-        >
-          <Plus className="h-4 w-4" strokeWidth={3} />
-          New Document
-        </Link>
+      <div className="flex items-center justify-between border-t-3 border-black p-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/${project.slug}/new`}
+            className="inline-flex items-center gap-2 border-3 border-black bg-brutal-yellow px-4 py-2 font-bold text-black transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+            New Document
+          </Link>
+        </div>
+        {project.githubRepo && (
+          <SyncButton projectSlug={project.slug} />
+        )}
       </div>
     </div>
   );

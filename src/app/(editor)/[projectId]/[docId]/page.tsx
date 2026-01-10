@@ -68,11 +68,10 @@ export default async function EditorPage({ params }: EditorPageProps) {
     }
   }
 
-  // Get the document from our database
-  const documentPath = decodeURIComponent(docId);
+  // Get the document from our database by ID (not path)
   const document = await db.query.documents.findFirst({
     where: and(
-      eq(documents.path, documentPath),
+      eq(documents.id, docId),
       eq(documents.projectId, project.id)
     ),
   });
@@ -81,34 +80,33 @@ export default async function EditorPage({ params }: EditorPageProps) {
     notFound();
   }
 
-  // Project must have a GitHub repo connected
-  if (!project.githubRepo) {
-    notFound();
-  }
+  // Check if project has valid GitHub repo (not __NEW__ placeholder)
+  const hasValidGitHubRepo = !!(project.githubRepo && 
+    project.githubRepo.includes("/") && 
+    !project.githubRepo.startsWith("__NEW__"));
 
-  // Parse GitHub repo info
-  const [owner, repo] = project.githubRepo.split("/");
-  const branch = project.githubBranch || "main";
+  // Use draft content if available, otherwise fetch from GitHub
+  let content: string = document.draftContent || "";
+  let sha: string = document.lastCommitSha || "";
+  const hasDraft = !!document.draftContent;
 
-  // Fetch document content from GitHub
-  let content: string;
-  let sha: string;
+  if (!hasDraft && hasValidGitHubRepo && accessToken) {
+    const [owner, repo] = project.githubRepo!.split("/");
+    const branch = project.githubBranch || "main";
 
-  try {
-    const documentData = await getDocument(
-      accessToken,
-      owner,
-      repo,
-      document.path,
-      branch
-    );
-    content = documentData.content;
-    sha = documentData.sha;
-  } catch (error) {
-    console.error("Failed to fetch document from GitHub:", error);
-    // Return a fallback for new or inaccessible documents
-    content = "";
-    sha = "";
+    try {
+      const documentData = await getDocument(
+        accessToken,
+        owner,
+        repo,
+        document.path,
+        branch
+      );
+      content = documentData.content;
+      sha = documentData.sha;
+    } catch (error) {
+      console.error("Failed to fetch document from GitHub:", error);
+    }
   }
 
   // Extract title from document path or content
@@ -126,6 +124,8 @@ export default async function EditorPage({ params }: EditorPageProps) {
       documentTitle={documentTitle}
       initialContent={content}
       initialSha={sha}
+      hasDraft={hasDraft}
+      canCommit={hasValidGitHubRepo}
     />
   );
 }

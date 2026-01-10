@@ -19,38 +19,37 @@ import { relations } from "drizzle-orm";
 // Auth Tables (NextAuth.js compatible)
 // ============================================================================
 
-export const users = pgTable("users", {
-  id: text("id").primaryKey(), // CUID generated at insert time
-  email: text("email").unique().notNull(),
+export const users = pgTable("user", {
+  id: text("id").primaryKey(),
+  email: text("email").unique(),
   name: text("name"),
   image: text("image"),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
 });
 
 export const accounts = pgTable(
-  "accounts",
+  "account",
   {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
+    userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").notNull(),
     provider: text("provider").notNull(),
-    providerAccountId: text("provider_account_id").notNull(),
+    providerAccountId: text("providerAccountId").notNull(),
     access_token: text("access_token"),
     refresh_token: text("refresh_token"),
     expires_at: integer("expires_at"),
     token_type: text("token_type"),
     scope: text("scope"),
     id_token: text("id_token"),
+    session_state: text("session_state"),
   },
-  (table) => [unique("accounts_provider_unique").on(table.provider, table.providerAccountId)]
+  (table) => [unique("account_provider_unique").on(table.provider, table.providerAccountId)]
 );
 
-export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey(),
-  sessionToken: text("session_token").unique().notNull(),
-  userId: text("user_id")
+export const sessions = pgTable("session", {
+  sessionToken: text("sessionToken").primaryKey(),
+  userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
@@ -100,7 +99,9 @@ export const documents = pgTable("documents", {
     .references(() => projects.id, { onDelete: "cascade" }),
   path: text("path").notNull(),
   title: text("title"),
+  draftContent: text("draft_content"), // Local draft, not yet committed
   lastSyncedAt: timestamp("last_synced_at", { mode: "date" }),
+  lastCommitSha: text("last_commit_sha"), // SHA of last committed version
   wordCount: integer("word_count"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),

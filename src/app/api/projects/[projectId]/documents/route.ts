@@ -187,12 +187,16 @@ async function createDocumentHandler(
     throw ApiError.conflict("A document with this path already exists");
   }
 
-  // If GitHub is connected, create the file on GitHub
+  // If GitHub is connected with a valid repo, create the file on GitHub
   let sha: string | undefined;
   const content = body.content || `# ${body.title || "New Document"}\n`;
 
-  if (accessToken && project.githubRepo) {
-    const [owner, repo] = project.githubRepo.split("/");
+  const hasValidGitHubRepo = accessToken && project.githubRepo && 
+    project.githubRepo.includes("/") && 
+    !project.githubRepo.startsWith("__NEW__");
+
+  if (hasValidGitHubRepo) {
+    const [owner, repo] = project.githubRepo!.split("/");
     const branch = project.githubBranch || "main";
 
     try {
@@ -224,6 +228,7 @@ async function createDocumentHandler(
       path: fullPath,
       title: body.title || fullPath.split("/").pop()?.replace(/\.md$/, ""),
       wordCount: content.split(/\s+/).filter(Boolean).length,
+      lastCommitSha: sha || null,
       lastSyncedAt: sha ? now : null,
       createdAt: now,
       updatedAt: now,

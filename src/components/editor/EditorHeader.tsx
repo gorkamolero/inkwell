@@ -12,6 +12,7 @@ import {
   Download,
   Trash2,
   FileText,
+  GitCommit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SaveStatus } from "@/hooks/useAutoSave";
@@ -35,6 +36,10 @@ interface EditorHeaderProps {
   onExport: () => void;
   onDelete: () => void;
   lastSavedAt: Date | null;
+  canCommit?: boolean;
+  hasUncommittedChanges?: boolean;
+  isCommitting?: boolean;
+  onCommit?: () => void;
 }
 
 export function EditorHeader({
@@ -47,6 +52,10 @@ export function EditorHeader({
   onExport,
   onDelete,
   lastSavedAt,
+  canCommit = false,
+  hasUncommittedChanges = false,
+  isCommitting = false,
+  onCommit,
 }: EditorHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -91,13 +100,35 @@ export function EditorHeader({
           <SaveStatusIndicator status={saveStatus} lastSavedAt={lastSavedAt} />
         </div>
 
-        {/* Right section: Word count, more menu */}
+        {/* Right section: Word count, commit button, more menu */}
         <div className="flex items-center gap-3">
           {/* Word count */}
           <div className="hidden items-center gap-1.5 text-sm text-gray-500 sm:flex">
             <FileText className="h-4 w-4" />
             <span>{wordCount.toLocaleString()} words</span>
           </div>
+
+          {/* Commit button */}
+          {canCommit && hasUncommittedChanges && (
+            <button
+              onClick={onCommit}
+              disabled={isCommitting}
+              className={cn(
+                "flex items-center gap-2 border-2 border-black px-3 py-1.5 text-sm font-bold transition-all",
+                isCommitting
+                  ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                  : "bg-green-400 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+              )}
+              title="Commit changes to GitHub"
+            >
+              {isCommitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <GitCommit className="h-4 w-4" />
+              )}
+              {isCommitting ? "Committing..." : "Commit"}
+            </button>
+          )}
 
           {/* More menu */}
           <div className="relative">

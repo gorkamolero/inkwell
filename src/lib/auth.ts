@@ -2,18 +2,24 @@ import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "./db";
-import { accounts } from "./db/schema";
+import { users, accounts, sessions } from "./db/schema";
 import { eq } from "drizzle-orm";
 
-const adapter = db ? DrizzleAdapter(db) : undefined;
+const adapter = db ? DrizzleAdapter(db, {
+  usersTable: users,
+  accountsTable: accounts,
+  sessionsTable: sessions,
+}) : undefined;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  debug: true,
+  trustHost: true,
   adapter,
+  session: { strategy: "jwt" }, // JWT for Edge-compatible middleware
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
       clientSecret: process.env.AUTH_GITHUB_SECRET,
-      // Request repo scope for GitHub API access (read/write repositories)
       authorization: {
         params: {
           scope: "read:user user:email repo",
@@ -26,22 +32,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-
-        // Fetch the GitHub access token from the accounts table
-        if (db) {
-          const account = await db
-            .select({ accessToken: accounts.access_token })
-            .from(accounts)
-            .where(eq(accounts.userId, user.id))
-            .limit(1);
-
-          if (account[0]?.accessToken) {
-            session.accessToken = account[0].accessToken;
-          }
-        }
+    async jwt({ token, user, account, profile }) {
+      // Initial sign in - user, account, profile are only available on first call
+      if (user) {
+        token.id = user.id;
+      }
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      // GitHub profile contains the login (username)
+      if (profile) {
+        token.login = (profile as { login?: string }).login;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id as string;
+        session.user.login = token.login as string;
+        session.accessToken = token.accessToken as string;
       }
       return session;
     },
@@ -53,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (isOnDashboard || isOnEditor || isOnSettings) {
         if (isLoggedIn) return true;
-        return false; // Redirect to login
+        return false;
       }
 
       return true;
@@ -61,18 +70,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-// Re-export for convenience
 export { auth as getServerSession };
 
-// Extend the Session type to include accessToken
 declare module "next-auth" {
   interface Session {
     accessToken?: string;
     user: {
       id: string;
+      login?: string;
       name?: string | null;
       email?: string | null;
       image?: string | null;
     };
+  }
+}
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    id?: string;
+    login?: string;
+    accessToken?: string;
   }
 }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { BrutalInput, BrutalTextarea } from "@/components/ui";
 import { BookSelector } from "@/components/dashboard/BookSelector";
+import { FolderPicker } from "@/components/dashboard/FolderPicker";
 import { cn } from "@/lib/utils";
 import type { RepoInfo, RepoStructure } from "@/lib/github";
 
@@ -74,11 +75,18 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
     setReposError(null);
 
     try {
-      const response = await fetch("/api/github/repos");
+      const response = await fetch("/api/user/repos");
       if (!response.ok) {
         throw new Error("Failed to load repositories");
       }
       const data = await response.json();
+
+      // If GitHub App not installed, redirect to install it
+      if (data.needsInstall && data.installUrl) {
+        window.location.href = data.installUrl;
+        return;
+      }
+
       setRepos(data.repos);
     } catch (error) {
       setReposError("Failed to load repositories. Please try again.");
@@ -190,7 +198,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
             selectedBooks.map((book) =>
               createProject({
                 name: book.name,
-                description: description || null,
+                description: description || undefined,
                 githubRepo: selectedRepo,
                 chaptersPath: book.path,
               })
@@ -211,13 +219,13 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
         // Single project creation
         const projectData = {
           name,
-          description: description || null,
+          description: description || undefined,
           githubRepo:
             repoMode === "existing"
               ? selectedRepo
               : newRepoName
                 ? `__NEW__:${newRepoName}:${isPrivate ? "private" : "public"}`
-                : null,
+                : undefined,
           chaptersPath: repoMode === "existing" ? chaptersPath : "",
         };
 
@@ -238,8 +246,8 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
 
   async function createProject(data: {
     name: string;
-    description: string | null;
-    githubRepo: string | null;
+    description?: string;
+    githubRepo?: string;
     chaptersPath: string;
   }): Promise<{ success: boolean; slug?: string; error?: string }> {
     const response = await fetch("/api/projects", {
@@ -479,13 +487,24 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
 
                 {/* Single-Book Chapters Path */}
                 {repoStructure?.type === "single" && (
-                  <BrutalInput
-                    label="Chapters Path (optional)"
-                    placeholder="chapters or content/chapters"
-                    value={chaptersPath}
-                    onChange={(e) => setChaptersPath(e.target.value)}
-                    helperText="Path to the folder containing your markdown files. Leave empty for root."
-                  />
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-black">
+                      Chapters Folder
+                    </label>
+                    <p className="mb-2 text-sm text-gray-600">
+                      Select the folder containing your markdown files
+                    </p>
+                    <FolderPicker
+                      repo={selectedRepo}
+                      value={chaptersPath}
+                      onChange={setChaptersPath}
+                    />
+                    {chaptersPath && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Selected: <code className="bg-gray-100 px-1">{chaptersPath || "(root)"}</code>
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}

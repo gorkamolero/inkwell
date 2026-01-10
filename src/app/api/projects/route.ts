@@ -9,8 +9,10 @@ import {
   generateSlug,
   type AuthContext,
 } from "@/lib/api-utils";
-import { db, projects, projectCollaborators } from "@/lib/db";
+import { getInstallationId, getInstallationOctokit, createRepository } from "@/lib/github-app";
+import { db, projects, projectCollaborators, accounts } from "@/lib/db";
 import { canCreateProject } from "@/lib/subscription";
+import { and } from "drizzle-orm";
 
 // ============================================================================
 // Schemas
@@ -24,7 +26,7 @@ const createProjectSchema = z.object({
   description: z.string().max(500).optional(),
   githubRepo: z
     .string()
-    .regex(/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/, "Invalid repository format")
+    .regex(/^(__NEW__:.+:.+|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)$/, "Invalid repository format")
     .optional(),
   githubBranch: z.string().max(100).optional(),
   chaptersPath: z.string().max(500).optional(),
@@ -180,6 +182,59 @@ async function createProjectHandler(
   const projectId = generateId();
   const now = new Date();
 
+  // Handle __NEW__:reponame:visibility format - create the repo
+  let githubRepo = body.githubRepo ?? null;
+  let githubBranch = body.githubBranch ?? null;
+
+  if (githubRepo?.startsWith("__NEW__:")) {
+    const parts = githubRepo.split(":");
+    const repoName = parts[1];
+    const visibility = parts[2] || "private";
+    const isPrivate = visibility === "private";
+
+    // Get user's GitHub access token
+    const userAccount = await db
+      .select({ accessToken: accounts.access_token })
+      .from(accounts)
+      .where(and(eq(accounts.userId, userId), eq(accounts.provider, "github")))
+      .limit(1);
+
+    if (!userAccount[0]?.accessToken) {
+      throw ApiError.forbidden("GitHub account not connected");
+    }
+
+    const result = await createRepository(
+      userAccount[0].accessToken,
+      repoName,
+      isPrivate,
+      body.description
+    );
+
+    if (!result) {
+      throw ApiError.badRequest(
+        "Could not create repository. Make sure you have permission to create repositories."
+      );
+    }
+
+    githubRepo = `${result.owner}/${result.repo}`;
+    githubBranch = result.defaultBranch;
+  } else if (githubRepo && !githubBranch) {
+    // If connecting to an existing GitHub repo, fetch the actual default branch
+    const [owner, repoName] = githubRepo.split("/");
+    try {
+      const installationId = await getInstallationId(owner);
+      if (installationId) {
+        const octokit = await getInstallationOctokit(installationId);
+        const { data: repoData } = await octokit.repos.get({ owner, repo: repoName });
+        githubBranch = repoData.default_branch;
+      }
+    } catch (error) {
+      console.error("Failed to fetch default branch:", error);
+      // Fall back to "main" if we can't fetch
+      githubBranch = "main";
+    }
+  }
+
   const [newProject] = await db
     .insert(projects)
     .values({
@@ -187,8 +242,8 @@ async function createProjectHandler(
       name: body.name,
       slug,
       description: body.description ?? null,
-      githubRepo: body.githubRepo ?? null,
-      githubBranch: body.githubBranch ?? "main",
+      githubRepo,
+      githubBranch: githubBranch ?? "main",
       chaptersPath: body.chaptersPath ?? "",
       isPublic: body.isPublic ?? false,
       userId,

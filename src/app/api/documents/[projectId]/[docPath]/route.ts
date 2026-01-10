@@ -125,36 +125,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       where: eq(projects.id, projectId),
     });
 
-    if (!project || !project.githubRepo) {
+    if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    const [owner, repo] = project.githubRepo.split("/");
-    const branch = project.githubBranch || "main";
     const documentPath = decodeURIComponent(docPath);
 
-    // Save to GitHub
-    const newSha = await saveDocument(
-      accessToken,
-      owner,
-      repo,
-      documentPath,
-      content,
-      sha || null,
-      message || `Update ${documentPath}`,
-      branch
-    );
-
-    // Update local document metadata
+    // Update local document with draft content (no GitHub commit)
     const wordCount = countWords(content);
     const title = extractTitle(content);
 
     await db
       .update(documents)
       .set({
+        draftContent: content,
         wordCount,
         title: title || undefined,
-        lastSyncedAt: new Date(),
         updatedAt: new Date(),
       })
       .where(
@@ -162,7 +148,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
 
     return NextResponse.json({
-      sha: newSha,
+      saved: true,
       wordCount,
       title,
     });

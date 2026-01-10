@@ -41,6 +41,8 @@ interface DocumentEditorProps {
   documentTitle: string;
   initialContent: string;
   initialSha: string;
+  hasDraft?: boolean;
+  canCommit?: boolean;
 }
 
 // Editor configuration
@@ -100,6 +102,8 @@ export function DocumentEditor({
   documentTitle,
   initialContent,
   initialSha,
+  hasDraft = false,
+  canCommit = false,
 }: DocumentEditorProps) {
   const router = useRouter();
   const [editorState, setEditorState] = useState<SerializedEditorState | null>(
@@ -118,6 +122,8 @@ export function DocumentEditor({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef(initialContent);
+  const [hasUncommittedChanges, setHasUncommittedChanges] = useState(hasDraft);
+  const [isCommitting, setIsCommitting] = useState(false);
 
   // Check for mobile/tablet
   useEffect(() => {
@@ -150,11 +156,43 @@ export function DocumentEditor({
         throw new Error(error.message || "Failed to save document");
       }
 
+      setHasUncommittedChanges(true); // Mark as having uncommitted changes
+    },
+    [projectId, documentPath]
+  );
+
+  // Commit to GitHub
+  const commitDocument = useCallback(async () => {
+    if (!canCommit || isCommitting) return;
+    
+    setIsCommitting(true);
+    try {
+      const response = await fetch(
+        `/api/documents/${projectId}/${encodeURIComponent(documentPath)}/commit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: generateCommitMessage(documentPath),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to commit");
+      }
+
       const data = await response.json();
       setCurrentSha(data.sha);
-    },
-    [projectId, documentPath, currentSha]
-  );
+      setHasUncommittedChanges(false);
+    } catch (error) {
+      console.error("Commit failed:", error);
+      alert("Failed to commit to GitHub");
+    } finally {
+      setIsCommitting(false);
+    }
+  }, [projectId, documentPath, canCommit, isCommitting]);
 
   // Auto-save hook
   const { status, save, lastSavedAt, markChanged } =
@@ -276,6 +314,10 @@ export function DocumentEditor({
           onExport={handleExport}
           onDelete={handleDelete}
           lastSavedAt={lastSavedAt}
+          canCommit={canCommit}
+          hasUncommittedChanges={hasUncommittedChanges}
+          isCommitting={isCommitting}
+          onCommit={commitDocument}
         />
         <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
           <div className="border-3 border-black bg-brutal-yellow p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -312,6 +354,10 @@ export function DocumentEditor({
         onExport={handleExport}
         onDelete={handleDelete}
         lastSavedAt={lastSavedAt}
+        canCommit={canCommit}
+        hasUncommittedChanges={hasUncommittedChanges}
+        isCommitting={isCommitting}
+        onCommit={commitDocument}
       />
 
       <div className="flex-1 overflow-auto">

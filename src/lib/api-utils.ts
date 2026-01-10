@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z, ZodSchema } from "zod";
 import { auth } from "@/lib/auth";
 import { db, projects, projectCollaborators, accounts } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import type { Project, CollaboratorRole } from "@/lib/db/schema";
 
 // ============================================================================
@@ -204,9 +204,9 @@ export function withProject(
         throw ApiError.internal("Database not configured");
       }
 
-      // Fetch the project
+      // Fetch the project by ID or slug
       const project = await db.query.projects.findFirst({
-        where: eq(projects.id, projectId),
+        where: or(eq(projects.id, projectId), eq(projects.slug, projectId)),
       });
 
       if (!project) {
