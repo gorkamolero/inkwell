@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
-import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "./db";
 import { accounts } from "./db/schema";
@@ -20,10 +19,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           scope: "read:user user:email repo",
         },
       },
-    }),
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
     }),
   ],
   pages: {
