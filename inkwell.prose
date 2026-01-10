@@ -1,0 +1,1101 @@
+# Inkwell - Collaborative Writing Platform
+# "Own your writing. Version control for everyone."
+#
+# A SaaS collaborative writing app where GitHub is the backend.
+# Users own their content in their own repos.
+#
+# STACK: Next.js 16, Drizzle ORM, PostgreSQL, ShadCN, Neobrutalist UI
+
+# ============================================================================
+# AGENT DEFINITIONS
+# ============================================================================
+
+agent architect:
+  model: opus
+  prompt: """
+    You are a senior software architect building Inkwell, a collaborative writing
+    platform. Tech stack: Next.js 16 (App Router), TypeScript, ShadCN UI,
+    shadcn-editor (Lexical-based), NextAuth.js, Drizzle ORM, PostgreSQL, Stripe.
+
+    Design patterns:
+    - Server Components by default, Client Components only when needed
+    - Server Actions for mutations
+    - Edge-compatible where possible
+    - Type-safe throughout
+
+    You write production-quality code. No placeholders, no TODOs.
+  """
+
+agent ui_designer:
+  model: opus
+  prompt: """
+    You are a UI/UX specialist with expertise in NEOBRUTALIST design.
+
+    NEOBRUTALIST PRINCIPLES (like Gumroad):
+    - Bold 2-4px black borders on EVERYTHING
+    - Offset box shadows (4px right, 4px down, black)
+    - High contrast colors: black, white, bright accents (yellow #FFE75C, blue #0066FF, pink #FF66B2)
+    - Shadows shift on hover (interactive feedback)
+    - Geometric, grid-based layouts
+    - Bold, chunky typography
+    - No gradients, no rounded corners (or very slight 4px max)
+    - Brutally honest, no-bullshit aesthetic
+
+    CSS patterns you use:
+    ```css
+    .neo-brutal {
+      border: 3px solid black;
+      box-shadow: 4px 4px 0 black;
+      transition: all 0.1s ease;
+    }
+    .neo-brutal:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 black;
+    }
+    .neo-brutal:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 black;
+    }
+    ```
+
+    You create bold, memorable interfaces that stand out from generic SaaS apps.
+    Every component should feel tactile and physical.
+  """
+
+agent frontend:
+  model: opus
+  prompt: """
+    You are a frontend specialist building Inkwell with Next.js 16, ShadCN UI,
+    and shadcn-editor. You implement the neobrutalist designs with pixel-perfect
+    attention to detail.
+
+    You work closely with the UI designer's specifications.
+    Use Tailwind CSS. All components must be accessible.
+    Handle loading states, error states, empty states.
+  """
+
+agent backend:
+  model: opus
+  prompt: """
+    You are a backend specialist building Inkwell. You handle auth, API routes,
+    database operations, and third-party integrations (GitHub API, Stripe).
+
+    Database: Drizzle ORM with PostgreSQL (NOT Prisma)
+    - Use drizzle-orm and drizzle-kit
+    - postgres driver via postgres.js
+    - Migrations via drizzle-kit
+
+    Security first:
+    - Validate all inputs with zod
+    - Proper RBAC
+    - Never expose secrets
+
+    Proper error handling everywhere.
+  """
+
+agent copywriter:
+  model: opus
+  prompt: """
+    You are a conversion-focused copywriter. You write landing page copy that
+    SELLS. Your copy is:
+
+    - Benefit-focused, not feature-focused
+    - Punchy, short sentences
+    - Uses power words that create urgency
+    - Addresses objections before they arise
+    - Has clear CTAs
+
+    You understand the target audience: writers, authors, content creators,
+    documentation teams who are tired of:
+    - Losing work to cloud services that go down
+    - Not owning their content
+    - Paying $20/month for glorified text editors
+    - Vendor lock-in
+
+    Your copy makes them feel the pain, then shows the solution.
+  """
+
+agent integrator:
+  model: opus
+  prompt: """
+    You are an integration specialist. You wire together GitHub OAuth, Google OAuth,
+    GitHub API for storage, and Stripe for payments. You ensure all pieces work
+    together seamlessly.
+
+    You test integrations thoroughly and handle edge cases gracefully.
+  """
+
+# ============================================================================
+# PHASE 1: PROJECT SETUP
+# ============================================================================
+
+block setup_project():
+  session: architect
+    prompt: """
+      Initialize the Inkwell project:
+
+      1. Create Next.js 16 app with:
+         - TypeScript
+         - Tailwind CSS
+         - App Router
+         - src/ directory
+         - pnpm
+
+         Command: pnpm create next-app@latest inkwell --typescript --tailwind --app --src-dir --use-pnpm
+
+      2. Install dependencies:
+         pnpm add @auth/core @auth/drizzle-adapter next-auth@beta
+         pnpm add drizzle-orm postgres
+         pnpm add -D drizzle-kit
+         pnpm add stripe @octokit/rest
+         pnpm add lucide-react
+         pnpm add zod
+
+      3. Initialize ShadCN:
+         pnpm dlx shadcn@latest init
+         - Style: Default
+         - Base color: Slate
+         - CSS variables: Yes
+
+      4. Install shadcn-editor:
+         pnpm dlx shadcn@latest add https://shadcn-editor.vercel.app/r/editor-x.json
+
+      5. Set up project structure:
+         src/
+           app/
+             (marketing)/        # Public pages
+               page.tsx          # Landing page with live editor
+               pricing/
+             (auth)/
+               login/
+               signup/
+             (dashboard)/
+               projects/
+               settings/
+             (editor)/
+               [projectId]/
+                 [docId]/
+             api/
+               auth/[...nextauth]/
+               webhooks/
+                 stripe/
+           components/
+             ui/           # ShadCN + neobrutalist overrides
+             editor/       # Editor-specific
+             marketing/    # Landing page components
+             layout/       # Layout components
+           lib/
+             auth.ts
+             db/
+               index.ts    # Drizzle client
+               schema.ts   # Drizzle schema
+             github.ts
+             stripe.ts
+             utils.ts
+           types/
+
+      6. Create initial config files:
+         - .env.example with all required vars
+         - drizzle.config.ts
+         - next.config.ts
+         - tailwind.config.ts (extend for neobrutalist styles)
+
+      7. Create tailwind.config.ts with neobrutalist utilities:
+         - Custom shadow utilities
+         - Border utilities
+         - Color palette (black, white, yellow #FFE75C, blue #0066FF, pink #FF66B2)
+
+      Execute all commands. Create all files. No placeholders.
+    """
+
+# ============================================================================
+# PHASE 2: DATABASE SCHEMA (DRIZZLE)
+# ============================================================================
+
+block setup_database():
+  session: backend
+    prompt: """
+      Create the Drizzle ORM schema for Inkwell.
+
+      src/lib/db/index.ts:
+      - Initialize postgres client with postgres.js
+      - Export drizzle instance
+
+      src/lib/db/schema.ts:
+      - Use Drizzle's pgTable, relations, etc.
+
+      Tables needed:
+
+      1. users
+         - id (text, primary key, cuid)
+         - email (text, unique, not null)
+         - name (text)
+         - image (text)
+         - createdAt (timestamp, default now)
+
+      2. accounts (NextAuth)
+         - id (text, primary key)
+         - userId (text, references users)
+         - type (text)
+         - provider (text)
+         - providerAccountId (text)
+         - access_token (text)
+         - refresh_token (text)
+         - expires_at (integer)
+         - token_type (text)
+         - scope (text)
+         - id_token (text)
+         - Unique constraint on (provider, providerAccountId)
+
+      3. sessions (NextAuth)
+         - id (text, primary key)
+         - sessionToken (text, unique)
+         - userId (text, references users)
+         - expires (timestamp)
+
+      4. projects
+         - id (text, primary key, cuid)
+         - name (text, not null)
+         - slug (text, not null)
+         - description (text)
+         - githubRepo (text) // owner/repo format
+         - githubBranch (text, default 'main')
+         - chaptersPath (text, default '') // path to chapters folder, e.g., "chapters" or "book-a/output/chapters"
+         - isPublic (boolean, default false)
+         - userId (text, references users)
+         - createdAt (timestamp)
+         - updatedAt (timestamp)
+         - Unique constraint on (userId, slug)
+
+         NOTE: Multiple projects can point to the same repo with different chaptersPath.
+         Example: "multi-book-test-repo" repo can have two projects:
+           - "Book A Tantra" with chaptersPath "book-a/output/chapters"
+           - "Book B Tantra" with chaptersPath "book-b/output/chapters"
+
+      5. project_collaborators
+         - id (text, primary key)
+         - projectId (text, references projects)
+         - userId (text, references users)
+         - role (text: 'viewer' | 'editor' | 'admin')
+         - invitedAt (timestamp)
+         - acceptedAt (timestamp)
+
+      6. documents (cached metadata)
+         - id (text, primary key, cuid)
+         - projectId (text, references projects)
+         - path (text, not null)
+         - title (text)
+         - lastSyncedAt (timestamp)
+         - wordCount (integer)
+         - createdAt (timestamp)
+         - updatedAt (timestamp)
+
+      7. subscriptions
+         - id (text, primary key)
+         - userId (text, unique, references users)
+         - stripeCustomerId (text)
+         - stripeSubscriptionId (text)
+         - stripePriceId (text)
+         - status (text: 'active' | 'canceled' | 'past_due' | 'trialing')
+         - currentPeriodEnd (timestamp)
+         - cancelAtPeriodEnd (boolean)
+
+      Define relations using Drizzle's relations API.
+
+      Create drizzle.config.ts for migrations:
+      ```typescript
+      import type { Config } from 'drizzle-kit'
+
+      export default {
+        schema: './src/lib/db/schema.ts',
+        out: './drizzle',
+        dialect: 'postgresql',
+        dbCredentials: {
+          url: process.env.DATABASE_URL!,
+        },
+      } satisfies Config
+      ```
+
+      Add scripts to package.json:
+      - "db:generate": "drizzle-kit generate"
+      - "db:migrate": "drizzle-kit migrate"
+      - "db:studio": "drizzle-kit studio"
+    """
+
+# ============================================================================
+# PHASE 3: NEOBRUTALIST UI SYSTEM
+# ============================================================================
+
+block setup_ui_system():
+  session: ui_designer
+    prompt: """
+      Create the neobrutalist design system for Inkwell.
+
+      1. Update tailwind.config.ts with custom utilities:
+
+      ```typescript
+      // Add to theme.extend
+      colors: {
+        brutal: {
+          black: '#000000',
+          white: '#FFFFFF',
+          yellow: '#FFE75C',
+          blue: '#0066FF',
+          pink: '#FF66B2',
+          green: '#00FF66',
+          red: '#FF3333',
+        }
+      },
+      boxShadow: {
+        brutal: '4px 4px 0 0 #000000',
+        'brutal-sm': '2px 2px 0 0 #000000',
+        'brutal-lg': '6px 6px 0 0 #000000',
+        'brutal-hover': '6px 6px 0 0 #000000',
+        'brutal-active': '2px 2px 0 0 #000000',
+      },
+      ```
+
+      2. Create src/components/ui/brutal-button.tsx:
+      - Bold 3px black border
+      - 4px offset shadow
+      - Hover: translate(-2px, -2px), larger shadow
+      - Active: translate(2px, 2px), smaller shadow
+      - Variants: default (white), primary (yellow), destructive (red)
+      - Sizes: sm, md, lg
+
+      3. Create src/components/ui/brutal-card.tsx:
+      - 3px black border
+      - 4px offset shadow
+      - White background
+      - Optional colored accent bar on top
+
+      4. Create src/components/ui/brutal-input.tsx:
+      - 3px black border
+      - No border radius
+      - Bold focus state (larger shadow)
+      - Label above in bold uppercase
+
+      5. Create src/components/ui/brutal-badge.tsx:
+      - Small, bold badges
+      - 2px border
+      - Various colors
+
+      6. Create src/components/ui/brutal-dialog.tsx:
+      - Modal with brutal styling
+      - Heavy black border
+      - Yellow close button
+
+      7. Create global CSS in app/globals.css:
+      - Base neobrutalist styles
+      - Typography: bold headings, clean body
+      - Selection color (yellow background)
+      - Scrollbar styling
+
+      All components should feel PHYSICAL and TACTILE.
+      They should have satisfying hover/click feedback.
+    """
+
+# ============================================================================
+# PHASE 4: AUTHENTICATION
+# ============================================================================
+
+block setup_auth():
+  session: backend
+    prompt: """
+      Set up NextAuth v5 with GitHub and Google providers using Drizzle adapter.
+
+      Install: pnpm add @auth/drizzle-adapter
+
+      Create src/lib/auth.ts:
+      - Configure NextAuth with Drizzle adapter
+      - GitHub provider (request repo scope)
+      - Google provider
+      - Custom session callback to include user.id and accessToken
+      - Store GitHub access token for API calls
+
+      Create src/app/api/auth/[...nextauth]/route.ts:
+      - Export GET and POST handlers
+
+      Create src/middleware.ts:
+      - Protect /projects, /settings routes
+      - Allow public access to /, /pricing, /login, /signup, /api/auth
+
+      Create auth pages with NEOBRUTALIST design:
+
+      src/app/(auth)/login/page.tsx:
+      - Centered brutal-card
+      - "SIGN IN" heading (bold, uppercase)
+      - GitHub button (black, primary)
+      - Google button (white, secondary)
+      - "No account? Sign up" link
+      - Small footer text about terms
+
+      src/app/(auth)/signup/page.tsx:
+      - Similar to login
+      - "CREATE ACCOUNT" heading
+      - Same OAuth buttons
+      - "Have an account? Sign in" link
+
+      Style notes:
+      - OAuth buttons should be chunky, satisfying to click
+      - Yellow accent on active states
+      - Black borders everywhere
+    """
+
+# ============================================================================
+# PHASE 5: GITHUB INTEGRATION
+# ============================================================================
+
+block setup_github():
+  session: integrator
+    prompt: """
+      Create GitHub integration layer in src/lib/github.ts:
+
+      Functions needed (all with proper TypeScript types):
+
+      1. getGitHubClient(accessToken: string)
+         - Returns configured Octokit instance
+
+      2. listUserRepos(accessToken: string)
+         - List user's repos (for connecting existing)
+         - Include private repos
+         - Return: { id, name, fullName, private, defaultBranch }[]
+
+      3. createRepo(accessToken: string, name: string, isPrivate: boolean)
+         - Create new repo for user
+         - Initialize with README.md
+         - Return repo details
+
+      4. listDocuments(accessToken: string, owner: string, repo: string, branch: string)
+         - List all .md files in repo (recursive)
+         - Return: { path, name, sha }[]
+
+      5. getDocument(accessToken: string, owner: string, repo: string, path: string, branch: string)
+         - Fetch document content
+         - Decode from base64
+         - Return: { content, sha }
+
+      6. saveDocument(accessToken: string, owner: string, repo: string, path: string, content: string, sha: string | null, message: string, branch: string)
+         - Create or update file
+         - If sha is null, create new file
+         - Return new sha
+
+      7. deleteDocument(accessToken: string, owner: string, repo: string, path: string, sha: string, branch: string)
+         - Delete file from repo
+
+      8. getCommitHistory(accessToken: string, owner: string, repo: string, path: string, branch: string)
+         - Get commit history for file
+         - Return: { sha, message, author, date }[]
+
+      9. getFileAtCommit(accessToken: string, owner: string, repo: string, path: string, commitSha: string)
+         - Get file content at specific commit
+         - For version history feature
+
+      10. detectRepoStructure(accessToken: string, owner: string, repo: string, branch: string)
+          - Analyze repo to detect if it's:
+            a) Single-book: has .md files at root or in "chapters" folder
+            b) Multi-book: has subfolders that each contain .md files
+          - Return: { type: 'single' | 'multi', books?: { name: string, path: string }[] }
+          - For multi-book repos like "multi-book-test-repo", detect:
+            - book-a/output/chapters/*.md → book "Book A"
+            - book-b/output/chapters/*.md → book "Book B"
+
+      11. listDocumentsInPath(accessToken: string, owner: string, repo: string, path: string, branch: string)
+          - List .md files in a specific path (for chaptersPath support)
+          - Used when project has chaptersPath configured
+
+      Custom GitHubError class with proper error codes.
+      Handle rate limiting with retries.
+    """
+
+# ============================================================================
+# PHASE 6: STRIPE INTEGRATION
+# ============================================================================
+
+block setup_stripe():
+  session: integrator
+    prompt: """
+      Set up Stripe integration for subscriptions.
+
+      Create src/lib/stripe.ts:
+
+      1. Initialize Stripe client
+
+      2. PRICING constant:
+         ```typescript
+         export const PRICING = {
+           FREE: { projects: 3, docsPerProject: 10, collaborators: 0 },
+           PRO: { price: 12, priceId: process.env.STRIPE_PRICE_PRO!, projects: Infinity, docsPerProject: Infinity, collaborators: 5 },
+           TEAM: { price: 29, priceId: process.env.STRIPE_PRICE_TEAM!, projects: Infinity, docsPerProject: Infinity, collaborators: Infinity },
+         }
+         ```
+
+      3. createCheckoutSession(userId: string, email: string, priceId: string)
+         - Create Stripe checkout session
+         - success_url and cancel_url
+         - Return checkout URL
+
+      4. createPortalSession(customerId: string)
+         - Create billing portal session
+         - Return portal URL
+
+      5. getSubscription(subscriptionId: string)
+         - Get subscription details from Stripe
+
+      Create src/app/api/webhooks/stripe/route.ts:
+
+      Handle events:
+      - checkout.session.completed: Create subscription in DB
+      - customer.subscription.updated: Update status
+      - customer.subscription.deleted: Mark canceled
+      - invoice.payment_failed: Mark past_due
+
+      Verify webhook signature. Use raw body.
+
+      Create src/lib/subscription.ts:
+      - getUserTier(userId: string): 'free' | 'pro' | 'team'
+      - canCreateProject(userId: string): boolean
+      - canAddDocument(projectId: string): boolean
+      - canAddCollaborator(projectId: string): boolean
+    """
+
+# ============================================================================
+# PHASE 7: LANDING PAGE WITH LIVE EDITOR
+# ============================================================================
+
+block setup_landing_page():
+  parallel:
+    copy = session: copywriter
+      prompt: """
+        Write the landing page copy for Inkwell.
+
+        HEADLINE OPTIONS (pick the best):
+        - "Own Your Words"
+        - "Your Writing. Your Repo. Your Rules."
+        - "The Last Editor You'll Ever Need"
+        - "Write Like You Mean It"
+
+        SUBHEADLINE:
+        Address the pain point directly. Something like:
+        "Stop paying $20/month for someone else to hold your writing hostage.
+        Inkwell stores everything in YOUR GitHub repo. No lock-in. No bullshit."
+
+        SECTIONS TO WRITE:
+
+        1. HERO
+           - Headline
+           - Subheadline (2-3 sentences)
+           - CTA: "Try It Now" (links to live editor below)
+           - Secondary CTA: "See Pricing"
+
+        2. LIVE DEMO SECTION
+           - Heading: "Don't take our word for it. Try it."
+           - Subtext: "This is the actual editor. Start typing."
+           - (Editor component will be embedded here)
+
+        3. PAIN POINTS (3 columns)
+           - "Tired of..." format
+           - Lost work, vendor lock-in, overpriced tools
+
+        4. HOW IT WORKS (3 steps)
+           - Connect GitHub
+           - Write
+           - Own your content forever
+
+        5. FEATURES GRID (6 features)
+           - Version history (git)
+           - Real-time collaboration
+           - Markdown native
+           - Export anytime
+           - Works offline
+           - Developer friendly
+
+        6. SOCIAL PROOF placeholder
+           - "Trusted by writers who give a damn about their work"
+
+        7. PRICING SECTION
+           - Free tier callout
+           - Pro tier
+           - Team tier
+           - FAQ below
+
+        8. FINAL CTA
+           - Punchy closer
+           - "Start Writing" button
+
+        Write copy that is:
+        - Bold, direct, no corporate fluff
+        - Slightly irreverent (like Gumroad's voice)
+        - Benefits over features
+        - Creates urgency without being sleazy
+
+        Output as structured JSON with each section.
+      """
+
+    design = session: ui_designer
+      prompt: """
+        Design the landing page layout for Inkwell (neobrutalist style).
+
+        LAYOUT SPECIFICATIONS:
+
+        1. HERO SECTION
+           - Full viewport height
+           - Large bold headline (text-6xl or bigger)
+           - Yellow highlight on key word
+           - Two buttons: primary (yellow), secondary (white outline)
+           - Subtle grid pattern background
+
+        2. LIVE EDITOR SECTION
+           - Gray background section (#F5F5F5)
+           - Brutal-card containing the editor
+           - "TRY IT" label rotated -3deg, yellow background
+           - Editor has full brutal styling
+
+        3. PAIN POINTS
+           - 3 brutal-cards in a row
+           - Each with icon, heading, text
+           - Alternating accent colors (yellow, blue, pink)
+
+        4. HOW IT WORKS
+           - 3 steps with large numbers (1, 2, 3)
+           - Connected by thick black line
+           - Icons for each step
+
+        5. FEATURES GRID
+           - 2x3 grid of feature cards
+           - Small brutal styling
+           - Icons from Lucide
+
+        6. PRICING
+           - 3 pricing cards
+           - Middle one (Pro) elevated/highlighted
+           - Yellow "POPULAR" badge on Pro
+           - Checkmarks for features
+
+        7. FOOTER
+           - Black background
+           - White text
+           - Minimal links
+
+        OVERALL:
+        - Max width container (1200px)
+        - Generous padding
+        - Black text on white, occasional color pops
+        - Every interactive element has brutal hover states
+
+        Describe each section's exact Tailwind classes and structure.
+      """
+
+  session: frontend
+    prompt: """
+      Build the landing page using the copy and design specs provided.
+
+      Context from copywriter:
+      {copy}
+
+      Context from designer:
+      {design}
+
+      Create these files:
+
+      src/app/(marketing)/page.tsx:
+      - Server component
+      - Imports all section components
+      - Clean, semantic structure
+
+      src/components/marketing/Hero.tsx:
+      - Use the copy provided
+      - Implement the design exactly
+      - Smooth scroll to editor section on CTA click
+
+      src/components/marketing/LiveEditorDemo.tsx:
+      - Client component
+      - Embeds the actual shadcn-editor
+      - Pre-populated with sample text:
+        "# Welcome to Inkwell\n\nStart typing to see the magic.\n\n**Bold**, *italic*, and `code` just work.\n\nThis is YOUR editor. No account needed to try it."
+      - Auto-saves to localStorage (so users don't lose their test)
+      - Shows word count
+      - "Sign up to save to GitHub" subtle CTA below
+
+      src/components/marketing/PainPoints.tsx
+      src/components/marketing/HowItWorks.tsx
+      src/components/marketing/Features.tsx
+      src/components/marketing/Pricing.tsx
+      src/components/marketing/Footer.tsx
+
+      Make sure the live editor demo ACTUALLY WORKS.
+      Users should be able to type, format text, and experience the real product.
+
+      All components must be responsive (mobile-first).
+    """
+    context: { copy, design }
+
+# ============================================================================
+# PHASE 8: DASHBOARD
+# ============================================================================
+
+block setup_dashboard():
+  session: frontend
+    prompt: """
+      Create dashboard pages with neobrutalist styling.
+
+      src/app/(dashboard)/layout.tsx:
+      - Sidebar + main content layout
+      - Fetch user session
+      - Show upgrade banner for free users
+
+      src/components/layout/DashboardSidebar.tsx:
+      - Logo at top
+      - Navigation: Projects, Settings
+      - User info at bottom
+      - Brutal styling (black border on right edge)
+
+      src/app/(dashboard)/projects/page.tsx:
+      - "YOUR PROJECTS" heading
+      - Grid of project cards
+      - "NEW PROJECT" button (yellow, prominent)
+      - Empty state with illustration
+
+      src/components/dashboard/ProjectCard.tsx:
+      - Brutal-card styling
+      - Project name (bold)
+      - Description
+      - Doc count, last updated
+      - Colored top border (random from palette)
+
+      src/app/(dashboard)/projects/new/page.tsx:
+      - "CREATE PROJECT" heading
+      - Form fields:
+        - Name
+        - Description
+        - "Create new repo" OR "Connect existing"
+        - If new: repo name input, public/private toggle
+        - If existing: dropdown of user's repos
+          - After selecting repo, call detectRepoStructure()
+          - If multi-book repo: show BOOK SELECTOR
+            - List detected books with checkboxes
+            - "Add selected books" creates one project per book
+          - If single-book: show chaptersPath input (optional, defaults to root)
+      - Submit button
+
+      src/components/dashboard/BookSelector.tsx:
+      - Shows when connecting a multi-book repo
+      - Lists detected books (e.g., "Book A Tantra", "Book B Tantra")
+      - Checkboxes to select which books to add
+      - Each selected book becomes its own project with correct chaptersPath
+
+      src/app/(dashboard)/projects/[projectId]/page.tsx:
+      - Project header with name, edit button
+      - Document list (brutal table)
+      - "NEW DOCUMENT" button
+      - Tabs: Documents, Collaborators, Settings
+
+      src/app/(dashboard)/settings/page.tsx:
+      - Profile section
+      - Connected accounts
+      - Subscription section
+      - Danger zone (red accent)
+
+      All pages need:
+      - Loading states (skeleton with brutal styling)
+      - Error states
+      - Empty states with helpful CTAs
+    """
+
+# ============================================================================
+# PHASE 9: EDITOR
+# ============================================================================
+
+block setup_editor():
+  session: frontend
+    prompt: """
+      Create the full editor experience.
+
+      src/app/(editor)/[projectId]/[docId]/page.tsx:
+      - Full-screen editor layout
+      - Fetch document from GitHub on load
+      - Pass to DocumentEditor component
+
+      src/components/editor/DocumentEditor.tsx:
+      - Client component wrapping shadcn-editor
+      - Initialize with markdown content (convert to Lexical state)
+      - Auto-save: debounced 2 seconds after last change
+      - Manual save: Cmd/Ctrl+S
+      - Unsaved changes warning on navigate away
+
+      src/components/editor/EditorHeader.tsx:
+      - Brutal styling (bottom border)
+      - Left: Back button, project name, "/" , doc title
+      - Center: Save status ("Saved" / "Saving..." / "Unsaved changes")
+      - Right: Word count, More menu (history, export, delete)
+
+      src/components/editor/VersionHistory.tsx:
+      - Slide-over panel from right
+      - List of commits with date, author, message
+      - Click to preview old version
+      - "Restore this version" button
+
+      src/lib/editor-utils.ts:
+      - markdownToLexical(md: string): SerializedEditorState
+      - lexicalToMarkdown(state: SerializedEditorState): string
+      - Use @lexical/markdown for conversion
+
+      src/hooks/useAutoSave.ts:
+      - Custom hook for auto-save logic
+      - Debounce, loading state, error handling
+
+      Editor UX requirements:
+      - Fast initial load
+      - Optimistic updates on save
+      - Clear feedback on save status
+      - Works on tablet (mobile is view-only with warning)
+    """
+
+# ============================================================================
+# PHASE 10: API ROUTES
+# ============================================================================
+
+block setup_api_routes():
+  session: backend
+    prompt: """
+      Create all API routes.
+
+      All routes must:
+      - Check authentication (getServerSession)
+      - Validate input with zod
+      - Check permissions (ownership or collaboration)
+      - Check subscription limits
+      - Return proper error responses
+      - Have TypeScript types
+
+      src/app/api/projects/route.ts:
+      GET - List user's projects
+      POST - Create project (check limits)
+
+      src/app/api/projects/[projectId]/route.ts:
+      GET - Get project (check access)
+      PATCH - Update project (check ownership)
+      DELETE - Delete project (check ownership)
+
+      src/app/api/projects/[projectId]/documents/route.ts:
+      GET - List documents (fetches from GitHub, updates cache)
+      POST - Create document (check limits)
+
+      src/app/api/projects/[projectId]/documents/[docId]/route.ts:
+      GET - Get document content from GitHub
+      PUT - Save document to GitHub
+      DELETE - Delete document from GitHub
+
+      src/app/api/projects/[projectId]/documents/[docId]/history/route.ts:
+      GET - Get commit history for document
+
+      src/app/api/projects/[projectId]/collaborators/route.ts:
+      GET - List collaborators
+      POST - Invite collaborator (check limits)
+      DELETE - Remove collaborator
+
+      src/app/api/user/repos/route.ts:
+      GET - List user's GitHub repos
+
+      src/app/api/billing/checkout/route.ts:
+      POST - Create Stripe checkout session
+
+      src/app/api/billing/portal/route.ts:
+      POST - Create Stripe portal session
+
+      Create src/lib/api-utils.ts:
+      - withAuth() wrapper for authenticated routes
+      - withProject() wrapper that also checks project access
+      - ApiError class for consistent error responses
+    """
+
+# ============================================================================
+# PHASE 11: POLISH
+# ============================================================================
+
+block polish():
+  session: architect
+    prompt: """
+      Final polish pass:
+
+      1. Error handling:
+         - Create src/app/error.tsx (global error boundary)
+         - Create src/app/not-found.tsx (404 page)
+         - Toast notifications for user feedback
+         - Consistent error messages
+
+      2. Loading states:
+         - Add loading.tsx to each route group
+         - Brutal skeleton loaders
+         - Button loading states
+
+      3. SEO:
+         - src/app/layout.tsx metadata
+         - OpenGraph images
+         - Favicon (brutal style - black square, white "I")
+
+      4. Performance:
+         - Optimize images with next/image
+         - Lazy load editor component
+         - Prefetch dashboard data
+
+      5. Accessibility:
+         - Test keyboard navigation
+         - ARIA labels on icons
+         - Focus visible states (yellow outline)
+
+      6. Mobile:
+         - Responsive breakpoints
+         - Touch-friendly tap targets
+         - Mobile navigation (hamburger menu)
+
+      7. Environment:
+         - Complete .env.example:
+           DATABASE_URL=
+           NEXTAUTH_SECRET=
+           NEXTAUTH_URL=
+           GITHUB_CLIENT_ID=
+           GITHUB_CLIENT_SECRET=
+           GOOGLE_CLIENT_ID=
+           GOOGLE_CLIENT_SECRET=
+           STRIPE_SECRET_KEY=
+           STRIPE_WEBHOOK_SECRET=
+           STRIPE_PRICE_PRO=
+           STRIPE_PRICE_TEAM=
+
+         - docker-compose.yml for local postgres
+         - README.md with setup instructions
+
+      8. Final build test:
+         pnpm build
+         pnpm lint
+         Fix any errors or warnings.
+    """
+
+# ============================================================================
+# PHASE 12: ACCEPTANCE TESTING WITH REAL REPOS
+# ============================================================================
+
+block acceptance_test():
+  session: integrator
+    prompt: """
+      CRITICAL: Test Inkwell with REAL GitHub repos to verify everything works.
+
+      Use the GitHub token from environment (GITHUB_TOKEN) to test against these repos:
+
+      TEST CASE 1: Single-Book Repo (single-book-test-repo)
+      ------------------------------------------------
+      Repo: gorkamolero/single-book-test-repo
+      Branch: master
+      Chapters path: chapters/
+
+      Verification steps:
+      1. Connect to repo via GitHub API
+      2. Detect structure → should return { type: 'single' }
+      3. List chapters → should find .md files in chapters/
+      4. Read a chapter (e.g., 01-chapter.md)
+      5. Make a test edit and save (add a comment, then revert)
+      6. Verify commit appears in history
+      7. Verify version history shows the change
+
+
+      TEST CASE 2: Multi-Book Repo (multi-book-test-repo)
+      --------------------------------------
+      Repo: gorkamolero/multi-book-test-repo
+      Branch: main
+      Books:
+        - book-a: path "book-a/output/chapters"
+        - book-b: path "book-b/output/chapters"
+
+      Verification steps:
+      1. Connect to repo via GitHub API
+      2. Detect structure → should return { type: 'multi', books: [...] }
+      3. Verify it detects both Book A and Book B as separate books
+      4. For each book:
+         a. List chapters in the correct path
+         b. Read a chapter
+         c. Verify content loads correctly
+      5. Test creating a project for just one book (e.g., Book A)
+      6. Verify the project only shows that book's chapters
+
+
+      TEST CASE 3: Book Selector UI
+      -----------------------------
+      1. In the "Connect existing repo" flow, select the multi-book-test-repo repo
+      2. Verify the Book Selector component appears
+      3. Verify it shows both "Book A Tantra" and "Book B Tantra"
+      4. Select only one and create project
+      5. Verify correct chaptersPath is saved
+
+
+      TEST CASE 4: End-to-End Editor Flow
+      ------------------------------------
+      1. Start the dev server: pnpm dev
+      2. Navigate to a project
+      3. Open a document in the editor
+      4. Make an edit
+      5. Save (auto-save or Cmd+S)
+      6. Verify save completes
+      7. Refresh page
+      8. Verify edit persisted
+      9. Check GitHub repo to verify commit was created
+
+
+      IMPORTANT:
+      - All tests must PASS
+      - If any test fails, debug and fix the issue
+      - Do not proceed until all tests pass
+      - Document any issues found and how they were resolved
+
+      Create a test results file at test-results.md with:
+      - Each test case
+      - Pass/Fail status
+      - Any errors encountered
+      - Fixes applied
+    """
+
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
+
+# Phase 1: Foundation
+do setup_project()
+do setup_database()
+do setup_ui_system()
+
+# Phase 2: Auth & Integrations
+do setup_auth()
+do setup_github()
+do setup_stripe()
+
+# Phase 3: User-facing pages
+do setup_landing_page()
+do setup_dashboard()
+do setup_editor()
+
+# Phase 4: API & Polish
+do setup_api_routes()
+do polish()
+
+# Phase 5: Acceptance Testing with Real Repos
+do acceptance_test()
+
+# Final verification
+session: architect
+  prompt: """
+    Final verification checklist:
+
+    1. pnpm build - must pass with zero errors
+    2. pnpm lint - must pass with zero warnings
+    3. All pages render correctly
+    4. Landing page editor demo works
+    5. Auth flow works (GitHub + Google)
+    6. Can create project and documents
+    7. Editor saves to GitHub
+    8. Stripe checkout works
+    9. Mobile responsive
+    10. Neobrutalist styling consistent throughout
+
+    Run through each check. Fix any issues found.
+    Report final status.
+  """

@@ -1,26 +1,594 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
+/* Neobrutalist Color Palette */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* ShadCN UI variables */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Neobrutalist custom colors - Tailwind v4 theme extension */
+  --color-brutal-black: #000000;
+  --color-brutal-white: #FFFFFF;
+  --color-brutal-yellow: #FFE75C;
+  --color-brutal-blue: #0066FF;
+  --color-brutal-pink: #FF66B2;
+  --color-brutal-green: #00FF66;
+  --color-brutal-red: #FF3333;
+  --color-brutal-orange: #FF8844;
+  --color-brutal-purple: #9933FF;
+
+  /* Legacy neo- prefixed colors for backward compatibility */
+  --color-neo-yellow: #FFE75C;
+  --color-neo-blue: #0066FF;
+  --color-neo-pink: #FF66B2;
+  --color-neo-black: #000000;
+  --color-neo-white: #FFFFFF;
+
+  /* Brutal shadows - Tailwind v4 theme extension */
+  --shadow-brutal-sm: 2px 2px 0 0 #000000;
+  --shadow-brutal: 4px 4px 0 0 #000000;
+  --shadow-brutal-md: 4px 4px 0 0 #000000;
+  --shadow-brutal-lg: 6px 6px 0 0 #000000;
+  --shadow-brutal-xl: 8px 8px 0 0 #000000;
+  --shadow-brutal-2xl: 12px 12px 0 0 #000000;
+  --shadow-brutal-hover: 6px 6px 0 0 #000000;
+  --shadow-brutal-active: 2px 2px 0 0 #000000;
+  --shadow-brutal-none: 0 0 0 0 #000000;
+
+  /* Colored brutal shadows */
+  --shadow-brutal-yellow: 4px 4px 0 0 #FFE75C;
+  --shadow-brutal-blue: 4px 4px 0 0 #0066FF;
+  --shadow-brutal-pink: 4px 4px 0 0 #FF66B2;
+  --shadow-brutal-green: 4px 4px 0 0 #00FF66;
+  --shadow-brutal-red: 4px 4px 0 0 #FF3333;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* Neobrutalist: No border radius by default */
+  --radius: 0;
+
+  --background: #FFFFFF;
+  --foreground: #000000;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  --popover: #FFFFFF;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #000000;
+  --muted: #F5F5F5;
+  --muted-foreground: #666666;
+  --accent: #FFE75C;
+  --accent-foreground: #000000;
+  --destructive: #FF4444;
+  --border: #000000;
+  --input: #000000;
+  --ring: #FFE75C;
+  --chart-1: #FFE75C;
+  --chart-2: #0066FF;
+  --chart-3: #FF66B2;
+  --chart-4: #00CC88;
+  --chart-5: #FF8844;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFE75C;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #000000;
+  --sidebar-ring: #FFE75C;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --card: #111111;
+  --card-foreground: #FFFFFF;
+  --popover: #111111;
+  --popover-foreground: #FFFFFF;
+  --primary: #FFFFFF;
+  --primary-foreground: #000000;
+  --secondary: #222222;
+  --secondary-foreground: #FFFFFF;
+  --muted: #222222;
+  --muted-foreground: #999999;
+  --accent: #FFE75C;
+  --accent-foreground: #000000;
+  --destructive: #FF4444;
+  --border: #FFFFFF;
+  --input: #FFFFFF;
+  --ring: #FFE75C;
+  --chart-1: #FFE75C;
+  --chart-2: #0066FF;
+  --chart-3: #FF66B2;
+  --chart-4: #00CC88;
+  --chart-5: #FF8844;
+  --sidebar: #111111;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #FFFFFF;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #FFE75C;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #FFFFFF;
+  --sidebar-ring: #FFE75C;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================
+   NEOBRUTALIST DESIGN SYSTEM
+   Inspired by Gumroad's bold, tactile aesthetic
+   ============================================ */
+
+/* Shadow Utilities */
+.shadow-brutal {
+  box-shadow: 4px 4px 0 0 #000000;
+}
+
+.shadow-brutal-sm {
+  box-shadow: 2px 2px 0 0 #000000;
+}
+
+.shadow-brutal-md {
+  box-shadow: 4px 4px 0 0 #000000;
+}
+
+.shadow-brutal-lg {
+  box-shadow: 6px 6px 0 0 #000000;
+}
+
+.shadow-brutal-xl {
+  box-shadow: 8px 8px 0 0 #000000;
+}
+
+.shadow-brutal-2xl {
+  box-shadow: 12px 12px 0 0 #000000;
+}
+
+/* Colored shadows */
+.shadow-brutal-yellow {
+  box-shadow: 4px 4px 0 0 #FFE75C;
+}
+
+.shadow-brutal-blue {
+  box-shadow: 4px 4px 0 0 #0066FF;
+}
+
+.shadow-brutal-pink {
+  box-shadow: 4px 4px 0 0 #FF66B2;
+}
+
+.shadow-brutal-green {
+  box-shadow: 4px 4px 0 0 #00FF66;
+}
+
+.shadow-brutal-red {
+  box-shadow: 4px 4px 0 0 #FF3333;
+}
+
+/* Dark mode shadows (white) */
+.dark .shadow-brutal,
+.dark .shadow-brutal-sm,
+.dark .shadow-brutal-md,
+.dark .shadow-brutal-lg,
+.dark .shadow-brutal-xl,
+.dark .shadow-brutal-2xl {
+  --tw-shadow-color: #FFFFFF;
+}
+
+.dark .shadow-brutal {
+  box-shadow: 4px 4px 0 0 #FFFFFF;
+}
+
+.dark .shadow-brutal-sm {
+  box-shadow: 2px 2px 0 0 #FFFFFF;
+}
+
+.dark .shadow-brutal-lg {
+  box-shadow: 6px 6px 0 0 #FFFFFF;
+}
+
+/* Interactive brutal element - Gumroad style
+   Hover: lift up and expand shadow
+   Active: press down and shrink shadow */
+.brutal-interactive {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.brutal-interactive:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 0 #000000;
+}
+
+.brutal-interactive:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 0 #000000;
+}
+
+.dark .brutal-interactive:hover {
+  box-shadow: 6px 6px 0 0 #FFFFFF;
+}
+
+.dark .brutal-interactive:active {
+  box-shadow: 2px 2px 0 0 #FFFFFF;
+}
+
+/* Border utilities */
+.border-brutal {
+  border: 3px solid #000000;
+}
+
+.border-brutal-2 {
+  border: 2px solid #000000;
+}
+
+.border-brutal-4 {
+  border: 4px solid #000000;
+}
+
+.border-brutal-thick {
+  border: 6px solid #000000;
+}
+
+.dark .border-brutal,
+.dark .border-brutal-2,
+.dark .border-brutal-4,
+.dark .border-brutal-thick {
+  border-color: #FFFFFF;
+}
+
+/* Text utilities */
+.text-brutal {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.text-brutal-heading {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* Uppercase labels - common in neobrutalist UIs */
+.text-brutal-label {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Button base - Gumroad style */
+.btn-brutal {
+  border: 3px solid #000000;
+  font-weight: 700;
+  box-shadow: 4px 4px 0 0 #000000;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-brutal:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 0 #000000;
+}
+
+.btn-brutal:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 0 #000000;
+}
+
+.btn-brutal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 4px 4px 0 0 #000000;
+}
+
+.dark .btn-brutal {
+  border-color: #FFFFFF;
+  box-shadow: 4px 4px 0 0 #FFFFFF;
+}
+
+.dark .btn-brutal:hover {
+  box-shadow: 6px 6px 0 0 #FFFFFF;
+}
+
+.dark .btn-brutal:active {
+  box-shadow: 2px 2px 0 0 #FFFFFF;
+}
+
+/* Card base */
+.card-brutal {
+  border: 3px solid #000000;
+  background-color: #FFFFFF;
+  box-shadow: 4px 4px 0 0 #000000;
+}
+
+.dark .card-brutal {
+  border-color: #FFFFFF;
+  background-color: #111111;
+  box-shadow: 4px 4px 0 0 #FFFFFF;
+}
+
+/* Input base */
+.input-brutal {
+  border: 3px solid #000000;
+  background-color: #FFFFFF;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  transition: box-shadow 0.1s ease;
+}
+
+.input-brutal:focus {
+  outline: none;
+  box-shadow: 4px 4px 0 0 #000000;
+}
+
+.input-brutal::placeholder {
+  color: #999999;
+}
+
+.dark .input-brutal {
+  border-color: #FFFFFF;
+  background-color: #111111;
+  color: #FFFFFF;
+}
+
+.dark .input-brutal:focus {
+  box-shadow: 4px 4px 0 0 #FFFFFF;
+}
+
+/* Badge base */
+.badge-brutal {
+  border: 2px solid #000000;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.dark .badge-brutal {
+  border-color: #FFFFFF;
+}
+
+/* Dialog/Modal overlay */
+.dialog-brutal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+/* Dialog/Modal content */
+.dialog-brutal {
+  border: 4px solid #000000;
+  background-color: #FFFFFF;
+  box-shadow: 8px 8px 0 0 #000000;
+}
+
+.dark .dialog-brutal {
+  border-color: #FFFFFF;
+  background-color: #111111;
+  box-shadow: 8px 8px 0 0 #FFFFFF;
+}
+
+/* Accent bar for cards */
+.accent-bar-top {
+  position: relative;
+}
+
+.accent-bar-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--accent-color, #FFE75C);
+}
+
+.accent-bar-top.accent-yellow::before { background-color: #FFE75C; }
+.accent-bar-top.accent-blue::before { background-color: #0066FF; }
+.accent-bar-top.accent-pink::before { background-color: #FF66B2; }
+.accent-bar-top.accent-green::before { background-color: #00FF66; }
+.accent-bar-top.accent-red::before { background-color: #FF3333; }
+
+/* Focus ring - neobrutalist style */
+.focus-brutal:focus-visible {
+  outline: 3px solid #FFE75C;
+  outline-offset: 2px;
+}
+
+/* Global focus-visible styles for accessibility */
+*:focus-visible {
+  outline: 3px solid #FFE75C;
+  outline-offset: 2px;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 1rem 2rem;
+  background-color: #000000;
+  color: #FFFFFF;
+  font-weight: 700;
+  border: 3px solid #FFE75C;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Lexical Editor Styles */
+.inkwell-editor {
+  min-height: 300px;
+  outline: none;
+}
+
+.inkwell-editor:focus {
+  outline: none;
+}
+
+/* Prose overrides for editor */
+.prose {
+  max-width: none;
+}
+
+.prose h1 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+  margin-top: 2rem;
+  color: #000000;
+}
+
+.prose h2 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+  color: #000000;
+}
+
+.prose h3 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  margin-top: 1.25rem;
+  color: #000000;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: 1rem;
+  margin-left: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.25rem;
+}
+
+.prose blockquote {
+  border-left-width: 4px;
+  border-left-color: #000000;
+  padding-left: 1rem;
+  font-style: italic;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.prose pre {
+  font-family: var(--font-geist-mono), monospace;
+  background-color: #111827;
+  color: #f3f4f6;
+  padding: 1rem;
+  border-width: 4px;
+  border-color: #000000;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.prose code {
+  font-family: var(--font-geist-mono), monospace;
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-width: 1px;
+  border-color: #d1d5db;
+  font-size: 0.875rem;
+}
+
+.prose a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.prose a:hover {
+  color: #1d4ed8;
+}
+
+/* Selection styles */
+::selection {
+  background-color: #FFE75C;
+  color: #000000;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #000000;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #1f2937;
 }
