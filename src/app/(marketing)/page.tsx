@@ -1,6 +1,4 @@
-import { Hero } from "@/components/marketing/Hero";
-import { LiveEditorDemo } from "@/components/marketing/LiveEditorDemo";
-import { PainPoints } from "@/components/marketing/PainPoints";
+import { HotpressHero } from "@/components/landing/HotpressHero";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { Features } from "@/components/marketing/Features";
 import { Pricing } from "@/components/marketing/Pricing";
@@ -8,14 +6,8 @@ import { Pricing } from "@/components/marketing/Pricing";
 export default function HomePage() {
   return (
     <>
-      {/* Hero - full viewport with headline and CTAs */}
-      <Hero />
-
-      {/* Live Editor Demo - try before you buy */}
-      <LiveEditorDemo />
-
-      {/* Pain Points - address the problems */}
-      <PainPoints />
+      {/* Hero with Live Editor - editor-first design */}
+      <HotpressHero />
 
       {/* How It Works - simple 3-step process */}
       <HowItWorks />

@@ -16,40 +16,41 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://inkwell.app"
+    process.env.NEXT_PUBLIC_APP_URL || "https://hotpress.app"
   ),
   title: {
-    default: "Inkwell - Collaborative Writing Platform",
-    template: "%s | Inkwell",
+    default: "Hotpress - Write together. Publish instantly.",
+    template: "%s | Hotpress",
   },
   description:
-    "The collaborative writing platform for modern teams. Create beautiful documents, sync with GitHub, and ship content faster.",
+    "Collaborative writing with live output. Books, articles, threads. Your content, your format. PDF regenerates on every save.",
   keywords: [
     "writing",
     "collaboration",
-    "documentation",
-    "markdown",
-    "editor",
-    "github",
     "publishing",
+    "pdf",
+    "books",
+    "articles",
+    "github",
+    "real-time",
   ],
-  authors: [{ name: "Inkwell" }],
-  creator: "Inkwell",
+  authors: [{ name: "Hotpress" }],
+  creator: "Hotpress",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://inkwell.app",
-    title: "Inkwell - Collaborative Writing Platform",
+    url: "https://hotpress.app",
+    title: "Hotpress - Write together. Publish instantly.",
     description:
-      "The collaborative writing platform for modern teams. Create beautiful documents, sync with GitHub, and ship content faster.",
-    siteName: "Inkwell",
+      "Collaborative writing with live output. Books, articles, threads. Your content, your format.",
+    siteName: "Hotpress",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Inkwell - Collaborative Writing Platform",
+    title: "Hotpress - Write together. Publish instantly.",
     description:
-      "The collaborative writing platform for modern teams. Create beautiful documents, sync with GitHub, and ship content faster.",
-    creator: "@inkwell",
+      "Collaborative writing with live output. Books, articles, threads. Your content, your format.",
+    creator: "@hotpress",
   },
   robots: {
     index: true,

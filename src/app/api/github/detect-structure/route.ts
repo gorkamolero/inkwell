@@ -69,15 +69,15 @@ export async function GET(request: NextRequest) {
       "changelog", "code_of_conduct", "security",
     ];
 
-    // Check for root-level .md files
-    const rootMdFiles = mdFiles.filter((item) => {
+    // Check for root-level .md files (kept for future use)
+    const _rootMdFiles = mdFiles.filter((item) => {
       const p = item.path!;
       const fileName = p.toLowerCase();
       return !p.includes("/") && !projectFiles.some((pf) => fileName.includes(pf));
     });
 
-    // Check for chapters folder
-    const chaptersFiles = mdFiles.filter(
+    // Check for chapters folder (kept for future use)
+    const _chaptersFiles = mdFiles.filter(
       (item) => item.path?.startsWith("chapters/") && !item.path.includes("/", 9)
     );
 

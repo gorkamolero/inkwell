@@ -24,10 +24,10 @@ import Link from "next/link";
 import { BrutalBadge } from "@/components/ui";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
 
-const STORAGE_KEY = "inkwell-demo-content";
+const STORAGE_KEY = "hotpress-demo-content";
 
 const editorTheme = {
-  root: "inkwell-editor",
+  root: "hotpress-editor",
   paragraph: "mb-4",
   heading: {
     h1: "text-3xl font-black mb-4 mt-6 sm:text-4xl",
@@ -85,7 +85,7 @@ function InitialContentPlugin() {
 
       // Title
       const h1 = $createHeadingNode("h1");
-      h1.append($createTextNode("Welcome to Inkwell"));
+      h1.append($createTextNode("Welcome to Hotpress"));
       root.append(h1);
 
       // Empty paragraph
@@ -209,14 +209,14 @@ function EditorContent({
   wordCount: number;
   lastSaved: Date | null;
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const handleChange = useCallback((_editorState: EditorState) => {
     // State changes are handled by the plugins
   }, []);
 
   const editorConfig = useMemo(
     () => ({
-      namespace: "InkwellDemoEditor",
+      namespace: "HotpressDemoEditor",
       theme: editorTheme,
       nodes: [
         HeadingNode,

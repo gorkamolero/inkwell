@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { CreateProjectForm } from "./create-project-form";
 
 export const metadata = {
-  title: "Create Project - Inkwell",
+  title: "Create Project",
   description: "Create a new writing project",
 };
 

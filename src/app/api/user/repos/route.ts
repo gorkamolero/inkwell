@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // GET /api/user/repos - List repositories accessible to the GitHub App
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const session = await auth();
 
   if (!session?.user) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         repos: [],
         needsInstall: true,
-        installUrl: `https://github.com/apps/inkwell-pi/installations/new`,
+        installUrl: `https://github.com/apps/hotpress-app/installations/new`,
       });
     }
 

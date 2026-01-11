@@ -114,7 +114,7 @@ export async function createRepository(
     const { data: repo } = await octokit.repos.createForAuthenticatedUser({
       name: repoName,
       private: isPrivate,
-      description: description || `Created by Inkwell`,
+      description: description || `Created by Hotpress`,
       auto_init: true, // Create with README so we have a branch
     });
 
@@ -126,6 +126,170 @@ export async function createRepository(
     };
   } catch (error) {
     console.error("[github-app] Error creating repository:", error);
+    return null;
+  }
+}
+
+// ============================================================================
+// Content Operations using OAuth Token
+// ============================================================================
+
+interface CommitFileResult {
+  sha: string;
+  commitUrl: string;
+}
+
+/**
+ * Get the SHA of a file if it exists
+ */
+export async function getFileSha(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  path: string,
+  branch: string
+): Promise<string | null> {
+  const octokit = new Octokit({ auth: accessToken });
+
+  try {
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path,
+      ref: branch,
+    });
+
+    if ("sha" in data) {
+      return data.sha;
+    }
+    return null;
+  } catch {
+    // File doesn't exist
+    return null;
+  }
+}
+
+/**
+ * Create or update a file in a repository
+ */
+export async function commitFile(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  path: string,
+  content: string,
+  message: string,
+  branch: string = "main"
+): Promise<CommitFileResult | null> {
+  const octokit = new Octokit({ auth: accessToken });
+
+  try {
+    // Check if file exists to get SHA for update
+    const existingSha = await getFileSha(accessToken, owner, repo, path, branch);
+
+    const { data } = await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path,
+      message,
+      content: Buffer.from(content).toString("base64"),
+      branch,
+      ...(existingSha ? { sha: existingSha } : {}),
+    });
+
+    console.log(`[github-app] Committed file: ${path} to ${owner}/${repo}`);
+    return {
+      sha: data.commit.sha!,
+      commitUrl: data.commit.html_url!,
+    };
+  } catch (error) {
+    console.error("[github-app] Error committing file:", error);
+    return null;
+  }
+}
+
+/**
+ * Commit multiple files in a single commit using the Git Data API
+ */
+export async function commitMultipleFiles(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  files: Array<{ path: string; content: string }>,
+  message: string,
+  branch: string = "main"
+): Promise<CommitFileResult | null> {
+  const octokit = new Octokit({ auth: accessToken });
+
+  try {
+    // Get the current reference
+    const { data: ref } = await octokit.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${branch}`,
+    });
+
+    const currentCommitSha = ref.object.sha;
+
+    // Get the current commit's tree
+    const { data: currentCommit } = await octokit.git.getCommit({
+      owner,
+      repo,
+      commit_sha: currentCommitSha,
+    });
+
+    const baseTreeSha = currentCommit.tree.sha;
+
+    // Create blobs for each file
+    const blobs = await Promise.all(
+      files.map(async (file) => {
+        const { data: blob } = await octokit.git.createBlob({
+          owner,
+          repo,
+          content: Buffer.from(file.content).toString("base64"),
+          encoding: "base64",
+        });
+        return { path: file.path, sha: blob.sha };
+      })
+    );
+
+    // Create new tree with the blobs
+    const { data: newTree } = await octokit.git.createTree({
+      owner,
+      repo,
+      base_tree: baseTreeSha,
+      tree: blobs.map((blob) => ({
+        path: blob.path,
+        mode: "100644" as const,
+        type: "blob" as const,
+        sha: blob.sha,
+      })),
+    });
+
+    // Create the commit
+    const { data: newCommit } = await octokit.git.createCommit({
+      owner,
+      repo,
+      message,
+      tree: newTree.sha,
+      parents: [currentCommitSha],
+    });
+
+    // Update the reference
+    await octokit.git.updateRef({
+      owner,
+      repo,
+      ref: `heads/${branch}`,
+      sha: newCommit.sha,
+    });
+
+    console.log(`[github-app] Committed ${files.length} files to ${owner}/${repo}`);
+    return {
+      sha: newCommit.sha,
+      commitUrl: newCommit.html_url!,
+    };
+  } catch (error) {
+    console.error("[github-app] Error committing multiple files:", error);
     return null;
   }
 }

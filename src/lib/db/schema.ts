@@ -5,6 +5,8 @@ import {
   boolean,
   integer,
   unique,
+  jsonb,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -122,6 +124,41 @@ export const subscriptions = pgTable("subscriptions", {
 });
 
 // ============================================================================
+// Hotpress Tables
+// ============================================================================
+
+export const writingSessions = pgTable(
+  "writing_sessions",
+  {
+    id: text("id").primaryKey(), // CUID, also Liveblocks room ID
+    shareSlug: text("share_slug").unique(),
+    title: text("title"),
+    type: text("type").default("book"), // book, article, thread, newsletter, docs
+    content: text("content"), // Lexical JSON or markdown
+    formatConfig: jsonb("format_config"), // hotpress.yaml as JSON
+    passwordHash: text("password_hash"), // bcrypt, optional
+    ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }), // NULL for anonymous
+    githubRepo: text("github_repo"),
+    githubPath: text("github_path"),
+    lastGithubSha: text("last_github_sha"),
+    expiresAt: timestamp("expires_at", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("writing_sessions_share_slug_idx").on(table.shareSlug),
+    index("writing_sessions_owner_id_idx").on(table.ownerId),
+  ]
+);
+
+export const liveblocksRooms = pgTable("liveblocks_rooms", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").references(() => writingSessions.id, { onDelete: "cascade" }),
+  roomName: text("room_name"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// ============================================================================
 // Relations
 // ============================================================================
 
@@ -134,6 +171,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     fields: [users.id],
     references: [subscriptions.userId],
   }),
+  writingSessions: many(writingSessions),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -187,6 +225,21 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   }),
 }));
 
+export const writingSessionsRelations = relations(writingSessions, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [writingSessions.ownerId],
+    references: [users.id],
+  }),
+  liveblocksRooms: many(liveblocksRooms),
+}));
+
+export const liveblocksRoomsRelations = relations(liveblocksRooms, ({ one }) => ({
+  session: one(writingSessions, {
+    fields: [liveblocksRooms.sessionId],
+    references: [writingSessions.id],
+  }),
+}));
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -212,6 +265,13 @@ export type NewDocument = typeof documents.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 
+export type WritingSession = typeof writingSessions.$inferSelect;
+export type NewWritingSession = typeof writingSessions.$inferInsert;
+
+export type LiveblocksRoom = typeof liveblocksRooms.$inferSelect;
+export type NewLiveblocksRoom = typeof liveblocksRooms.$inferInsert;
+
 // Role type for type safety
 export type CollaboratorRole = "viewer" | "editor" | "admin";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
+export type WritingSessionType = "book" | "article" | "thread" | "newsletter" | "docs";

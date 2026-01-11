@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: ProjectPageProps) {
   const { projectId } = await params;
   const project = await getProject(projectId);
   return {
-    title: project ? `${project.name} - Inkwell` : "Project - Inkwell",
+    title: project ? `${project.name} - Hotpress` : "Project - Hotpress",
     description: project?.description ?? "Manage your project",
   };
 }

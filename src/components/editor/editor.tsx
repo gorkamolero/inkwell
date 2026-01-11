@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
@@ -18,7 +17,7 @@ import { TRANSFORMERS } from "@lexical/markdown";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
-import type { EditorState, SerializedEditorState } from "lexical";
+import type { SerializedEditorState } from "lexical";
 import { EditorToolbar } from "./editor-toolbar";
 
 interface EditorProps {
@@ -27,9 +26,9 @@ interface EditorProps {
 }
 
 const editorConfig = {
-  namespace: "InkwellEditor",
+  namespace: "HotpressEditor",
   theme: {
-    root: "inkwell-editor",
+    root: "hotpress-editor",
     paragraph: "mb-4",
     heading: {
       h1: "text-4xl font-black mb-6 mt-8",
@@ -118,12 +117,6 @@ function InitialContentPlugin({
 }
 
 export function Editor({ initialContent, onSave }: EditorProps) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleChange = useCallback((_editorState: EditorState) => {
-    // Auto-save could be implemented here
-    // For now, we just track state changes
-  }, []);
-
   return (
     <LexicalComposer initialConfig={editorConfig}>
       <div className="relative">
@@ -144,7 +137,6 @@ export function Editor({ initialContent, onSave }: EditorProps) {
         <LinkPlugin />
         <TablePlugin />
         <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-        <OnChangePlugin onChange={handleChange} />
         <SavePlugin onSave={onSave} />
         <InitialContentPlugin initialContent={initialContent} />
       </div>

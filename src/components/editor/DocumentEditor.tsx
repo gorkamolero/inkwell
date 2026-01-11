@@ -47,7 +47,7 @@ interface DocumentEditorProps {
 
 // Editor configuration
 const editorTheme = {
-  root: "inkwell-editor",
+  root: "hotpress-editor",
   paragraph: "mb-4",
   heading: {
     h1: "text-4xl font-black mb-6 mt-8",
@@ -158,7 +158,7 @@ export function DocumentEditor({
 
       setHasUncommittedChanges(true); // Mark as having uncommitted changes
     },
-    [projectId, documentPath]
+    [projectId, documentPath, currentSha]
   );
 
   // Commit to GitHub
@@ -289,7 +289,7 @@ export function DocumentEditor({
 
   // Editor config
   const editorConfig = {
-    namespace: "InkwellEditor",
+    namespace: "HotpressEditor",
     theme: editorTheme,
     nodes: editorNodes,
     editorState: editorState

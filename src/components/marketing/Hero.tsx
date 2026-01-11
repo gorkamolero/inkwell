@@ -38,7 +38,7 @@ export function Hero() {
           {/* Subheadline */}
           <p className="mx-auto mb-12 max-w-3xl text-lg font-medium text-gray-700 sm:text-xl md:text-2xl">
             Stop paying $20/month for someone else to hold your writing hostage.
-            Inkwell stores everything in{" "}
+            Hotpress stores everything in{" "}
             <span className="font-black text-black">YOUR</span> GitHub repo. You
             own every word, every draft, every revision.{" "}
             <span className="font-black text-black">Forever.</span>

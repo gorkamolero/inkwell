@@ -36,7 +36,7 @@ const EDITOR_NODES = [
 export function markdownToLexical(markdown: string): SerializedEditorState {
   // Create a headless editor for conversion
   const editor = createEditor({
-    namespace: "InkwellConverter",
+    namespace: "HotpressConverter",
     nodes: EDITOR_NODES,
     onError: (error: Error) => {
       console.error("Editor conversion error:", error);
@@ -62,7 +62,7 @@ export function markdownToLexical(markdown: string): SerializedEditorState {
 export function lexicalToMarkdown(state: SerializedEditorState): string {
   // Create a headless editor for conversion
   const editor = createEditor({
-    namespace: "InkwellConverter",
+    namespace: "HotpressConverter",
     nodes: EDITOR_NODES,
     onError: (error: Error) => {
       console.error("Editor conversion error:", error);

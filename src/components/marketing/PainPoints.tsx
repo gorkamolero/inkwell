@@ -6,21 +6,21 @@ const painPoints = [
     icon: CloudOff,
     question: "Tired of losing work?",
     description:
-      "Cloud services go down. Companies shut down. Your writing disappears. With Inkwell, your files live in YOUR repo. Always accessible, always yours.",
+      "Cloud services go down. Companies shut down. Your writing disappears. With Hotpress, your files live in YOUR repo. Always accessible, always yours.",
     accent: "yellow" as const,
   },
   {
     icon: Lock,
     question: "Tired of vendor lock-in?",
     description:
-      "Proprietary formats. Export fees. Migration nightmares. Inkwell uses plain markdown. Export everything with one click. Switch tools whenever you want.",
+      "Proprietary formats. Export fees. Migration nightmares. Hotpress uses plain markdown. Export everything with one click. Switch tools whenever you want.",
     accent: "blue" as const,
   },
   {
     icon: DollarSign,
     question: "Tired of overpriced tools?",
     description:
-      "$20, $30, $50 a month just to write? We built Inkwell because writing tools shouldn't cost more than your Netflix subscription.",
+      "$20, $30, $50 a month just to write? We built Hotpress because writing tools shouldn't cost more than your Netflix subscription.",
     accent: "pink" as const,
   },
 ];

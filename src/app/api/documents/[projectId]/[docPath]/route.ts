@@ -4,7 +4,6 @@ import { db, projects, documents, accounts } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import {
   getDocument,
-  saveDocument,
   deleteDocument,
 } from "@/lib/github";
 import { countWords, extractTitle } from "@/lib/editor-utils";
@@ -91,7 +90,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { content, sha, message } = body;
+    const { content } = body;
 
     if (typeof content !== "string") {
       return NextResponse.json(

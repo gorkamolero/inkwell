@@ -3,8 +3,8 @@ import { Check } from "lucide-react";
 import { PLANS } from "@/lib/stripe";
 
 export const metadata = {
-  title: "Pricing - Inkwell",
-  description: "Simple, transparent pricing for teams of all sizes.",
+  title: "Pricing",
+  description: "Simple, transparent pricing. Start free, upgrade when you need more.",
 };
 
 export default function PricingPage() {

@@ -10,6 +10,7 @@ import {
   PenTool,
   Crown,
   Sparkles,
+  FileEdit,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import type { User } from "next-auth";
@@ -24,6 +25,11 @@ export function DashboardSidebar({ user, tier }: DashboardSidebarProps) {
   const pathname = usePathname();
 
   const navigation = [
+    {
+      name: "Sessions",
+      href: "/sessions",
+      icon: FileEdit,
+    },
     {
       name: "Projects",
       href: "/projects",
@@ -55,7 +61,7 @@ export function DashboardSidebar({ user, tier }: DashboardSidebarProps) {
           <div className="flex h-10 w-10 items-center justify-center border-3 border-black bg-brutal-yellow">
             <PenTool className="h-5 w-5" />
           </div>
-          Inkwell
+          Hotpress
         </Link>
       </div>
 
@@ -121,7 +127,7 @@ export function DashboardSidebar({ user, tier }: DashboardSidebarProps) {
         {tier === "free" && (
           <Link
             href="/settings"
-            className="mb-4 flex w-full items-center justify-center gap-2 border-3 border-black bg-brutal-pink px-4 py-2 font-bold text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="mb-4 flex w-full items-center justify-center gap-2 border-3 border-black bg-brutal-pink px-4 py-2 font-bold text-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
           >
             <Sparkles className="h-4 w-4" />
             Upgrade

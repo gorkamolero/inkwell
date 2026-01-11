@@ -122,7 +122,7 @@ async function inviteCollaboratorHandler(
 
   if (!invitedUser) {
     throw ApiError.notFound(
-      "User not found. They must have an Inkwell account first."
+      "User not found. They must have a Hotpress account first."
     );
   }
 

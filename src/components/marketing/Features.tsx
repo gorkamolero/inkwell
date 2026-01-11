@@ -41,9 +41,9 @@ const features = [
   },
   {
     icon: Code2,
-    title: "Developer friendly",
+    title: "API-first",
     description:
-      "CLI tools, API access, webhooks. Build your own workflows on top of Inkwell.",
+      "SDK for automation. Claude-ready for AI editing. Build your own workflows on top of Hotpress.",
   },
 ];
 

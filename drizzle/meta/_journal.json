@@ -15,6 +15,13 @@
       "when": 1768080318426,
       "tag": "0001_faulty_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768125359384,
+      "tag": "0002_overconfident_pyro",
+      "breakpoints": true
     }
   ]
 }

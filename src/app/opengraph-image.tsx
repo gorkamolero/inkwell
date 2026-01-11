@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export const alt = "Inkwell - Collaborative Writing Platform";
+export const alt = "Hotpress - Write together. Publish instantly.";
 export const size = {
   width: 1200,
   height: 630,
@@ -82,7 +82,7 @@ export default function OpenGraphImage() {
                 fontFamily: "system-ui, sans-serif",
               }}
             >
-              I
+              H
             </span>
           </div>
 
@@ -98,7 +98,7 @@ export default function OpenGraphImage() {
               textTransform: "uppercase",
             }}
           >
-            Inkwell
+            Hotpress
           </h1>
 
           {/* Tagline */}
@@ -110,7 +110,7 @@ export default function OpenGraphImage() {
               fontFamily: "system-ui, sans-serif",
             }}
           >
-            Collaborative Writing Platform
+            Write together. Publish instantly.
           </p>
 
           {/* Feature badges */}

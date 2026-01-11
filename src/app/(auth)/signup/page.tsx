@@ -5,8 +5,8 @@ import { BrutalCard } from "@/components/ui";
 import { AuthButtons } from "@/components/layout/auth-buttons";
 
 export const metadata = {
-  title: "Sign Up - Inkwell",
-  description: "Create your Inkwell account",
+  title: "Sign Up",
+  description: "Create your Hotpress account",
 };
 
 export default async function SignupPage() {

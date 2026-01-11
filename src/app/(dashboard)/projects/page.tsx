@@ -10,7 +10,7 @@ import {
 } from "@/components/dashboard/ProjectCard";
 
 export const metadata = {
-  title: "Projects - Inkwell",
+  title: "Projects",
   description: "Manage your writing projects",
 };
 

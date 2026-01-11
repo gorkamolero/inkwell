@@ -17,9 +17,9 @@ export async function Header() {
           <Link
             href="/"
             className="text-2xl font-black tracking-tight text-black"
-            aria-label="Inkwell - Go to homepage"
+            aria-label="Hotpress - Go to homepage"
           >
-            Inkwell
+            Hotpress
           </Link>
 
           <nav
@@ -28,19 +28,19 @@ export async function Header() {
           >
             <Link
               href="/pricing"
-              className="font-bold text-black hover:text-yellow-600"
+              className="font-bold text-black hover:text-brutal-blue"
             >
               Pricing
             </Link>
             <Link
               href="/docs"
-              className="font-bold text-black hover:text-yellow-600"
+              className="font-bold text-black hover:text-brutal-blue"
             >
               Docs
             </Link>
             <Link
               href="/blog"
-              className="font-bold text-black hover:text-yellow-600"
+              className="font-bold text-black hover:text-brutal-blue"
             >
               Blog
             </Link>
@@ -50,7 +50,7 @@ export async function Header() {
             {session?.user ? (
               <Link
                 href="/projects"
-                className="hidden border-4 border-black bg-yellow-400 px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] md:inline-flex"
+                className="hidden border-4 border-black bg-brutal-yellow px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] md:inline-flex"
               >
                 Dashboard
               </Link>
@@ -58,13 +58,13 @@ export async function Header() {
               <>
                 <Link
                   href="/login"
-                  className="hidden font-bold text-black hover:text-yellow-600 md:inline"
+                  className="hidden font-bold text-black hover:text-brutal-blue md:inline"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="hidden border-4 border-black bg-yellow-400 px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] md:inline-flex"
+                  className="hidden border-4 border-black bg-brutal-yellow px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] md:inline-flex"
                 >
                   Get Started
                 </Link>

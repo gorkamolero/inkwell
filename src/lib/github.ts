@@ -308,7 +308,7 @@ export async function createRepo(
       name,
       private: isPrivate,
       auto_init: true, // Initialize with README
-      description: "Created with Inkwell",
+      description: "Created with Hotpress",
     });
 
     return {

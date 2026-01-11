@@ -33,12 +33,12 @@ export function MarketingFooter() {
               href="/"
               className="text-2xl font-black tracking-tight text-white"
             >
-              Inkwell
+              Hotpress
             </Link>
             <p className="mt-4 text-sm text-gray-400">
-              Own your writing.
+              Write together.
               <br />
-              Version control for everyone.
+              Publish instantly.
             </p>
           </div>
 
@@ -161,11 +161,11 @@ export function MarketingFooter() {
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/20 pt-8 sm:flex-row">
           <p className="text-sm text-gray-400">
-            &copy; {new Date().getFullYear()} Inkwell. All rights reserved.
+            &copy; {new Date().getFullYear()} Hotpress. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/inkwell"
+              href="https://github.com/hotpress"
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center border-2 border-white/30 text-gray-400 transition-all hover:border-white hover:text-white"
@@ -174,7 +174,7 @@ export function MarketingFooter() {
               <Github className="h-5 w-5" />
             </a>
             <a
-              href="https://twitter.com/inkwell"
+              href="https://twitter.com/hotpress"
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-10 w-10 items-center justify-center border-2 border-white/30 text-gray-400 transition-all hover:border-white hover:text-white"

@@ -32,7 +32,7 @@ export function SyncButton({ projectSlug }: SyncButtonProps) {
 
       setResult({ success: true, message: data.message });
       router.refresh();
-    } catch (error) {
+    } catch {
       setResult({ success: false, message: "Failed to sync" });
     } finally {
       setSyncing(false);

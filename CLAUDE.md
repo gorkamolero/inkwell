@@ -1,21 +1,29 @@
-# Inkwell - Collaborative Writing Platform
+# Hotpress - Collaborative Writing Platform
 
 ## Vision
-"Own your writing. Version control for everyone."
+"Write together. Publish instantly."
 
-A SaaS collaborative writing platform where GitHub is the storage backend. Users own their content in their own repositories - no vendor lock-in.
+A collaborative writing platform with live output. Write a book, article, or thread with your team. PDF regenerates on every save. Your content stays yours (GitHub-backed).
+
+## Core Philosophy
+
+1. **Land -> Write immediately** (no auth required)
+2. **Collaborate in real-time** (Liveblocks)
+3. **Save to GitHub when ready** (you own your data)
+4. **Configure formatting via schema** (API-driven)
+5. **PDF regenerates automatically**
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript (strict)
-- **UI**: ShadCN UI + Tailwind CSS + **Neobrutalist Design**
-- **Editor**: shadcn-editor (Lexical-based)
-- **Auth**: NextAuth.js v5 (GitHub + Google OAuth)
-- **Database**: PostgreSQL + **Drizzle ORM**
-- **Payments**: Stripe
-- **Storage**: GitHub API (user's own repos)
-- **Deployment**: Vercel
+- **Real-time**: Liveblocks (Yjs CRDT)
+- **Database**: PostgreSQL + Drizzle ORM
+- **Auth**: NextAuth v5 (GitHub OAuth, optional)
+- **Storage**: GitHub (user's repos)
+- **PDF Generation**: GitHub Actions + Python/ReportLab
+- **UI**: ShadCN + Tailwind + **Neobrutalist Design**
+- **Editor**: Lexical
 
 ## Design System: Neobrutalism
 
@@ -55,64 +63,54 @@ Inspired by Gumroad and neobrutalism.dev. Key principles:
 
 ## Key Differentiators
 
-1. **You own your content** - Files live in your GitHub repo, not our servers
-2. **Version history included** - Full git history for every document
-3. **No lock-in** - Standard markdown files, export anytime
-4. **Try before signup** - Live editor on homepage, no account required
+1. **Start writing immediately** - No signup required to use the editor
+2. **Real-time collaboration** - Write with your team, see their cursors
+3. **Live output** - PDF regenerates on every save
+4. **You own your content** - Files live in your GitHub repo
+5. **Any format** - Books, articles, threads, newsletters, docs
 
 ## Landing Page
 
-The homepage features a LIVE, FUNCTIONAL editor that visitors can use without signing up. This lets them experience the product immediately.
+The homepage IS the editor. Visitors land and can start writing immediately without signing up.
 
-**Copy voice**: Bold, direct, slightly irreverent (like Gumroad). No corporate fluff.
+**Copy voice**: Direct, not corporate. Gumroad energy. No fluff.
 
-## Architecture Decisions
+**Headline**: "Write together. Publish instantly."
+**Subheadline**: "Books, articles, threads. Collaborative writing with live output. Your content, your format."
 
-### Why Drizzle over Prisma?
-- Type-safe SQL that feels like writing SQL
-- Lighter weight, faster
-- Better edge compatibility
-- User preference
+## Content Types
 
-### Why GitHub as Backend?
-- Users already trust GitHub with their code
-- Free, reliable storage with CDN
-- Built-in version control
-- Collaboration via GitHub's model
-- Zero storage costs for us
-
-### Why Lexical Editor?
-- Modern, performant editor framework
-- Extensible for future features
-- Good markdown roundtrip support
-- Active development by Meta
+| Type | Primary Output | Secondary Outputs | Status |
+|------|----------------|-------------------|--------|
+| `book` | PDF | ePub, Kindle, HTML | MVP |
+| `article` | HTML | Markdown, Medium, Substack | v2 |
+| `thread` | Platform posts | Twitter/X, LinkedIn, Bluesky | v3 |
+| `newsletter` | Email HTML | Markdown | v3 |
+| `docs` | Static site | Markdown, HTML | v4 |
 
 ## Pricing Model
 
-| Tier | Price | Projects | Docs/Project | Collaborators |
-|------|-------|----------|--------------|---------------|
-| Free | $0 | 3 | 10 | 0 |
-| Pro | $12/mo | Unlimited | Unlimited | 5/project |
-| Team | $29/mo | Unlimited | Unlimited | Unlimited |
+| Tier | Price | Sessions | Collaborators |
+|------|-------|----------|---------------|
+| Free | $0 | 3 | 0 |
+| Pro | $12/mo | Unlimited | 5/session |
+| Team | $29/mo | Unlimited | Unlimited |
 
 ## Development Notes
 
 ### Environment Variables
 ```
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
-
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
+AUTH_SECRET=
+AUTH_GITHUB_ID=
+AUTH_GITHUB_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_PRO=
 STRIPE_PRICE_TEAM=
+LIVEBLOCKS_SECRET_KEY=
+GITHUB_APP_ID=
+GITHUB_APP_PRIVATE_KEY_PATH=
 ```
 
 ### GitHub OAuth Scopes
@@ -122,7 +120,7 @@ STRIPE_PRICE_TEAM=
 ### Database
 Local dev uses Docker:
 ```bash
-docker-compose up -d postgres
+docker compose up -d
 pnpm db:generate
 pnpm db:migrate
 ```
@@ -134,40 +132,17 @@ pnpm db:migrate   # Run migrations
 pnpm db:studio    # Open Drizzle Studio
 ```
 
-## Multi-Book Repo Support
+## URL Structure
 
-Inkwell supports two repo structures:
-
-**Single-Book Repo** (e.g., `single-book-test-repo`):
-- One book per repo
-- Chapters in root or a `chapters/` folder
-- `chaptersPath`: `"chapters"` or `""`
-
-**Multi-Book Repo** (e.g., `multi-book-test-repo`):
-- Multiple books in subfolders
-- Each book has its own chapters path
-- When connecting, show Book Selector UI
-- Each selected book becomes its own project
-
-Example - `multi-book-test-repo` repo:
 ```
-multi-book-test-repo/
-  book-a/output/chapters/*.md  → Project "Book A Tantra"
-  book-b/output/chapters/*.md → Project "Book B Tantra"
+/                           Homepage = Editor (ephemeral session)
+/s/:shareSlug               Shared session (may require password)
+/sessions                   User's sessions (auth required)
+/sessions/:sessionId        Session settings/details
+/projects                   Legacy projects (GitHub-connected)
+/pricing                    Pricing page
+/docs                       API documentation
 ```
-
-## Acceptance Testing
-
-The app MUST be tested against real repos before deployment:
-
-| Test | Repo | Expected Result |
-|------|------|-----------------|
-| Single-book detection | `gorkamolero/single-book-test-repo` | Detect as single-book, list chapters |
-| Multi-book detection | `gorkamolero/multi-book-test-repo` | Detect both Book A and Book B |
-| Book selector UI | `multi-book-test-repo` | Show selector, create correct projects |
-| Editor save | Any | Save to GitHub, verify commit |
-
-Use `GITHUB_TOKEN` from environment for testing.
 
 ## Quality Standards
 
@@ -178,4 +153,3 @@ Use `GITHUB_TOKEN` from environment for testing.
 - Loading states for all async operations
 - Proper error handling with user feedback
 - Neobrutalist styling consistent throughout
-- **All acceptance tests must pass**

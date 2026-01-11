@@ -15,7 +15,7 @@ import {
 import type { UserWithSubscription } from "@/types";
 
 export const metadata = {
-  title: "Settings - Inkwell",
+  title: "Settings",
   description: "Manage your account settings",
 };
 

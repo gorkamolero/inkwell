@@ -1,0 +1,255 @@
+# Hotpress Build Program
+# Transform Inkwell into Hotpress
+
+session "You are building Hotpress, a collaborative writing platform with live output. Read HOTPRESS_ARCHITECTURE.md for the complete specification. Follow the neobrutalist design system. Use pnpm for all package operations. Zero warnings, zero errors policy."
+
+## Phase 1: Scaffolding (Parallel)
+
+parallel:
+  agent schema:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Update the database schema in /src/lib/db/schema.ts:
+
+    1. Add writing_sessions table with all fields from architecture doc
+    2. Add liveblocks_rooms table
+    3. Keep users, accounts, subscriptions tables
+    4. Add proper indexes on share_slug, owner_id
+    5. Run pnpm db:generate to create migration
+    6. Run pnpm db:migrate to apply
+
+    Do NOT delete old tables yet (projects, documents) - we'll deprecate later.
+    """
+
+  agent liveblocks:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Set up Liveblocks integration:
+
+    1. Install: pnpm add @liveblocks/client @liveblocks/react @liveblocks/yjs
+    2. Create /src/lib/liveblocks.ts with client setup and room context
+    3. Create /src/app/api/liveblocks-auth/route.ts for room authentication
+    4. Create Presence and Storage types
+
+    Use environment variable LIVEBLOCKS_SECRET_KEY for auth.
+    Add NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY for client.
+    """
+
+  agent session-lib:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Create session management library:
+
+    1. Create /src/lib/session.ts with:
+       - getOrCreateSession() - cookie-based session management
+       - createSession() - create new ephemeral session
+       - claimSession() - link anonymous session to user
+       - SESSION_COOKIE constant
+
+    2. Create /src/lib/format-schema.ts with:
+       - TypeScript types for the format config schema
+       - Zod validation schema
+       - Default config for each content type (book, article, thread)
+       - MVP subset defaults
+
+    Use cuid2 for session IDs.
+    """
+
+  agent api-routes:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Scaffold all API routes (stubs with types, not full implementation):
+
+    1. /src/app/api/sessions/route.ts - POST (create)
+    2. /src/app/api/sessions/[id]/route.ts - GET, PATCH, DELETE
+    3. /src/app/api/sessions/[id]/claim/route.ts - POST
+    4. /src/app/api/sessions/[id]/share/route.ts - POST
+    5. /src/app/api/sessions/[id]/format/route.ts - GET, PUT
+    6. /src/app/api/sessions/[id]/generate/route.ts - POST
+    7. /src/app/api/sessions/[id]/save-to-github/route.ts - POST
+    8. /src/app/api/share/[slug]/route.ts - GET
+    9. /src/app/api/share/[slug]/verify/route.ts - POST
+    10. /src/app/api/format/presets/route.ts - GET
+
+    Each route should have proper TypeScript types and return TODO responses.
+    Use the existing api-utils.ts patterns from Inkwell.
+    """
+
+  agent components:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Scaffold new component files (structure only, not full implementation):
+
+    Editor components:
+    - /src/components/editor/SessionEditor.tsx
+    - /src/components/editor/CollaboratorCursors.tsx
+    - /src/components/editor/PresenceAvatars.tsx
+    - /src/components/editor/EditorModeToggle.tsx
+
+    Share components:
+    - /src/components/share/ShareDialog.tsx
+    - /src/components/share/PasswordGate.tsx
+
+    Format components:
+    - /src/components/format/FormatPanel.tsx
+    - /src/components/format/TypographySection.tsx
+    - /src/components/format/ChapterSection.tsx
+    - /src/components/format/PageLayoutSection.tsx
+    - /src/components/format/PreviewPane.tsx
+
+    GitHub components:
+    - /src/components/github/SaveToGitHubDialog.tsx
+
+    Each component should have proper TypeScript interface, basic structure,
+    and use the neobrutalist UI components (BrutalButton, BrutalCard, etc).
+    """
+
+## Phase 2: Implementation (Ralph Wiggum Loop)
+
+agent implementer:
+  context: HOTPRESS_ARCHITECTURE.md
+  loop until **all MVP features working and tests pass**:
+    """
+    You are implementing Hotpress. Work through these in order:
+
+    1. SESSIONS API
+       - Implement POST /api/sessions (create session, set cookie)
+       - Implement GET /api/sessions/[id]
+       - Implement PATCH /api/sessions/[id] (update content, title)
+       - Test with curl or the app
+
+    2. HOMEPAGE EDITOR
+       - Modify /src/app/(marketing)/page.tsx to be editor-first
+       - Create session on page load
+       - Connect to SessionEditor component
+       - Auto-save content to DB via PATCH
+       - Add type selector (Book/Article/Thread dropdown)
+       - Style with neobrutalist design
+
+    3. LIVEBLOCKS REAL-TIME
+       - Connect SessionEditor to Liveblocks
+       - Integrate Y.js with Lexical
+       - Add CollaboratorCursors component
+       - Add PresenceAvatars component
+       - Test with two browser windows
+
+    4. SHARE FLOW
+       - Implement share link generation
+       - Create /src/app/s/[slug]/page.tsx
+       - Add ShareDialog component to editor
+       - Test sharing a session
+
+    5. AUTH MODIFICATION
+       - Update /src/lib/auth.ts for optional auth
+       - Update /src/middleware.ts to allow anonymous access
+       - Implement session claiming when user logs in
+       - Keep GitHub OAuth for "Save to GitHub"
+
+    6. GITHUB SAVE
+       - Implement /api/sessions/[id]/save-to-github
+       - Create SaveToGitHubDialog with repo picker
+       - Commit content as markdown + hotpress.yaml
+       - Update session with github_repo, github_path
+
+    7. BASIC FORMATTING
+       - Implement format API endpoints
+       - Create simple FormatPanel UI
+       - Typography: font dropdowns
+       - Chapters: numbering, drop caps toggle
+       - Page: size presets
+       - Save format config to session
+
+    8. LANDING PAGE
+       - Add HowItWorks section below editor
+       - Add Features section
+       - Add UseCases tabs
+       - Move Pricing section
+       - Add FAQ section
+       - Add final CTA
+       - All neobrutalist styling
+
+    9. DASHBOARD
+       - Create /src/app/dashboard/page.tsx - list user's sessions
+       - Create session cards with SessionCard component
+       - Link to editor and format pages
+
+    10. CLEANUP
+        - Remove old /projects routes
+        - Remove old /documents routes
+        - Remove old auth pages (keep OAuth callback)
+        - Update all imports
+        - Run pnpm lint --fix
+        - Run pnpm build
+        - Fix any errors
+
+    After each major step, run pnpm build to check for errors.
+    Fix all errors and warnings before moving on.
+
+    When stuck, read the error carefully, check the architecture doc,
+    and try a different approach. Keep iterating until it works.
+    """
+
+## Phase 3: Polish (Parallel)
+
+parallel:
+  agent copy:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Polish all copy and messaging:
+
+    1. Update all "Inkwell" references to "Hotpress"
+    2. Update page titles and meta descriptions
+    3. Review and refine landing page copy per architecture doc
+    4. Ensure consistent voice (direct, not corporate, Gumroad energy)
+    5. Update README.md
+    6. Update CLAUDE.md with new project info
+    """
+
+  agent styling:
+    context: HOTPRESS_ARCHITECTURE.md
+    """
+    Consistency pass on neobrutalist styling:
+
+    1. Verify all components use brutal-* UI components
+    2. Check color usage (black borders, yellow accents)
+    3. Verify no rounded corners > 4px
+    4. Check shadow consistency (4px 4px 0 black)
+    5. Test hover/active states on all buttons
+    6. Mobile responsiveness check
+    """
+
+  agent tests:
+    """
+    Add E2E tests with Playwright:
+
+    1. Install Playwright if not present: pnpm add -D @playwright/test
+    2. Create tests for:
+       - Homepage loads, editor works
+       - Create session, type content, auto-saves
+       - Share link generation and access
+       - GitHub OAuth flow (mock or skip)
+       - Format panel opens and saves
+    3. Run tests: pnpm test:e2e
+    4. Fix any failures
+    """
+
+## Final Verification
+
+agent verify:
+  """
+  Final checks before declaring done:
+
+  1. pnpm lint - zero warnings
+  2. pnpm build - succeeds
+  3. pnpm test:e2e - all pass (if tests exist)
+  4. Manual test:
+     - Open homepage, type, see auto-save
+     - Share link, open in incognito, see content
+     - Open format panel, change font, see preview
+     - Login with GitHub, claim session
+     - Save to GitHub (if credentials available)
+  5. Check all pages render without errors
+  6. Check mobile view
+
+  Report any remaining issues.
+  """

@@ -2,8 +2,7 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication
-const protectedRoutes = ["/projects", "/settings"];
-
+const protectedRoutes = ["/projects", "/settings", "/dashboard"];
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -15,20 +14,14 @@ export default auth((req) => {
       nextUrl.pathname === route || nextUrl.pathname.startsWith(`${route}/`)
   );
 
-
-  // Allow all API routes except protected ones
+  // Allow all API routes - auth is handled in route handlers
   if (nextUrl.pathname.startsWith("/api/")) {
-    // api/auth routes are always public
-    if (nextUrl.pathname.startsWith("/api/auth")) {
-      return NextResponse.next();
-    }
-    // Other API routes may need auth, handled in the route handlers
     return NextResponse.next();
   }
 
   // Redirect logged-in users away from auth pages
   if (isLoggedIn && (nextUrl.pathname === "/login" || nextUrl.pathname === "/signup")) {
-    return NextResponse.redirect(new URL("/projects", nextUrl));
+    return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
   // Redirect unauthenticated users from protected routes to login
@@ -38,7 +31,7 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Allow access to public routes and authenticated users on protected routes
+  // Allow access to public routes (/, /s/*, /pricing, etc.)
   return NextResponse.next();
 });
 

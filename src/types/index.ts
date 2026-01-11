@@ -52,7 +52,7 @@ export interface DocumentTreeNode {
 export interface UserWithSubscription {
   id: string;
   name: string | null;
-  email: string;
+  email: string | null;
   image: string | null;
   subscription: {
     stripeCustomerId: string | null;

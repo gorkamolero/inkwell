@@ -3,24 +3,24 @@ import { Github, PenTool, Shield } from "lucide-react";
 const steps = [
   {
     number: "1",
-    icon: Github,
-    title: "Connect GitHub",
-    description:
-      "Link your GitHub account and choose a repo. We'll never touch anything else.",
-  },
-  {
-    number: "2",
     icon: PenTool,
     title: "Write",
     description:
-      "Use our editor or your favorite tool. Markdown, rich text, whatever works for you.",
+      "Real-time collaboration. Write with your team, see their cursors. No signup required to start.",
+  },
+  {
+    number: "2",
+    icon: Shield,
+    title: "Format",
+    description:
+      "Configure your output. Fonts, chapters, drop caps, or let us handle it.",
   },
   {
     number: "3",
-    icon: Shield,
-    title: "Own it forever",
+    icon: Github,
+    title: "Publish",
     description:
-      "Every save is a commit. Full version history. Your content stays in YOUR repo.",
+      "One click to PDF, ePub, web, or social. Save to GitHub. Your content, forever yours.",
   },
 ];
 

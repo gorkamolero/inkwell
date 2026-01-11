@@ -12,7 +12,7 @@ export default function AuthLayout({
         href="/"
         className="mb-8 text-4xl font-black uppercase tracking-tight text-black transition-colors hover:text-brutal-blue"
       >
-        Inkwell
+        Hotpress
       </Link>
 
       {/* Auth card */}

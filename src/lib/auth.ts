@@ -3,7 +3,7 @@ import GitHub from "next-auth/providers/github";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "./db";
 import { users, accounts, sessions } from "./db/schema";
-import { eq } from "drizzle-orm";
+// eq import removed - not currently used
 
 const adapter = db ? DrizzleAdapter(db, {
   usersTable: users,
@@ -56,15 +56,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith("/projects");
-      const isOnEditor = nextUrl.pathname.startsWith("/editor");
-      const isOnSettings = nextUrl.pathname.startsWith("/settings");
 
-      if (isOnDashboard || isOnEditor || isOnSettings) {
-        if (isLoggedIn) return true;
-        return false;
+      // Protected routes - require authentication
+      const protectedPaths = [
+        "/projects",
+        "/settings",
+        "/dashboard",
+      ];
+
+      const isProtectedRoute = protectedPaths.some(
+        (path) =>
+          nextUrl.pathname === path ||
+          nextUrl.pathname.startsWith(`${path}/`)
+      );
+
+      if (isProtectedRoute) {
+        return isLoggedIn;
       }
 
+      // All other routes are public (including /, /s/*, /api/sessions/*, etc.)
       return true;
     },
   },
@@ -85,6 +95,9 @@ declare module "next-auth" {
   }
 }
 
+// JWT type extension via interface merging
+// Extending the DefaultJWT from @auth/core which the JWT interface extends
+import "@auth/core/jwt";
 declare module "@auth/core/jwt" {
   interface JWT {
     id?: string;
