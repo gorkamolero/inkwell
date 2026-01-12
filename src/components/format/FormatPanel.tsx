@@ -111,6 +111,7 @@ export function FormatSection({
   return (
     <div className="border-b-3 border-black last:border-b-0">
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className={cn(
           "w-full flex items-center justify-between",

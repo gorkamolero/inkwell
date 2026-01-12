@@ -269,7 +269,7 @@ async function CollaboratorsTab({ projectId }: { projectId: string }) {
     <div className="border-3 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-black text-black">Collaborators</h2>
-        <button className="flex items-center gap-2 border-3 border-black bg-brutal-yellow px-4 py-2 font-bold text-black transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+        <button type="button" className="flex items-center gap-2 border-3 border-black bg-brutal-yellow px-4 py-2 font-bold text-black transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
           <Plus className="h-4 w-4" strokeWidth={3} />
           Invite
         </button>

@@ -87,8 +87,7 @@ function Avatar({ user, size, isFirst = false }: AvatarProps) {
       title={user.isSelf ? `${user.name} (you)` : user.name}
     >
       {user.avatarUrl ? (
-        // TODO: Use Next.js Image component
-        // eslint-disable-next-line @next/next/no-img-element
+        // biome-ignore lint/performance/noImgElement: External avatar URLs from various providers
         <img
           src={user.avatarUrl}
           alt={user.name}

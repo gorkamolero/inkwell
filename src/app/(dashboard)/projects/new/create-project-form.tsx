@@ -30,6 +30,13 @@ interface DetectedBook {
   path: string;
 }
 
+function formatRepoName(repoName: string): string {
+  return repoName
+    .split(/[-_]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -127,7 +134,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
     } finally {
       setIsDetectingStructure(false);
     }
-  }, [accessToken, selectedRepo, name, repos, formatRepoName]);
+  }, [accessToken, selectedRepo, name, repos]);
 
   // Load user repos when switching to existing mode
   useEffect(() => {
@@ -145,13 +152,6 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
       setSelectedBooks([]);
     }
   }, [selectedRepo, accessToken, detectStructure]);
-
-  function formatRepoName(repoName: string): string {
-    return repoName
-      .split(/[-_]/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  }
 
   function validateForm(): boolean {
     const newErrors: Record<string, string> = {};

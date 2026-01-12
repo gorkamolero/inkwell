@@ -102,6 +102,7 @@ export function BillingSection({ user }: BillingSectionProps) {
         {currentPlan === "free" ? (
           <>
             <button
+              type="button"
               onClick={() => handleUpgrade(PLANS.pro.priceId!)}
               disabled={isLoading}
               className="border-4 border-black bg-yellow-400 px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -109,6 +110,7 @@ export function BillingSection({ user }: BillingSectionProps) {
               Upgrade to Pro
             </button>
             <button
+              type="button"
               onClick={() => handleUpgrade(PLANS.team.priceId!)}
               disabled={isLoading}
               className="border-4 border-black bg-white px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -118,6 +120,7 @@ export function BillingSection({ user }: BillingSectionProps) {
           </>
         ) : (
           <button
+            type="button"
             onClick={handleManageBilling}
             disabled={isLoading}
             className="border-4 border-black bg-white px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"

@@ -56,6 +56,7 @@ export function EditorModeToggle({
       aria-label="Editor mode"
     >
       <button
+        type="button"
         role="tab"
         aria-selected={mode === "write"}
         aria-controls="write-panel"
@@ -79,6 +80,7 @@ export function EditorModeToggle({
       <div className="w-[3px] bg-black" aria-hidden="true" />
 
       <button
+        type="button"
         role="tab"
         aria-selected={mode === "format"}
         aria-controls="format-panel"

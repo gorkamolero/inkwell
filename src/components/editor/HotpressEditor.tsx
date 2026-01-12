@@ -278,6 +278,7 @@ function TypeSelector({
           <div className="absolute left-0 top-full z-20 mt-1 w-56 border-3 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             {CONTENT_TYPES.map((type) => (
               <button
+                type="button"
                 key={type.value}
                 onClick={() => {
                   onChange(type.value);
@@ -538,6 +539,7 @@ export function HotpressEditor(): React.ReactElement {
 
           {/* Share button */}
           <button
+            type="button"
             onClick={handleShare}
             className="flex items-center gap-2 border-3 border-black bg-brutal-blue px-3 py-1.5 font-bold text-white shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
           >

@@ -135,6 +135,7 @@ export function DashboardSidebar({ user, tier }: DashboardSidebarProps) {
         )}
 
         <button
+          type="button"
           onClick={() => signOut({ callbackUrl: "/" })}
           className="flex w-full items-center gap-2 border-3 border-black bg-white px-4 py-2 font-bold text-black transition-all hover:bg-brutal-red hover:text-white"
         >

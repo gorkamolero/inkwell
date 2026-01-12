@@ -97,8 +97,7 @@ type Step = "select-repo" | "create-repo" | "select-path" | "confirm";
 export function SaveToGitHubDialog({
   open,
   onOpenChange,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  sessionId,
+  sessionId: _sessionId,
   sessionTitle,
   repositories = [],
   loadingRepos = false,
@@ -280,6 +279,7 @@ export function SaveToGitHubDialog({
                   <div className="max-h-[300px] overflow-y-auto space-y-2">
                     {repositories.map((repo) => (
                       <button
+                        type="button"
                         key={repo.fullName}
                         onClick={() => handleSelectRepo(repo)}
                         className={cn(

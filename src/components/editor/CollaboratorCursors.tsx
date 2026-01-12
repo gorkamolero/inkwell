@@ -72,7 +72,10 @@ function Cursor({ cursor }: CursorProps) {
         fill="none"
         className="drop-shadow-md"
         style={{ color: cursor.color }}
+        aria-labelledby={`cursor-title-${cursor.id}`}
+        role="img"
       >
+        <title id={`cursor-title-${cursor.id}`}>{cursor.name}&apos;s cursor</title>
         <path
           d="M5.65376 12.4563L5.65376 3.99999L14.1091 12.4563H9.01041L8.57951 12.6203L5.65376 12.4563Z"
           fill="currentColor"
@@ -98,8 +101,7 @@ function Cursor({ cursor }: CursorProps) {
 
 export function CollaboratorCursors({
   cursors,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  containerRef,
+  containerRef: _containerRef,
 }: CollaboratorCursorsProps) {
   // TODO: Use containerRef for relative position calculations
   // TODO: Implement Liveblocks useOthers() hook integration

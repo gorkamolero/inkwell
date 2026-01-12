@@ -57,6 +57,7 @@ function ToggleSwitch({
   return (
     <label className="flex items-start gap-3 cursor-pointer group">
       <button
+        type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
@@ -171,6 +172,7 @@ export function ChapterSection({
             <div className="flex gap-2">
               {DROP_CAP_LINES.map((lines) => (
                 <button
+                  type="button"
                   key={lines}
                   onClick={() => handleChange("dropCapsLines", lines)}
                   className={cn(

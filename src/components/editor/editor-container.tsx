@@ -75,6 +75,7 @@ export function EditorContainer({
             </span>
           )}
           <button
+            type="button"
             onClick={() =>
               handleSave(document.content as SerializedEditorState)
             }

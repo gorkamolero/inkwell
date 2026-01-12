@@ -168,6 +168,7 @@ const BrutalDialogContent = React.forwardRef<
       >
         {showClose && (
           <button
+            type="button"
             className={cn(
               "absolute right-4 top-4",
               "h-8 w-8",

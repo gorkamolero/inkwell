@@ -180,6 +180,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.ReactNode {
         )}
       </div>
       <button
+        type="button"
         onClick={() => onDismiss(toast.id)}
         className={cn(
           "flex-shrink-0 rounded-none p-1 transition-opacity hover:opacity-70",

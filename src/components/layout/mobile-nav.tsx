@@ -40,6 +40,7 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
     <div className="md:hidden">
       {/* Hamburger button */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex h-10 w-10 items-center justify-center",
@@ -89,6 +90,7 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
         <div className="flex items-center justify-between border-b-4 border-black p-4">
           <span className="text-xl font-black">Menu</span>
           <button
+            type="button"
             onClick={closeMenu}
             className="flex h-10 w-10 items-center justify-center border-3 border-black bg-gray-100 transition-colors hover:bg-brutal-red hover:text-white"
             aria-label="Close menu"

@@ -182,6 +182,7 @@ export function ShareDialog({
               </label>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => handleAccessChange("view")}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2",
@@ -198,6 +199,7 @@ export function ShareDialog({
                   View Only
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleAccessChange("edit")}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2",

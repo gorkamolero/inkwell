@@ -155,6 +155,7 @@ export function PageLayoutSection({
         <div className="grid grid-cols-3 gap-2">
           {PAGE_SIZE_PRESETS.map((preset) => (
             <button
+              type="button"
               key={preset.value}
               onClick={() => handleSizeChange(preset.value)}
               className={cn(
@@ -201,6 +202,7 @@ export function PageLayoutSection({
         <div className="flex gap-2">
           {MARGIN_PRESETS.map((preset) => (
             <button
+              type="button"
               key={preset.value}
               onClick={() => handleMarginPresetChange(preset.value)}
               className={cn(

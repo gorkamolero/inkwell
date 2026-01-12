@@ -146,6 +146,7 @@ export function VersionHistory({
             Version History
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center border-2 border-black bg-white transition-all hover:bg-gray-100"
           >
@@ -172,6 +173,7 @@ export function VersionHistory({
               <div className="border-3 border-red-500 bg-red-50 p-4 m-4">
                 <p className="text-sm font-bold text-red-700">{error}</p>
                 <button
+                  type="button"
                   onClick={fetchHistory}
                   className="mt-2 text-sm font-bold text-red-600 underline hover:no-underline"
                 >
@@ -194,6 +196,7 @@ export function VersionHistory({
               <div className="divide-y-2 divide-gray-100">
                 {commits.map((commit, index) => (
                   <button
+                    type="button"
                     key={commit.sha}
                     onClick={() => handleSelectCommit(commit)}
                     className={cn(
@@ -242,6 +245,7 @@ export function VersionHistory({
                     Preview
                   </span>
                   <button
+                    type="button"
                     onClick={() => {
                       setSelectedCommit(null);
                       setPreviewContent(null);

@@ -265,6 +265,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
           </Link>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={handleCopyLink}
               className="flex items-center gap-2 border-3 border-black bg-white px-3 py-1.5 font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
             >

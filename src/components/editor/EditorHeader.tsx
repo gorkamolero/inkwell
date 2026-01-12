@@ -111,6 +111,7 @@ export function EditorHeader({
           {/* Commit button */}
           {canCommit && hasUncommittedChanges && (
             <button
+              type="button"
               onClick={onCommit}
               disabled={isCommitting}
               className={cn(
@@ -133,6 +134,7 @@ export function EditorHeader({
           {/* More menu */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setMenuOpen(!menuOpen)}
               className="flex h-8 w-8 items-center justify-center border-2 border-black bg-white transition-all hover:bg-gray-100"
               title="More options"
@@ -151,6 +153,7 @@ export function EditorHeader({
                 {/* Menu */}
                 <div className="absolute right-0 top-full z-50 mt-2 w-48 border-3 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                   <button
+                    type="button"
                     onClick={() => {
                       setMenuOpen(false);
                       onOpenHistory();
@@ -161,6 +164,7 @@ export function EditorHeader({
                     Version History
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setMenuOpen(false);
                       onExport();
@@ -172,6 +176,7 @@ export function EditorHeader({
                   </button>
                   <div className="border-t-2 border-gray-100" />
                   <button
+                    type="button"
                     onClick={handleDelete}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
                   >

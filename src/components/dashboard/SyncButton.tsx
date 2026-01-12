@@ -45,6 +45,7 @@ export function SyncButton({ projectSlug }: SyncButtonProps) {
   return (
     <div className="flex items-center gap-3">
       <button
+        type="button"
         onClick={handleSync}
         disabled={syncing}
         className={cn(
