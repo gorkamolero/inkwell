@@ -542,7 +542,8 @@ select:focus-visible {
 }
 
 /* Liveblocks FloatingToolbar - neobrutalist */
-.lb-floating-toolbar {
+.lb-lexical-floating-toolbar,
+.lb-lexical-floating-toolbar > div {
   background-color: white !important;
   border: 3px solid black !important;
   box-shadow: 4px 4px 0 0 black !important;
@@ -551,45 +552,55 @@ select:focus-visible {
   gap: 2px !important;
 }
 
-.lb-floating-toolbar-separator {
-  background-color: #e5e5e5 !important;
-  width: 1px !important;
-  margin: 0 4px !important;
-}
-
-.lb-toolbar-button,
-.lb-floating-toolbar button {
+.lb-lexical-floating-toolbar button {
   border-radius: 0 !important;
   border: 2px solid transparent !important;
   font-weight: 700 !important;
   font-family: var(--font-geist-sans), system-ui, sans-serif !important;
   transition: all 0.1s ease !important;
+  padding: 6px !important;
 }
 
-.lb-toolbar-button:hover,
-.lb-floating-toolbar button:hover {
+.lb-lexical-floating-toolbar button:hover {
   background-color: #f5f5f5 !important;
   border-color: black !important;
 }
 
-.lb-toolbar-button[data-state="on"],
-.lb-toolbar-button[aria-pressed="true"],
-.lb-floating-toolbar button[data-state="on"],
-.lb-floating-toolbar button[aria-pressed="true"] {
+.lb-lexical-floating-toolbar button[data-state="on"],
+.lb-lexical-floating-toolbar button[aria-pressed="true"] {
   background-color: #FFE75C !important;
   border-color: black !important;
 }
 
+.lb-lexical-toolbar-separator {
+  background-color: #d4d4d4 !important;
+  width: 2px !important;
+  margin: 4px 6px !important;
+}
+
 /* Liveblocks Toolbar (static) - neobrutalist */
-.lb-toolbar {
+.lb-lexical-toolbar {
   background-color: white !important;
   border: 3px solid black !important;
   border-radius: 0 !important;
   font-family: var(--font-geist-sans), system-ui, sans-serif !important;
 }
 
-.lb-toolbar-separator {
-  background-color: #e5e5e5 !important;
+/* Dropdown menus - neobrutalist */
+.lb-dropdown,
+.lb-select-dropdown {
+  border: 3px solid black !important;
+  border-radius: 0 !important;
+  box-shadow: 4px 4px 0 0 black !important;
+}
+
+.lb-dropdown-item {
+  border-radius: 0 !important;
+  font-weight: 600 !important;
+}
+
+.lb-dropdown-item:hover {
+  background-color: #f5f5f5 !important;
 }
 
 /* Prose overrides for editor */
