@@ -2,19 +2,9 @@
 
 import * as React from "react"
 import { X } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 import { BrutalButton } from "./brutal-button"
-
-/**
- * Neobrutalist Dialog Component
- *
- * Features:
- * - Modal with brutal styling
- * - Heavy 4px black border
- * - 8px offset shadow
- * - Yellow close button
- * - Backdrop blur overlay
- */
 
 interface BrutalDialogContextValue {
   open: boolean
@@ -23,13 +13,15 @@ interface BrutalDialogContextValue {
 
 const BrutalDialogContext = React.createContext<BrutalDialogContextValue | null>(null)
 
-function useBrutalDialog() {
+function useBrutalDialog(): BrutalDialogContextValue {
   const context = React.useContext(BrutalDialogContext)
   if (!context) {
     throw new Error("BrutalDialog components must be used within a BrutalDialog")
   }
   return context
 }
+
+function noop(): void {}
 
 interface BrutalDialogProps {
   open?: boolean
@@ -43,13 +35,13 @@ function BrutalDialog({
   onOpenChange: controlledOnOpenChange,
   defaultOpen = false,
   children,
-}: BrutalDialogProps) {
+}: BrutalDialogProps): React.ReactNode {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
 
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : uncontrolledOpen
   const onOpenChange = isControlled
-    ? controlledOnOpenChange || (() => {})
+    ? controlledOnOpenChange ?? noop
     : setUncontrolledOpen
 
   return (
@@ -64,7 +56,7 @@ type BrutalDialogTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement>
 const BrutalDialogTrigger = React.forwardRef<
   HTMLButtonElement,
   BrutalDialogTriggerProps
->(({ className, children, ...props }, ref) => {
+>(function BrutalDialogTrigger({ className, children, ...props }, ref) {
   const { onOpenChange } = useBrutalDialog()
 
   return (
@@ -84,7 +76,7 @@ interface BrutalDialogPortalProps {
   children: React.ReactNode
 }
 
-function BrutalDialogPortal({ children }: BrutalDialogPortalProps) {
+function BrutalDialogPortal({ children }: BrutalDialogPortalProps): React.ReactNode {
   const { open } = useBrutalDialog()
 
   if (!open) return null
@@ -95,7 +87,7 @@ function BrutalDialogPortal({ children }: BrutalDialogPortalProps) {
 const BrutalDialogOverlay = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+>(function BrutalDialogOverlay({ className, ...props }, ref) {
   const { onOpenChange } = useBrutalDialog()
 
   return (
@@ -121,12 +113,11 @@ interface BrutalDialogContentProps extends React.HTMLAttributes<HTMLDivElement> 
 const BrutalDialogContent = React.forwardRef<
   HTMLDivElement,
   BrutalDialogContentProps
->(({ className, children, showClose = true, ...props }, ref) => {
+>(function BrutalDialogContent({ className, children, showClose = true, ...props }, ref) {
   const { onOpenChange } = useBrutalDialog()
 
-  // Handle escape key
   React.useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
+    function handleEscape(event: KeyboardEvent): void {
       if (event.key === "Escape") {
         onOpenChange(false)
       }
@@ -136,7 +127,6 @@ const BrutalDialogContent = React.forwardRef<
     return () => document.removeEventListener("keydown", handleEscape)
   }, [onOpenChange])
 
-  // Prevent body scroll when dialog is open
   React.useEffect(() => {
     document.body.style.overflow = "hidden"
     return () => {
@@ -150,20 +140,15 @@ const BrutalDialogContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          // Positioning
           "fixed left-1/2 top-1/2 z-50",
           "-translate-x-1/2 -translate-y-1/2",
-          // Sizing
           "w-full max-w-lg max-h-[85vh]",
           "overflow-auto",
-          // Brutal styling
           "border-4 border-black dark:border-white",
           "bg-white dark:bg-black",
           "shadow-[8px_8px_0_0_#000000] dark:shadow-[8px_8px_0_0_#FFFFFF]",
-          // Animation
           "animate-in fade-in-0 zoom-in-95",
           "duration-200",
-          // Padding
           "p-6",
           className
         )}
@@ -204,62 +189,67 @@ BrutalDialogContent.displayName = "BrutalDialogContent"
 const BrutalDialogHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-2 mb-4", className)}
-    {...props}
-  />
-))
+>(function BrutalDialogHeader({ className, ...props }, ref) {
+  return (
+    <div
+      ref={ref}
+      className={cn("flex flex-col space-y-2 mb-4", className)}
+      {...props}
+    />
+  )
+})
 BrutalDialogHeader.displayName = "BrutalDialogHeader"
 
 const BrutalDialogFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3",
-      "mt-6 pt-4",
-      "border-t-3 border-black dark:border-white",
-      className
-    )}
-    {...props}
-  />
-))
+>(function BrutalDialogFooter({ className, ...props }, ref) {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3",
+        "mt-6 pt-4",
+        "border-t-3 border-black dark:border-white",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 BrutalDialogFooter.displayName = "BrutalDialogFooter"
 
 const BrutalDialogTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h2
-    ref={ref}
-    className={cn(
-      "text-xl font-black tracking-tight text-black dark:text-white pr-8",
-      className
-    )}
-    {...props}
-  />
-))
+>(function BrutalDialogTitle({ className, ...props }, ref) {
+  return (
+    <h2
+      ref={ref}
+      className={cn(
+        "text-xl font-black tracking-tight text-black dark:text-white pr-8",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 BrutalDialogTitle.displayName = "BrutalDialogTitle"
 
 const BrutalDialogDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
+>(function BrutalDialogDescription({ className, ...props }, ref) {
+  return (
+    <p
+      ref={ref}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+})
 BrutalDialogDescription.displayName = "BrutalDialogDescription"
 
-/**
- * Convenience component for quick alert/confirm dialogs
- */
 interface BrutalAlertDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -282,13 +272,13 @@ function BrutalAlertDialog({
   onCancel,
   onConfirm,
   destructive = false,
-}: BrutalAlertDialogProps) {
-  const handleCancel = () => {
+}: BrutalAlertDialogProps): React.ReactNode {
+  function handleCancel(): void {
     onCancel?.()
     onOpenChange?.(false)
   }
 
-  const handleConfirm = () => {
+  function handleConfirm(): void {
     onConfirm?.()
     onOpenChange?.(false)
   }

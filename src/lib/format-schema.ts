@@ -23,6 +23,54 @@ export const ContentTypeSchema = z.enum([
 export type ContentType = z.infer<typeof ContentTypeSchema>;
 
 // ============================================================================
+// Shared Constants
+// ============================================================================
+
+const FONTS = {
+  BODY: "Cormorant Garamond",
+  HEADING: "Cinzel",
+  WEB: "Inter",
+  SYSTEM: "system-ui",
+} as const;
+
+const BOOK_DEFAULTS = {
+  bodySize: "11pt",
+  headingSize: "18pt",
+  chapterTitleSize: "24pt",
+  headerSize: "9pt",
+  lineHeight: 1.5,
+  indent: "1.5em",
+  ornament: "flourish-01",
+  sceneBreakOrnament: "three-asterisks",
+} as const;
+
+const ARTICLE_DEFAULTS = {
+  bodySize: "16px",
+  headingSize: "24px",
+  chapterTitleSize: "32px",
+  headerSize: "14px",
+  lineHeight: 1.6,
+  spacing: "1em",
+} as const;
+
+const THREAD_DEFAULTS = {
+  bodySize: "15px",
+  headingSize: "18px",
+  lineHeight: 1.4,
+  spacing: "0.5em",
+  maxLength: 280,
+} as const;
+
+// ============================================================================
+// Shared Enum Schemas
+// ============================================================================
+
+const FontStyleSchema = z.enum(["normal", "italic", "oblique"]);
+const TextAlignSchema = z.enum(["left", "center", "right"]);
+const TextTransformSchema = z.enum(["none", "uppercase", "lowercase", "capitalize"]);
+const NormalItalicSchema = z.enum(["normal", "italic"]);
+
+// ============================================================================
 // Metadata Schema
 // ============================================================================
 
@@ -49,39 +97,39 @@ export type Meta = z.infer<typeof MetaSchema>;
 // ============================================================================
 
 export const BodyFontSchema = z.object({
-  font: z.string().optional().default("Cormorant Garamond"),
-  size: z.string().optional().default("11pt"),
-  lineHeight: z.number().optional().default(1.5),
-  style: z.enum(["normal", "italic", "oblique"]).optional(),
+  font: z.string().optional().default(FONTS.BODY),
+  size: z.string().optional().default(BOOK_DEFAULTS.bodySize),
+  lineHeight: z.number().optional().default(BOOK_DEFAULTS.lineHeight),
+  style: FontStyleSchema.optional(),
   weight: z.union([z.string(), z.number()]).optional(),
 });
 
 export const HeadingsFontSchema = z.object({
-  font: z.string().optional().default("Cinzel"),
-  size: z.string().optional().default("18pt"),
+  font: z.string().optional().default(FONTS.HEADING),
+  size: z.string().optional().default(BOOK_DEFAULTS.headingSize),
   lineHeight: z.number().optional(),
-  style: z.enum(["normal", "italic", "oblique"]).optional(),
+  style: FontStyleSchema.optional(),
   weight: z.union([z.string(), z.number()]).optional(),
 });
 
 export const ParagraphConfigSchema = z.object({
-  indent: z.string().optional().default("1.5em"),
+  indent: z.string().optional().default(BOOK_DEFAULTS.indent),
   spacing: z.string().optional().default("0"),
   firstParagraphIndent: z.boolean().optional().default(false),
 });
 
 export const TypographySchema = z.object({
   body: BodyFontSchema.optional().default(() => ({
-    font: "Cormorant Garamond",
-    size: "11pt",
-    lineHeight: 1.5,
+    font: FONTS.BODY,
+    size: BOOK_DEFAULTS.bodySize,
+    lineHeight: BOOK_DEFAULTS.lineHeight,
   })),
   headings: HeadingsFontSchema.optional().default(() => ({
-    font: "Cinzel",
-    size: "18pt",
+    font: FONTS.HEADING,
+    size: BOOK_DEFAULTS.headingSize,
   })),
   paragraph: ParagraphConfigSchema.optional().default(() => ({
-    indent: "1.5em",
+    indent: BOOK_DEFAULTS.indent,
     spacing: "0",
     firstParagraphIndent: false,
   })),
@@ -99,21 +147,21 @@ export const ChapterNumberingSchema = z.object({
 });
 
 export const ChapterTitleSchema = z.object({
-  font: z.string().optional().default("Cinzel"),
-  size: z.string().optional().default("24pt"),
-  align: z.enum(["left", "center", "right"]).optional().default("center"),
-  transform: z.enum(["none", "uppercase", "lowercase", "capitalize"]).optional().default("uppercase"),
+  font: z.string().optional().default(FONTS.HEADING),
+  size: z.string().optional().default(BOOK_DEFAULTS.chapterTitleSize),
+  align: TextAlignSchema.optional().default("center"),
+  transform: TextTransformSchema.optional().default("uppercase"),
 });
 
 export const ChapterSubtitleSchema = z.object({
   enabled: z.boolean().optional().default(true),
-  font: z.string().optional().default("Cormorant Garamond"),
-  style: z.enum(["normal", "italic"]).optional().default("italic"),
+  font: z.string().optional().default(FONTS.BODY),
+  style: NormalItalicSchema.optional().default("italic"),
 });
 
 export const OrnamentSchema = z.object({
   enabled: z.boolean().optional().default(true),
-  image: z.string().optional().default("flourish-01"),
+  image: z.string().optional().default(BOOK_DEFAULTS.ornament),
   spacing: z.string().optional().default("1em"),
 });
 
@@ -123,20 +171,20 @@ export const ChaptersSchema = z.object({
     format: "Chapter {n}",
   })),
   title: ChapterTitleSchema.optional().default(() => ({
-    font: "Cinzel",
-    size: "24pt",
+    font: FONTS.HEADING,
+    size: BOOK_DEFAULTS.chapterTitleSize,
     align: "center" as const,
     transform: "uppercase" as const,
   })),
   subtitle: ChapterSubtitleSchema.optional().default(() => ({
     enabled: true,
-    font: "Cormorant Garamond",
+    font: FONTS.BODY,
     style: "italic" as const,
   })),
   startOn: z.enum(["right", "left", "any"]).optional().default("right"),
   ornament: OrnamentSchema.optional().default(() => ({
     enabled: true,
-    image: "flourish-01",
+    image: BOOK_DEFAULTS.ornament,
     spacing: "1em",
   })),
 });
@@ -150,7 +198,7 @@ export type Chapters = z.infer<typeof ChaptersSchema>;
 export const DropCapsSchema = z.object({
   enabled: z.boolean().optional().default(true),
   lines: z.number().int().min(1).max(5).optional().default(3),
-  font: z.string().optional().default("Cinzel"),
+  font: z.string().optional().default(FONTS.HEADING),
   style: z.enum(["dropped", "raised"]).optional().default("dropped"),
 });
 
@@ -161,7 +209,7 @@ export type DropCaps = z.infer<typeof DropCapsSchema>;
 // ============================================================================
 
 export const SceneBreaksSchema = z.object({
-  ornament: z.string().optional().default("three-asterisks"),
+  ornament: z.string().optional().default(BOOK_DEFAULTS.sceneBreakOrnament),
   customImage: z.string().nullable().optional().default(null),
   spacing: z.string().optional().default("2em"),
 });
@@ -176,9 +224,9 @@ export const HeadersSchema = z.object({
   enabled: z.boolean().optional().default(true),
   left: z.string().optional().default("{author}"),
   right: z.string().optional().default("{title}"),
-  font: z.string().optional().default("Cormorant Garamond"),
-  size: z.string().optional().default("9pt"),
-  transform: z.enum(["none", "uppercase", "lowercase", "capitalize"]).optional().default("uppercase"),
+  font: z.string().optional().default(FONTS.BODY),
+  size: z.string().optional().default(BOOK_DEFAULTS.headerSize),
+  transform: TextTransformSchema.optional().default("uppercase"),
   hideOnChapterStart: z.boolean().optional().default(true),
 });
 
@@ -189,7 +237,7 @@ export type Headers = z.infer<typeof HeadersSchema>;
 // ============================================================================
 
 export const PageNumberSchema = z.object({
-  position: z.enum(["left", "center", "right"]).optional().default("center"),
+  position: TextAlignSchema.optional().default("center"),
   format: z.string().optional().default("{n}"),
 });
 
@@ -249,7 +297,7 @@ export const FrontMatterItemSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("dedication"),
     content: z.string().optional(),
-    align: z.enum(["left", "center", "right"]).optional().default("center"),
+    align: TextAlignSchema.optional().default("center"),
   }),
   z.object({
     type: z.literal("epigraph"),
@@ -325,14 +373,14 @@ export type BackMatter = z.infer<typeof BackMatterSchema>;
 
 export const BlockquoteStyleSchema = z.object({
   font: z.string().optional().default("inherit"),
-  style: z.enum(["normal", "italic"]).optional().default("italic"),
+  style: NormalItalicSchema.optional().default("italic"),
   indent: z.string().optional().default("2em"),
 });
 
 export const VerseStyleSchema = z.object({
   font: z.string().optional().default("inherit"),
-  style: z.enum(["normal", "italic"]).optional().default("italic"),
-  align: z.enum(["left", "center", "right"]).optional().default("left"),
+  style: NormalItalicSchema.optional().default("italic"),
+  align: TextAlignSchema.optional().default("left"),
 });
 
 export const CalloutStyleSchema = z.object({
@@ -376,7 +424,7 @@ export type Elements = z.infer<typeof ElementsSchema>;
 
 export const InlineImageSchema = z.object({
   maxWidth: z.string().optional().default("80%"),
-  align: z.enum(["left", "center", "right"]).optional().default("center"),
+  align: TextAlignSchema.optional().default("center"),
 });
 
 export const FullPageImageSchema = z.object({
@@ -386,7 +434,7 @@ export const FullPageImageSchema = z.object({
 export const CaptionStyleSchema = z.object({
   font: z.string().optional().default("inherit"),
   size: z.string().optional().default("9pt"),
-  style: z.enum(["normal", "italic"]).optional().default("italic"),
+  style: NormalItalicSchema.optional().default("italic"),
 });
 
 export const ImagesSchema = z.object({
@@ -410,6 +458,8 @@ export type Images = z.infer<typeof ImagesSchema>;
 // Output Settings Schema
 // ============================================================================
 
+const OutputFormatSchema = z.enum(["pdf", "epub", "html", "markdown"]);
+
 export const PdfOutputSchema = z.object({
   colorProfile: z.enum(["RGB", "CMYK"]).optional().default("CMYK"),
   bleed: z.string().optional().default("0.125in"),
@@ -421,7 +471,7 @@ export const EpubOutputSchema = z.object({
 });
 
 export const OutputSchema = z.object({
-  formats: z.array(z.enum(["pdf", "epub", "html", "markdown"])).optional().default(["pdf"]),
+  formats: z.array(OutputFormatSchema).optional().default(["pdf"]),
   pdf: PdfOutputSchema.optional().default(() => ({
     colorProfile: "CMYK" as const,
     bleed: "0.125in",
@@ -456,7 +506,7 @@ export const ArticleSettingsSchema = z.object({
 export const ThreadSettingsSchema = z.object({
   platform: z.enum(["twitter", "linkedin", "bluesky"]).optional().default("twitter"),
   splitStrategy: z.enum(["paragraph", "sentence", "manual"]).optional().default("paragraph"),
-  maxLength: z.number().int().positive().optional().default(280),
+  maxLength: z.number().int().positive().optional().default(THREAD_DEFAULTS.maxLength),
   numbering: z.boolean().optional().default(true),
 });
 
@@ -485,16 +535,16 @@ export const FormatConfigSchema = z.object({
   })),
   typography: TypographySchema.optional().default(() => ({
     body: {
-      font: "Cormorant Garamond",
-      size: "11pt",
-      lineHeight: 1.5,
+      font: FONTS.BODY,
+      size: BOOK_DEFAULTS.bodySize,
+      lineHeight: BOOK_DEFAULTS.lineHeight,
     },
     headings: {
-      font: "Cinzel",
-      size: "18pt",
+      font: FONTS.HEADING,
+      size: BOOK_DEFAULTS.headingSize,
     },
     paragraph: {
-      indent: "1.5em",
+      indent: BOOK_DEFAULTS.indent,
       spacing: "0",
       firstParagraphIndent: false,
     },
@@ -505,31 +555,31 @@ export const FormatConfigSchema = z.object({
       format: "Chapter {n}",
     },
     title: {
-      font: "Cinzel",
-      size: "24pt",
+      font: FONTS.HEADING,
+      size: BOOK_DEFAULTS.chapterTitleSize,
       align: "center" as const,
       transform: "uppercase" as const,
     },
     subtitle: {
       enabled: true,
-      font: "Cormorant Garamond",
+      font: FONTS.BODY,
       style: "italic" as const,
     },
     startOn: "right" as const,
     ornament: {
       enabled: true,
-      image: "flourish-01",
+      image: BOOK_DEFAULTS.ornament,
       spacing: "1em",
     },
   })),
   dropCaps: DropCapsSchema.optional().default(() => ({
     enabled: true,
     lines: 3,
-    font: "Cinzel",
+    font: FONTS.HEADING,
     style: "dropped" as const,
   })),
   sceneBreaks: SceneBreaksSchema.optional().default(() => ({
-    ornament: "three-asterisks",
+    ornament: BOOK_DEFAULTS.sceneBreakOrnament,
     customImage: null,
     spacing: "2em",
   })),
@@ -537,8 +587,8 @@ export const FormatConfigSchema = z.object({
     enabled: true,
     left: "{author}",
     right: "{title}",
-    font: "Cormorant Garamond",
-    size: "9pt",
+    font: FONTS.BODY,
+    size: BOOK_DEFAULTS.headerSize,
     transform: "uppercase" as const,
     hideOnChapterStart: true,
   })),
@@ -608,7 +658,6 @@ export const FormatConfigSchema = z.object({
       tocDepth: 2,
     },
   })),
-  // Type-specific settings
   article: ArticleSettingsSchema.optional(),
   thread: ThreadSettingsSchema.optional(),
   newsletter: NewsletterSettingsSchema.optional(),
@@ -636,16 +685,16 @@ export const DEFAULT_BOOK_CONFIG: FormatConfig = {
   },
   typography: {
     body: {
-      font: "Cormorant Garamond",
-      size: "11pt",
-      lineHeight: 1.5,
+      font: FONTS.BODY,
+      size: BOOK_DEFAULTS.bodySize,
+      lineHeight: BOOK_DEFAULTS.lineHeight,
     },
     headings: {
-      font: "Cinzel",
-      size: "18pt",
+      font: FONTS.HEADING,
+      size: BOOK_DEFAULTS.headingSize,
     },
     paragraph: {
-      indent: "1.5em",
+      indent: BOOK_DEFAULTS.indent,
       spacing: "0",
       firstParagraphIndent: false,
     },
@@ -656,31 +705,31 @@ export const DEFAULT_BOOK_CONFIG: FormatConfig = {
       format: "Chapter {n}",
     },
     title: {
-      font: "Cinzel",
-      size: "24pt",
+      font: FONTS.HEADING,
+      size: BOOK_DEFAULTS.chapterTitleSize,
       align: "center",
       transform: "uppercase",
     },
     subtitle: {
       enabled: true,
-      font: "Cormorant Garamond",
+      font: FONTS.BODY,
       style: "italic",
     },
     startOn: "right",
     ornament: {
       enabled: true,
-      image: "flourish-01",
+      image: BOOK_DEFAULTS.ornament,
       spacing: "1em",
     },
   },
   dropCaps: {
     enabled: true,
     lines: 3,
-    font: "Cinzel",
+    font: FONTS.HEADING,
     style: "dropped",
   },
   sceneBreaks: {
-    ornament: "three-asterisks",
+    ornament: BOOK_DEFAULTS.sceneBreakOrnament,
     customImage: null,
     spacing: "2em",
   },
@@ -688,8 +737,8 @@ export const DEFAULT_BOOK_CONFIG: FormatConfig = {
     enabled: true,
     left: "{author}",
     right: "{title}",
-    font: "Cormorant Garamond",
-    size: "9pt",
+    font: FONTS.BODY,
+    size: BOOK_DEFAULTS.headerSize,
     transform: "uppercase",
     hideOnChapterStart: true,
   },
@@ -782,18 +831,18 @@ export const DEFAULT_ARTICLE_CONFIG: FormatConfig = {
   },
   typography: {
     body: {
-      font: "Inter",
-      size: "16px",
-      lineHeight: 1.6,
+      font: FONTS.WEB,
+      size: ARTICLE_DEFAULTS.bodySize,
+      lineHeight: ARTICLE_DEFAULTS.lineHeight,
     },
     headings: {
-      font: "Inter",
-      size: "24px",
+      font: FONTS.WEB,
+      size: ARTICLE_DEFAULTS.headingSize,
       weight: "700",
     },
     paragraph: {
       indent: "0",
-      spacing: "1em",
+      spacing: ARTICLE_DEFAULTS.spacing,
       firstParagraphIndent: false,
     },
   },
@@ -803,14 +852,14 @@ export const DEFAULT_ARTICLE_CONFIG: FormatConfig = {
       format: "{n}",
     },
     title: {
-      font: "Inter",
-      size: "32px",
+      font: FONTS.WEB,
+      size: ARTICLE_DEFAULTS.chapterTitleSize,
       align: "left",
       transform: "none",
     },
     subtitle: {
       enabled: true,
-      font: "Inter",
+      font: FONTS.WEB,
       style: "normal",
     },
     startOn: "any",
@@ -823,7 +872,7 @@ export const DEFAULT_ARTICLE_CONFIG: FormatConfig = {
   dropCaps: {
     enabled: false,
     lines: 3,
-    font: "Inter",
+    font: FONTS.WEB,
     style: "dropped",
   },
   sceneBreaks: {
@@ -835,8 +884,8 @@ export const DEFAULT_ARTICLE_CONFIG: FormatConfig = {
     enabled: false,
     left: "",
     right: "",
-    font: "Inter",
-    size: "14px",
+    font: FONTS.WEB,
+    size: ARTICLE_DEFAULTS.headerSize,
     transform: "none",
     hideOnChapterStart: false,
   },
@@ -928,18 +977,18 @@ export const DEFAULT_THREAD_CONFIG: FormatConfig = {
   },
   typography: {
     body: {
-      font: "system-ui",
-      size: "15px",
-      lineHeight: 1.4,
+      font: FONTS.SYSTEM,
+      size: THREAD_DEFAULTS.bodySize,
+      lineHeight: THREAD_DEFAULTS.lineHeight,
     },
     headings: {
-      font: "system-ui",
-      size: "18px",
+      font: FONTS.SYSTEM,
+      size: THREAD_DEFAULTS.headingSize,
       weight: "700",
     },
     paragraph: {
       indent: "0",
-      spacing: "0.5em",
+      spacing: THREAD_DEFAULTS.spacing,
       firstParagraphIndent: false,
     },
   },
@@ -949,14 +998,14 @@ export const DEFAULT_THREAD_CONFIG: FormatConfig = {
       format: "",
     },
     title: {
-      font: "system-ui",
-      size: "18px",
+      font: FONTS.SYSTEM,
+      size: THREAD_DEFAULTS.headingSize,
       align: "left",
       transform: "none",
     },
     subtitle: {
       enabled: false,
-      font: "system-ui",
+      font: FONTS.SYSTEM,
       style: "normal",
     },
     startOn: "any",
@@ -969,7 +1018,7 @@ export const DEFAULT_THREAD_CONFIG: FormatConfig = {
   dropCaps: {
     enabled: false,
     lines: 1,
-    font: "system-ui",
+    font: FONTS.SYSTEM,
     style: "dropped",
   },
   sceneBreaks: {
@@ -981,7 +1030,7 @@ export const DEFAULT_THREAD_CONFIG: FormatConfig = {
     enabled: false,
     left: "",
     right: "",
-    font: "system-ui",
+    font: FONTS.SYSTEM,
     size: "14px",
     transform: "none",
     hideOnChapterStart: false,
@@ -1055,7 +1104,7 @@ export const DEFAULT_THREAD_CONFIG: FormatConfig = {
   thread: {
     platform: "twitter",
     splitStrategy: "paragraph",
-    maxLength: 280,
+    maxLength: THREAD_DEFAULTS.maxLength,
     numbering: true,
   },
 };
@@ -1073,7 +1122,8 @@ export function validateFormatConfig(config: unknown): FormatConfig {
 }
 
 /**
- * Safely validates a format configuration, returning a result object.
+ * Safely validates a format configuration.
+ * Returns Zod's SafeParseReturnType with success/error information.
  */
 export function safeValidateFormatConfig(config: unknown): {
   success: boolean;
@@ -1099,7 +1149,6 @@ export function getDefaultConfig(type: ContentType): FormatConfig {
     case "thread":
       return DEFAULT_THREAD_CONFIG;
     case "newsletter":
-      // Newsletter uses article defaults with newsletter-specific settings
       return {
         ...DEFAULT_ARTICLE_CONFIG,
         type: "newsletter",
@@ -1109,31 +1158,55 @@ export function getDefaultConfig(type: ContentType): FormatConfig {
         },
       };
     case "docs":
-      // Docs use article defaults
       return {
         ...DEFAULT_ARTICLE_CONFIG,
         type: "docs",
       };
-    default:
-      return DEFAULT_BOOK_CONFIG;
   }
 }
 
 /**
- * Merges partial config updates with existing config.
+ * Deep merges partial config updates with existing config.
  * Validates the result and returns the merged config.
  */
 export function mergeFormatConfig(
   existing: FormatConfig,
   updates: Partial<FormatConfig>
 ): FormatConfig {
-  const merged = {
-    ...existing,
-    ...updates,
-    meta: { ...existing.meta, ...updates.meta },
-    typography: { ...existing.typography, ...updates.typography },
-    chapters: { ...existing.chapters, ...updates.chapters },
-    page: { ...existing.page, ...updates.page },
-  };
-  return validateFormatConfig(merged);
+  return validateFormatConfig(deepMerge(existing, updates));
+}
+
+/**
+ * Deep merge utility for nested objects.
+ * Arrays are replaced entirely, not merged.
+ */
+function deepMerge<T extends Record<string, unknown>>(
+  target: T,
+  source: Partial<T>
+): T {
+  const result = { ...target };
+
+  for (const key in source) {
+    const sourceValue = source[key];
+    const targetValue = target[key];
+
+    if (
+      sourceValue !== undefined &&
+      typeof sourceValue === "object" &&
+      sourceValue !== null &&
+      !Array.isArray(sourceValue) &&
+      typeof targetValue === "object" &&
+      targetValue !== null &&
+      !Array.isArray(targetValue)
+    ) {
+      result[key] = deepMerge(
+        targetValue as Record<string, unknown>,
+        sourceValue as Record<string, unknown>
+      ) as T[Extract<keyof T, string>];
+    } else if (sourceValue !== undefined) {
+      result[key] = sourceValue as T[Extract<keyof T, string>];
+    }
+  }
+
+  return result;
 }

@@ -5,7 +5,6 @@ import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
@@ -17,7 +16,7 @@ import { TRANSFORMERS } from "@lexical/markdown";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { $getRoot } from "lexical";
-import type { EditorState, SerializedEditorState } from "lexical";
+import type { SerializedEditorState } from "lexical";
 import { FileText, Check, Loader2, Copy, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
@@ -217,11 +216,6 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
     setWordCount(count);
   }, []);
 
-   
-  const handleChange = useCallback((_editorState: EditorState) => {
-    // State changes are handled by AutoSavePlugin
-  }, []);
-
   const handleCopyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -236,7 +230,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
     () => ({
       namespace: "SharedSessionEditor",
       theme: editorTheme,
-      editable: true, // Collaborative editing
+      editable: true, // Collaborative editing enabled
       nodes: [
         HeadingNode,
         QuoteNode,
@@ -324,7 +318,6 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
                 <ListPlugin />
                 <LinkPlugin />
                 <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-                <OnChangePlugin onChange={handleChange} />
                 <ContentPlugin content={session.content} />
                 <AutoSavePlugin
                   sessionId={session.id}

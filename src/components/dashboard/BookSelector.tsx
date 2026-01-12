@@ -14,6 +14,30 @@ interface BookSelectorProps {
   onSelectionChange: (selectedBooks: DetectedBook[]) => void;
 }
 
+interface SelectAllIconProps {
+  allSelected: boolean;
+  someSelected: boolean;
+}
+
+function SelectAllIcon({ allSelected, someSelected }: SelectAllIconProps): React.ReactNode {
+  if (allSelected) {
+    return <CheckSquare className="h-4 w-4 text-brutal-blue" />;
+  }
+
+  if (someSelected) {
+    return (
+      <div className="relative h-4 w-4">
+        <Square className="h-4 w-4" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="h-2 w-2 bg-brutal-blue" />
+        </div>
+      </div>
+    );
+  }
+
+  return <Square className="h-4 w-4" />;
+}
+
 export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
   const [selectedBooks, setSelectedBooks] = useState<Set<string>>(new Set());
 
@@ -25,10 +49,7 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
       newSelection.add(bookPath);
     }
     setSelectedBooks(newSelection);
-
-    // Notify parent of selection change
-    const selected = books.filter((b) => newSelection.has(b.path));
-    onSelectionChange(selected);
+    onSelectionChange(books.filter((b) => newSelection.has(b.path)));
   };
 
   const handleSelectAll = () => {
@@ -72,18 +93,7 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
           onClick={handleSelectAll}
           className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-black"
         >
-          {allSelected ? (
-            <CheckSquare className="h-4 w-4 text-brutal-blue" />
-          ) : someSelected ? (
-            <div className="relative h-4 w-4">
-              <Square className="h-4 w-4" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-2 w-2 bg-brutal-blue" />
-              </div>
-            </div>
-          ) : (
-            <Square className="h-4 w-4" />
-          )}
+          <SelectAllIcon allSelected={allSelected} someSelected={someSelected} />
           {allSelected ? "Deselect All" : "Select All"}
         </button>
       </div>

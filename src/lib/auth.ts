@@ -1,21 +1,26 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import "@auth/core/jwt";
+
 import { db } from "./db";
 import { users, accounts, sessions } from "./db/schema";
-// eq import removed - not currently used
 
-const adapter = db ? DrizzleAdapter(db, {
-  usersTable: users,
-  accountsTable: accounts,
-  sessionsTable: sessions,
-}) : undefined;
+const PROTECTED_PATHS = ["/projects", "/settings", "/dashboard"];
+
+const adapter = db
+  ? DrizzleAdapter(db, {
+      usersTable: users,
+      accountsTable: accounts,
+      sessionsTable: sessions,
+    })
+  : undefined;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: true,
   trustHost: true,
   adapter,
-  session: { strategy: "jwt" }, // JWT for Edge-compatible middleware
+  session: { strategy: "jwt" },
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
@@ -32,21 +37,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      // Initial sign in - user, account, profile are only available on first call
+    jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id;
       }
       if (account) {
         token.accessToken = account.access_token;
       }
-      // GitHub profile contains the login (username)
       if (profile) {
         token.login = (profile as { login?: string }).login;
       }
       return token;
     },
-    async session({ session, token }) {
+    session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.login = token.login as string;
@@ -56,25 +59,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-
-      // Protected routes - require authentication
-      const protectedPaths = [
-        "/projects",
-        "/settings",
-        "/dashboard",
-      ];
-
-      const isProtectedRoute = protectedPaths.some(
+      const isProtectedRoute = PROTECTED_PATHS.some(
         (path) =>
-          nextUrl.pathname === path ||
-          nextUrl.pathname.startsWith(`${path}/`)
+          nextUrl.pathname === path || nextUrl.pathname.startsWith(`${path}/`)
       );
 
       if (isProtectedRoute) {
         return isLoggedIn;
       }
 
-      // All other routes are public (including /, /s/*, /api/sessions/*, etc.)
       return true;
     },
   },
@@ -95,9 +88,6 @@ declare module "next-auth" {
   }
 }
 
-// JWT type extension via interface merging
-// Extending the DefaultJWT from @auth/core which the JWT interface extends
-import "@auth/core/jwt";
 declare module "@auth/core/jwt" {
   interface JWT {
     id?: string;

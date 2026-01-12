@@ -25,6 +25,30 @@ A collaborative writing platform with live output. Write a book, article, or thr
 - **UI**: ShadCN + Tailwind + **Neobrutalist Design**
 - **Editor**: Lexical
 
+## Architecture
+
+```
+src/
+├── app/api/           # REST APIs (sessions, share, billing, github, liveblocks-auth)
+├── components/
+│   ├── editor/        # HotpressEditor, SharedSessionView, toolbar, cursors
+│   ├── ui/            # Neobrutalist design system (brutal-*)
+│   ├── dashboard/     # Project cards, folder picker
+│   ├── format/        # Format config panels
+│   └── layout/        # Headers, sidebars
+└── lib/
+    ├── db/schema.ts   # Drizzle schema (users, sessions, projects, documents)
+    ├── auth.ts        # NextAuth v5 + GitHub OAuth
+    ├── liveblocks.ts  # Real-time collaboration (Yjs CRDT)
+    ├── github.ts      # Octokit integration
+    ├── session.ts     # Ephemeral session management
+    └── format-schema.ts # Output format configs (book/article/thread)
+```
+
+**Key Tables:** `writingSessions` (ephemeral), `projects` (GitHub-backed), `documents` (versioned), `liveblocksRooms`
+
+**Data Flow:** Anonymous session → auto-save to DB → optional GitHub export → format schema → PDF generation
+
 ## Design System: Neobrutalism
 
 Inspired by Gumroad and neobrutalism.dev. Key principles:

@@ -8,11 +8,11 @@ interface AuthFormProps {
   mode: "login" | "signup";
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
-  const handleGitHubSignIn = () => {
-    signIn("github", { callbackUrl: "/projects" });
-  };
+function handleGitHubSignIn(): void {
+  signIn("github", { callbackUrl: "/projects" });
+}
 
+export function AuthForm({ mode }: AuthFormProps): React.ReactNode {
   return (
     <div className="space-y-4">
       <button

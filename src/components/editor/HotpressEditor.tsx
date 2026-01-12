@@ -7,22 +7,20 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { HeadingNode, QuoteNode, $createHeadingNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
+import { $createHeadingNode } from "@lexical/rich-text";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { TRANSFORMERS } from "@lexical/markdown";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
 import type { SerializedEditorState } from "lexical";
-import { Share2, FileText, Check, Loader2, ChevronDown } from "lucide-react";
+import { Share2, FileText, Check, Loader2, ChevronDown, Copy } from "lucide-react";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
-import { BrutalBadge } from "@/components/ui";
+import { BrutalBadge, BrutalButton, BrutalInput, BrutalDialog, BrutalDialogContent, BrutalDialogHeader, BrutalDialogTitle, BrutalDialogDescription, BrutalDialogFooter } from "@/components/ui";
+import { createEditorConfig } from "@/lib/editor-config";
 
-// Types
 type ContentType = "book" | "article" | "thread" | "newsletter" | "docs";
+type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface SessionData {
   id: string;
@@ -32,50 +30,33 @@ interface SessionData {
   shareSlug: string | null;
 }
 
-// Editor theme - neobrutalist style
-const editorTheme = {
-  root: "hotpress-editor",
-  paragraph: "mb-4",
-  heading: {
-    h1: "text-3xl font-black mb-4 mt-6 sm:text-4xl",
-    h2: "text-2xl font-bold mb-3 mt-5 sm:text-3xl",
-    h3: "text-xl font-bold mb-2 mt-4 sm:text-2xl",
-    h4: "text-lg font-bold mb-2 mt-3",
-    h5: "text-base font-bold mb-2 mt-3",
-    h6: "text-sm font-bold mb-2 mt-3",
-  },
-  text: {
-    bold: "font-bold",
-    italic: "italic",
-    underline: "underline",
-    strikethrough: "line-through",
-    code: "font-mono bg-gray-100 px-1.5 py-0.5 border border-gray-300 text-sm",
-  },
-  list: {
-    ul: "list-disc ml-6 mb-4",
-    ol: "list-decimal ml-6 mb-4",
-    listitem: "mb-1",
-    nested: {
-      listitem: "list-none",
-    },
-  },
-  quote: "border-l-4 border-black pl-4 italic my-4 text-gray-700",
-  code: "font-mono bg-gray-900 text-gray-100 p-4 border-4 border-black my-4 overflow-x-auto",
-  link: "text-brutal-blue underline hover:text-blue-800",
-};
-
-// Content type options
 const CONTENT_TYPES: { value: ContentType; label: string; description: string }[] = [
   { value: "book", label: "Book", description: "Long-form writing with chapters" },
   { value: "article", label: "Article", description: "Blog posts and essays" },
   { value: "thread", label: "Thread", description: "Social media threads" },
 ];
 
-// ============================================================================
-// Initial Content Plugin
-// ============================================================================
+const SAVE_STATUS_CONFIG: Record<SaveStatus, { variant: "default" | "success" | "destructive"; icon?: typeof Check; label: string }> = {
+  idle: { variant: "default", label: "Auto-saving" },
+  saving: { variant: "default", icon: Loader2, label: "Saving..." },
+  saved: { variant: "success", icon: Check, label: "Saved" },
+  error: { variant: "destructive", label: "Save failed" },
+};
 
-function InitialContentPlugin({ content }: { content: string | null }) {
+function SaveStatusBadge({ status }: { status: SaveStatus }): React.ReactElement {
+  const config = SAVE_STATUS_CONFIG[status];
+  const Icon = config.icon;
+  const iconClass = status === "saving" ? "h-3 w-3 animate-spin" : "h-3 w-3";
+
+  return (
+    <BrutalBadge variant={config.variant} size="sm" className={Icon ? "gap-1.5" : undefined}>
+      {Icon && <Icon className={iconClass} />}
+      {config.label}
+    </BrutalBadge>
+  );
+}
+
+function InitialContentPlugin({ content }: { content: string | null }): null {
   const [editor] = useLexicalComposerContext();
   const initializedRef = useRef(false);
 
@@ -120,10 +101,6 @@ function InitialContentPlugin({ content }: { content: string | null }) {
   return null;
 }
 
-// ============================================================================
-// Auto-save Plugin
-// ============================================================================
-
 function AutoSavePlugin({
   sessionId,
   onSaveStart,
@@ -134,7 +111,7 @@ function AutoSavePlugin({
   onSaveStart: () => void;
   onSaveComplete: () => void;
   onSaveError: (error: Error) => void;
-}) {
+}): null {
   const [editor] = useLexicalComposerContext();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>("");
@@ -186,15 +163,11 @@ function AutoSavePlugin({
   return null;
 }
 
-// ============================================================================
-// Word Count Plugin
-// ============================================================================
-
 function WordCountPlugin({
   onWordCountChange,
 }: {
   onWordCountChange: (count: number) => void;
-}) {
+}): null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -218,10 +191,6 @@ function WordCountPlugin({
   return null;
 }
 
-// ============================================================================
-// Type Selector Dropdown
-// ============================================================================
-
 function TypeSelector({
   value,
   onChange,
@@ -230,7 +199,7 @@ function TypeSelector({
   value: ContentType;
   onChange: (type: ContentType) => void;
   disabled: boolean;
-}) {
+}): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const currentType = CONTENT_TYPES.find((t) => t.value === value) || CONTENT_TYPES[0];
 
@@ -273,31 +242,48 @@ function TypeSelector({
   );
 }
 
-// ============================================================================
-// Main Editor Component
-// ============================================================================
-
-export function HotpressEditor() {
+export function HotpressEditor(): React.ReactElement {
   const [session, setSession] = useState<SessionData | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [wordCount, setWordCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
+
+  // Share dialog state
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [isCreatingShare, setIsCreatingShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Handle client-side mounting
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Create or fetch session on mount
+  // Get or create session on mount
   useEffect(() => {
     if (!isMounted || session || isCreatingSession) return;
 
     const initSession = async () => {
       setIsCreatingSession(true);
       try {
-        // Create a new session
+        // First, check for existing session in cookie
+        const currentResponse = await fetch("/api/sessions?current=true");
+        if (currentResponse.ok) {
+          const currentData = await currentResponse.json();
+          if (currentData.session) {
+            setSession({
+              id: currentData.session.id,
+              title: currentData.session.title,
+              type: currentData.session.type,
+              content: currentData.session.content,
+              shareSlug: currentData.session.shareSlug,
+            });
+            return;
+          }
+        }
+
+        // No existing session, create a new one
         const response = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -317,7 +303,7 @@ export function HotpressEditor() {
           shareSlug: data.session.shareSlug,
         });
       } catch (error) {
-        console.error("Failed to create session:", error);
+        console.error("Failed to initialize session:", error);
       } finally {
         setIsCreatingSession(false);
       }
@@ -348,12 +334,23 @@ export function HotpressEditor() {
     [session]
   );
 
-  // Handle share button click
-  const handleShare = useCallback(async () => {
+  // Handle share button click - opens dialog
+  const handleShare = useCallback(() => {
     if (!session) return;
 
+    // If we already have a share slug, show it
+    if (session.shareSlug) {
+      setShareUrl(`${window.location.origin}/s/${session.shareSlug}`);
+    }
+    setShareDialogOpen(true);
+  }, [session]);
+
+  // Create share link via API
+  const handleCreateShareLink = useCallback(async () => {
+    if (!session) return;
+
+    setIsCreatingShare(true);
     try {
-      // Create share link via API
       const response = await fetch(`/api/sessions/${session.id}/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -365,36 +362,38 @@ export function HotpressEditor() {
       }
 
       const data = await response.json();
-
-      // Copy share URL to clipboard
-      await navigator.clipboard.writeText(data.shareUrl);
-
-      // Update session with share slug
+      setShareUrl(data.shareUrl);
       setSession((prev) => (prev ? { ...prev, shareSlug: data.shareSlug } : null));
-
-      // Show success message
-      alert(`Link copied!\n\n${data.shareUrl}`);
     } catch (error) {
       console.error("Failed to share:", error);
-      alert("Failed to create share link. Please try again.");
+    } finally {
+      setIsCreatingShare(false);
     }
   }, [session]);
 
-  // Save callbacks
+  // Copy share URL to clipboard
+  const handleCopyShareUrl = useCallback(async () => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  }, [shareUrl]);
+
   const handleSaveStart = useCallback(() => {
-    setIsSaving(true);
     setSaveStatus("saving");
   }, []);
 
   const handleSaveComplete = useCallback(() => {
-    setIsSaving(false);
     setSaveStatus("saved");
-    // Reset to idle after 2 seconds
     setTimeout(() => setSaveStatus("idle"), 2000);
   }, []);
 
   const handleSaveError = useCallback((error: Error) => {
-    setIsSaving(false);
     setSaveStatus("error");
     console.error("Save error:", error);
     // Reset to idle after 3 seconds
@@ -405,26 +404,7 @@ export function HotpressEditor() {
     setWordCount(count);
   }, []);
 
-  const editorConfig = useMemo(
-    () => ({
-      namespace: "HotpressEditor",
-      theme: editorTheme,
-      nodes: [
-        HeadingNode,
-        QuoteNode,
-        ListNode,
-        ListItemNode,
-        CodeNode,
-        CodeHighlightNode,
-        LinkNode,
-        AutoLinkNode,
-      ],
-      onError: (error: Error) => {
-        console.error("Lexical error:", error);
-      },
-    }),
-    []
-  );
+  const editorConfig = useMemo(() => createEditorConfig(), []);
 
   // Loading state
   if (!isMounted || !session) {
@@ -482,11 +462,10 @@ export function HotpressEditor() {
       {/* Status bar */}
       <div className="flex flex-col items-start justify-between gap-2 border-t-3 border-black bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:px-6">
         <div className="flex items-center gap-4">
-          {/* Type selector */}
           <TypeSelector
             value={session.type}
             onChange={handleTypeChange}
-            disabled={isSaving}
+            disabled={saveStatus === "saving"}
           />
 
           {/* Word count */}
@@ -497,31 +476,7 @@ export function HotpressEditor() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Save status */}
-          <div className="flex items-center gap-2">
-            {saveStatus === "saving" && (
-              <BrutalBadge variant="default" size="sm" className="gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Saving...
-              </BrutalBadge>
-            )}
-            {saveStatus === "saved" && (
-              <BrutalBadge variant="success" size="sm" className="gap-1.5">
-                <Check className="h-3 w-3" />
-                Saved
-              </BrutalBadge>
-            )}
-            {saveStatus === "error" && (
-              <BrutalBadge variant="destructive" size="sm">
-                Save failed
-              </BrutalBadge>
-            )}
-            {saveStatus === "idle" && (
-              <BrutalBadge variant="default" size="sm">
-                Auto-saving
-              </BrutalBadge>
-            )}
-          </div>
+          <SaveStatusBadge status={saveStatus} />
 
           {/* Share button */}
           <button
@@ -533,6 +488,77 @@ export function HotpressEditor() {
           </button>
         </div>
       </div>
+
+      {/* Share Dialog */}
+      <BrutalDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <BrutalDialogContent className="max-w-md">
+          <BrutalDialogHeader>
+            <BrutalDialogTitle>Share Session</BrutalDialogTitle>
+            <BrutalDialogDescription>
+              Share this writing session with others. Anyone with the link can view and edit.
+            </BrutalDialogDescription>
+          </BrutalDialogHeader>
+
+          <div className="space-y-4 py-4">
+            {shareUrl ? (
+              <div className="space-y-3">
+                <label className="block text-xs font-bold uppercase tracking-wider">
+                  Share Link
+                </label>
+                <div className="flex gap-2">
+                  <BrutalInput
+                    value={shareUrl}
+                    readOnly
+                    className="flex-1 font-mono text-sm"
+                  />
+                  <BrutalButton
+                    variant="primary"
+                    size="icon"
+                    onClick={handleCopyShareUrl}
+                    title={shareCopied ? "Copied!" : "Copy link"}
+                  >
+                    {shareCopied ? (
+                      <Check className="h-4 w-4" strokeWidth={2.5} />
+                    ) : (
+                      <Copy className="h-4 w-4" strokeWidth={2.5} />
+                    )}
+                  </BrutalButton>
+                </div>
+                {shareCopied && (
+                  <p className="text-sm text-green-600 font-medium">Link copied to clipboard!</p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Share2 className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                <p className="text-sm text-gray-600 mb-4">
+                  Generate a link to share this session with collaborators
+                </p>
+                <BrutalButton
+                  variant="primary"
+                  onClick={handleCreateShareLink}
+                  disabled={isCreatingShare}
+                >
+                  {isCreatingShare ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Share Link"
+                  )}
+                </BrutalButton>
+              </div>
+            )}
+          </div>
+
+          <BrutalDialogFooter>
+            <BrutalButton variant="outline" onClick={() => setShareDialogOpen(false)}>
+              Done
+            </BrutalButton>
+          </BrutalDialogFooter>
+        </BrutalDialogContent>
+      </BrutalDialog>
     </div>
   );
 }

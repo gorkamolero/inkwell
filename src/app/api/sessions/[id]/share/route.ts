@@ -6,6 +6,7 @@ import {
   getSessionById,
   getSessionIdFromCookie,
   createShareLink,
+  canAccessSession,
 } from "@/lib/session";
 import { headers } from "next/headers";
 
@@ -15,9 +16,6 @@ import { headers } from "next/headers";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-/**
- * Request body for creating a share link
- */
 export const CreateShareLinkSchema = z.object({
   password: z.string().optional(),
   expiresInDays: z.number().min(1).max(365).optional(),
@@ -25,14 +23,22 @@ export const CreateShareLinkSchema = z.object({
 
 export type CreateShareLinkRequest = z.infer<typeof CreateShareLinkSchema>;
 
-/**
- * Response for creating a share link
- */
 export interface CreateShareLinkResponse {
   shareUrl: string;
   shareSlug: string;
   passwordProtected: boolean;
   expiresAt: string | null;
+}
+
+// ============================================================================
+// Helper: Build share URL
+// ============================================================================
+
+async function buildShareUrl(shareSlug: string): Promise<string> {
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  return `${protocol}://${host}/s/${shareSlug}`;
 }
 
 // ============================================================================
@@ -54,49 +60,35 @@ export async function POST(
       // Empty body is fine
     }
 
-    // Find session by ID
     const session = await getSessionById(id);
     if (!session) {
       throw ApiError.notFound("Session not found");
     }
 
-    // Verify access (owner or session cookie matches)
-    const authSession = await auth();
-    const userId = authSession?.user?.id;
-    const cookieSessionId = await getSessionIdFromCookie();
+    // Get access context
+    const [authSession, cookieSessionId] = await Promise.all([
+      auth(),
+      getSessionIdFromCookie(),
+    ]);
+    const context = { userId: authSession?.user?.id, cookieSessionId };
 
-    const hasAccess =
-      (userId && session.ownerId === userId) ||
-      cookieSessionId === id ||
-      !session.ownerId; // Anonymous sessions can be shared by anyone with access
-
-    if (!hasAccess) {
+    if (!canAccessSession(session, context, true)) {
       throw ApiError.forbidden("You don't have permission to share this session");
     }
 
-    // Generate share link (creates slug if doesn't exist)
     const updated = await createShareLink(id);
-    if (!updated || !updated.shareSlug) {
+    if (!updated?.shareSlug) {
       throw ApiError.internal("Failed to create share link");
     }
 
-    // TODO: Handle password protection in future version
-    // For MVP, we skip password protection
+    const shareUrl = await buildShareUrl(updated.shareSlug);
 
-    // Build share URL
-    const headersList = await headers();
-    const host = headersList.get("host") || "localhost:3000";
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const shareUrl = `${protocol}://${host}/s/${updated.shareSlug}`;
-
-    const response: CreateShareLinkResponse = {
+    return NextResponse.json({
       shareUrl,
       shareSlug: updated.shareSlug,
       passwordProtected: !!body.password,
       expiresAt: updated.expiresAt?.toISOString() ?? null,
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     if (error instanceof ApiError) {
       return error.toResponse();

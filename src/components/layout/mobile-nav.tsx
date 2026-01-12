@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,10 +32,9 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
     };
   }, [isOpen]);
 
-  // Close menu when route changes
-  const closeMenu = useCallback(() => {
+  function closeMenu(): void {
     setIsOpen(false);
-  }, []);
+  }
 
   return (
     <div className="md:hidden">

@@ -1,21 +1,14 @@
+import { relations } from "drizzle-orm";
 import {
+  boolean,
+  index,
+  integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
-  boolean,
-  integer,
   unique,
-  jsonb,
-  index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
-
-// ============================================================================
-// Helper: Generate CUID-like IDs
-// ============================================================================
-
-// Note: In actual usage, use a proper CUID library like @paralleldrive/cuid2
-// For schema definition, we use text type and handle ID generation in application code
 
 // ============================================================================
 // Auth Tables (NextAuth.js compatible)
@@ -167,11 +160,11 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
   projects: many(projects),
   collaborations: many(projectCollaborators),
+  writingSessions: many(writingSessions),
   subscription: one(subscriptions, {
     fields: [users.id],
     references: [subscriptions.userId],
   }),
-  writingSessions: many(writingSessions),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -244,34 +237,25 @@ export const liveblocksRoomsRelations = relations(liveblocksRooms, ({ one }) => 
 // Types
 // ============================================================================
 
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-
-export type Account = typeof accounts.$inferSelect;
-export type NewAccount = typeof accounts.$inferInsert;
-
-export type Session = typeof sessions.$inferSelect;
-export type NewSession = typeof sessions.$inferInsert;
-
-export type Project = typeof projects.$inferSelect;
-export type NewProject = typeof projects.$inferInsert;
-
-export type ProjectCollaborator = typeof projectCollaborators.$inferSelect;
-export type NewProjectCollaborator = typeof projectCollaborators.$inferInsert;
-
-export type Document = typeof documents.$inferSelect;
-export type NewDocument = typeof documents.$inferInsert;
-
-export type Subscription = typeof subscriptions.$inferSelect;
-export type NewSubscription = typeof subscriptions.$inferInsert;
-
-export type WritingSession = typeof writingSessions.$inferSelect;
-export type NewWritingSession = typeof writingSessions.$inferInsert;
-
-export type LiveblocksRoom = typeof liveblocksRooms.$inferSelect;
-export type NewLiveblocksRoom = typeof liveblocksRooms.$inferInsert;
-
-// Role type for type safety
 export type CollaboratorRole = "viewer" | "editor" | "admin";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
 export type WritingSessionType = "book" | "article" | "thread" | "newsletter" | "docs";
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;
+export type ProjectCollaborator = typeof projectCollaborators.$inferSelect;
+export type NewProjectCollaborator = typeof projectCollaborators.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+export type WritingSession = typeof writingSessions.$inferSelect;
+export type NewWritingSession = typeof writingSessions.$inferInsert;
+export type LiveblocksRoom = typeof liveblocksRooms.$inferSelect;
+export type NewLiveblocksRoom = typeof liveblocksRooms.$inferInsert;

@@ -1,29 +1,17 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
 
-/**
- * Neobrutalist Button Component
- *
- * Features:
- * - Bold 3px black border
- * - 4px offset shadow
- * - Hover: lifts up (-2px, -2px) with larger 6px shadow
- * - Active: presses down (2px, 2px) with smaller 2px shadow
- * - Satisfying tactile feedback
- */
+import { cn } from "@/lib/utils"
 
 const brutalButtonVariants = cva(
   [
-    // Base styles
     "inline-flex items-center justify-center gap-2",
     "font-bold text-sm",
     "border-3 border-black dark:border-white",
     "transition-all duration-100 ease-out",
     "cursor-pointer select-none",
     "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
-    // Focus state
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brutal-yellow focus-visible:ring-offset-2",
   ],
   {
@@ -107,13 +95,15 @@ const brutalButtonVariants = cva(
 export interface BrutalButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof brutalButtonVariants> {
-  asChild?: boolean
   loading?: boolean
   loadingText?: string
 }
 
 const BrutalButton = React.forwardRef<HTMLButtonElement, BrutalButtonProps>(
-  ({ className, variant, size, loading, loadingText, children, disabled, ...props }, ref) => {
+  function BrutalButton(
+    { className, variant, size, loading, loadingText, children, disabled, ...props },
+    ref
+  ) {
     return (
       <button
         className={cn(brutalButtonVariants({ variant, size, className }))}

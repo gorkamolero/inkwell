@@ -1,19 +1,3 @@
-/**
- * Neobrutalist Design System
- *
- * A bold, tactile component library inspired by Gumroad's aesthetic.
- *
- * Key principles:
- * - Bold 2-4px black borders on EVERYTHING
- * - Offset box shadows (4px right, 4px down, black)
- * - High contrast colors: black, white, bright accents
- * - Shadows expand on hover, shrink on active (Gumroad style)
- * - Geometric, grid-based layouts
- * - Bold, chunky typography
- * - No gradients, minimal rounded corners
- * - Brutally honest, no-bullshit aesthetic
- */
-
 // Button
 export {
   BrutalButton,

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, projects, documents, accounts } from "@/lib/db";
+import { projects, documents } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { saveDocument } from "@/lib/github";
+import {
+  ApiError,
+  requireDatabase,
+  requireGitHubAccessToken,
+} from "@/lib/api-utils";
 
 interface RouteParams {
   params: Promise<{
@@ -11,69 +16,52 @@ interface RouteParams {
   }>;
 }
 
+// ============================================================================
 // POST - Commit draft to GitHub
-export async function POST(request: NextRequest, { params }: RouteParams) {
+// ============================================================================
+
+export async function POST(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
     const session = await auth();
 
-    if (!session?.user?.id || !db) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      throw ApiError.unauthorized();
     }
 
     const body = await request.json();
     const { message } = body;
 
-    // Get user's GitHub access token
-    const userAccount = await db
-      .select({ accessToken: accounts.access_token })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.userId, session.user.id),
-          eq(accounts.provider, "github")
-        )
-      )
-      .limit(1);
+    const database = requireDatabase();
+    const accessToken = await requireGitHubAccessToken(session.user.id);
 
-    const accessToken = userAccount[0]?.accessToken;
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: "GitHub not connected" },
-        { status: 403 }
-      );
-    }
-
-    // Get project
-    const project = await db.query.projects.findFirst({
+    const project = await database.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
 
-    if (!project || !project.githubRepo) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project?.githubRepo) {
+      throw ApiError.notFound("Project not found");
     }
 
     const documentPath = decodeURIComponent(docPath);
 
-    // Get document with draft content
-    const document = await db.query.documents.findFirst({
+    const document = await database.query.documents.findFirst({
       where: and(
         eq(documents.projectId, projectId),
         eq(documents.path, documentPath)
       ),
     });
 
-    if (!document || !document.draftContent) {
-      return NextResponse.json(
-        { error: "No draft to commit" },
-        { status: 400 }
-      );
+    if (!document?.draftContent) {
+      throw ApiError.badRequest("No draft to commit");
     }
 
     const [owner, repo] = project.githubRepo.split("/");
     const branch = project.githubBranch || "main";
 
-    // Commit to GitHub
     const newSha = await saveDocument(
       accessToken,
       owner,
@@ -85,8 +73,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       branch
     );
 
-    // Update document - clear draft, store new SHA
-    await db
+    await database
       .update(documents)
       .set({
         draftContent: null,
@@ -100,10 +87,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ sha: newSha, success: true });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return error.toResponse();
+    }
     console.error("Commit error:", error);
-    return NextResponse.json(
-      { error: "Failed to commit to GitHub" },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to commit to GitHub").toResponse();
   }
 }

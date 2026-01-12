@@ -217,64 +217,51 @@ interface SaveStatusIndicatorProps {
   lastSavedAt: Date | null;
 }
 
-function SaveStatusIndicator({ status, lastSavedAt }: SaveStatusIndicatorProps) {
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
+const STATUS_STYLES: Record<SaveStatus, string> = {
+  idle: "border-gray-300 bg-gray-50 text-gray-500",
+  saving: "border-yellow-500 bg-yellow-50 text-yellow-700",
+  saved: "border-green-500 bg-green-50 text-green-700",
+  unsaved: "border-orange-500 bg-orange-50 text-orange-700",
+  error: "border-red-500 bg-red-50 text-red-700",
+};
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getStatusContent(status: SaveStatus, lastSavedAt: Date | null): { icon: typeof Check | typeof Loader2 | typeof AlertCircle; label: string; animate?: boolean } {
+  switch (status) {
+    case "idle":
+      return {
+        icon: Check,
+        label: lastSavedAt ? `Saved at ${formatTime(lastSavedAt)}` : "Saved",
+      };
+    case "saving":
+      return { icon: Loader2, label: "Saving...", animate: true };
+    case "saved":
+      return { icon: Check, label: "Saved" };
+    case "unsaved":
+      return { icon: AlertCircle, label: "Unsaved changes" };
+    case "error":
+      return { icon: AlertCircle, label: "Save failed" };
+  }
+}
+
+function SaveStatusIndicator({ status, lastSavedAt }: SaveStatusIndicatorProps): React.ReactElement {
+  const { icon: Icon, label, animate } = getStatusContent(status, lastSavedAt);
 
   return (
     <div
       className={cn(
         "flex items-center gap-2 rounded-none border-2 px-3 py-1 text-xs font-bold transition-all",
-        {
-          "border-gray-300 bg-gray-50 text-gray-500": status === "idle",
-          "border-yellow-500 bg-yellow-50 text-yellow-700": status === "saving",
-          "border-green-500 bg-green-50 text-green-700": status === "saved",
-          "border-orange-500 bg-orange-50 text-orange-700":
-            status === "unsaved",
-          "border-red-500 bg-red-50 text-red-700": status === "error",
-        }
+        STATUS_STYLES[status]
       )}
     >
-      {status === "idle" && lastSavedAt && (
-        <>
-          <Check className="h-3 w-3" />
-          <span>Saved at {formatTime(lastSavedAt)}</span>
-        </>
-      )}
-      {status === "idle" && !lastSavedAt && (
-        <>
-          <Check className="h-3 w-3" />
-          <span>Saved</span>
-        </>
-      )}
-      {status === "saving" && (
-        <>
-          <Loader2 className="h-3 w-3 animate-spin" />
-          <span>Saving...</span>
-        </>
-      )}
-      {status === "saved" && (
-        <>
-          <Check className="h-3 w-3" />
-          <span>Saved</span>
-        </>
-      )}
-      {status === "unsaved" && (
-        <>
-          <AlertCircle className="h-3 w-3" />
-          <span>Unsaved changes</span>
-        </>
-      )}
-      {status === "error" && (
-        <>
-          <AlertCircle className="h-3 w-3" />
-          <span>Save failed</span>
-        </>
-      )}
+      <Icon className={cn("h-3 w-3", animate && "animate-spin")} />
+      <span>{label}</span>
     </div>
   );
 }

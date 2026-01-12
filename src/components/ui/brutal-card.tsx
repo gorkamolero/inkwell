@@ -1,21 +1,10 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
 
-/**
- * Neobrutalist Card Component
- *
- * Features:
- * - Bold 3px black border
- * - 4px offset shadow
- * - White background
- * - Optional colored accent bar on top
- * - Optional interactive hover state
- */
+import { cn } from "@/lib/utils"
 
 const brutalCardVariants = cva(
   [
-    // Base styles
     "relative",
     "border-3 border-black dark:border-white",
     "bg-white dark:bg-black",
@@ -62,7 +51,7 @@ export interface BrutalCardProps
     VariantProps<typeof brutalCardVariants> {}
 
 const BrutalCard = React.forwardRef<HTMLDivElement, BrutalCardProps>(
-  ({ className, interactive, accent, padding, ...props }, ref) => {
+  function BrutalCard({ className, interactive, accent, padding, ...props }, ref) {
     return (
       <div
         className={cn(brutalCardVariants({ interactive, accent, padding, className }))}
@@ -74,81 +63,74 @@ const BrutalCard = React.forwardRef<HTMLDivElement, BrutalCardProps>(
 )
 BrutalCard.displayName = "BrutalCard"
 
-/**
- * Card Header - for consistent card header styling
- */
 const BrutalCardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5", className)}
-    {...props}
-  />
-))
+>(function BrutalCardHeader({ className, ...props }, ref) {
+  return (
+    <div
+      ref={ref}
+      className={cn("flex flex-col space-y-1.5", className)}
+      {...props}
+    />
+  )
+})
 BrutalCardHeader.displayName = "BrutalCardHeader"
 
-/**
- * Card Title - bold neobrutalist heading
- */
 const BrutalCardTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn(
-      "text-xl font-black tracking-tight text-black dark:text-white",
-      className
-    )}
-    {...props}
-  />
-))
+>(function BrutalCardTitle({ className, ...props }, ref) {
+  return (
+    <h3
+      ref={ref}
+      className={cn(
+        "text-xl font-black tracking-tight text-black dark:text-white",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 BrutalCardTitle.displayName = "BrutalCardTitle"
 
-/**
- * Card Description - muted text for subtitles
- */
 const BrutalCardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
+>(function BrutalCardDescription({ className, ...props }, ref) {
+  return (
+    <p
+      ref={ref}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+})
 BrutalCardDescription.displayName = "BrutalCardDescription"
 
-/**
- * Card Content - main content area
- */
 const BrutalCardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("pt-0", className)} {...props} />
-))
+>(function BrutalCardContent({ className, ...props }, ref) {
+  return <div ref={ref} className={cn("pt-0", className)} {...props} />
+})
 BrutalCardContent.displayName = "BrutalCardContent"
 
-/**
- * Card Footer - for actions at the bottom
- */
 const BrutalCardFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "flex items-center pt-4 border-t-3 border-black dark:border-white mt-4 -mx-4 px-4",
-      className
-    )}
-    {...props}
-  />
-))
+>(function BrutalCardFooter({ className, ...props }, ref) {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex items-center pt-4 border-t-3 border-black dark:border-white mt-4 -mx-4 px-4",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 BrutalCardFooter.displayName = "BrutalCardFooter"
 
 export {

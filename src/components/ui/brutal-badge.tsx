@@ -1,20 +1,10 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
 
-/**
- * Neobrutalist Badge Component
- *
- * Features:
- * - Small, bold badges
- * - 2px border
- * - Various color variants
- * - Optional interactive state
- */
+import { cn } from "@/lib/utils"
 
 const brutalBadgeVariants = cva(
   [
-    // Base styles
     "inline-flex items-center justify-center",
     "border-2 border-black dark:border-white",
     "font-bold text-xs uppercase tracking-wide",
@@ -66,7 +56,7 @@ export interface BrutalBadgeProps
     VariantProps<typeof brutalBadgeVariants> {}
 
 const BrutalBadge = React.forwardRef<HTMLSpanElement, BrutalBadgeProps>(
-  ({ className, variant, size, interactive, ...props }, ref) => {
+  function BrutalBadge({ className, variant, size, interactive, ...props }, ref) {
     return (
       <span
         className={cn(brutalBadgeVariants({ variant, size, interactive, className }))}
@@ -78,19 +68,18 @@ const BrutalBadge = React.forwardRef<HTMLSpanElement, BrutalBadgeProps>(
 )
 BrutalBadge.displayName = "BrutalBadge"
 
-/**
- * Badge Group - for displaying multiple badges inline
- */
 const BrutalBadgeGroup = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-wrap gap-2", className)}
-    {...props}
-  />
-))
+>(function BrutalBadgeGroup({ className, ...props }, ref) {
+  return (
+    <div
+      ref={ref}
+      className={cn("flex flex-wrap gap-2", className)}
+      {...props}
+    />
+  )
+})
 BrutalBadgeGroup.displayName = "BrutalBadgeGroup"
 
 export { BrutalBadge, BrutalBadgeGroup, brutalBadgeVariants }

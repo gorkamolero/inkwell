@@ -5,6 +5,18 @@ import { Check, Crown } from "lucide-react";
 import type { UserWithSubscription } from "@/types";
 import { PLANS, type PlanType } from "@/lib/stripe";
 
+function getCurrentPlan(stripePriceId: string | undefined | null): PlanType {
+  if (!stripePriceId) {
+    return "free";
+  }
+
+  if (stripePriceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEAM) {
+    return "team";
+  }
+
+  return "pro";
+}
+
 interface BillingSectionProps {
   user: UserWithSubscription;
 }
@@ -12,13 +24,7 @@ interface BillingSectionProps {
 export function BillingSection({ user }: BillingSectionProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  // Determine current plan based on stripePriceId from subscription
-  const stripePriceId = user.subscription?.stripePriceId;
-  const currentPlan: PlanType = stripePriceId
-    ? stripePriceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEAM
-      ? "team"
-      : "pro"
-    : "free";
+  const currentPlan = getCurrentPlan(user.subscription?.stripePriceId);
 
   const currentPlanInfo = PLANS[currentPlan];
 

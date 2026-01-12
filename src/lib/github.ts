@@ -56,6 +56,101 @@ export type GitHubErrorCode =
   | "NETWORK_ERROR"
   | "UNKNOWN";
 
+interface OctokitError {
+  status: number;
+  message?: string;
+  response?: {
+    headers?: Record<string, string>;
+  };
+}
+
+function isOctokitError(error: unknown): error is OctokitError {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "status" in error &&
+    typeof error.status === "number"
+  );
+}
+
+function extractErrorDetails(error: OctokitError): {
+  status: number;
+  message: string;
+  retryAfter: number | undefined;
+} {
+  const status = error.status;
+  const message =
+    typeof error.message === "string" ? error.message : "GitHub API error";
+
+  const headers = error.response?.headers;
+  let retryAfter: number | undefined;
+
+  if (headers?.["retry-after"]) {
+    retryAfter = parseInt(headers["retry-after"], 10) * 1000;
+  } else if (headers?.["x-ratelimit-reset"]) {
+    const resetTime = parseInt(headers["x-ratelimit-reset"], 10) * 1000;
+    retryAfter = Math.max(0, resetTime - Date.now());
+  }
+
+  return { status, message, retryAfter };
+}
+
+function createErrorFromStatus(
+  status: number,
+  message: string,
+  retryAfter: number | undefined
+): GitHubError {
+  switch (status) {
+    case 401:
+      return new GitHubError(
+        "Authentication failed. Please reconnect your GitHub account.",
+        "UNAUTHORIZED",
+        status
+      );
+    case 403:
+      if (message.toLowerCase().includes("rate limit")) {
+        return new GitHubError(
+          "GitHub API rate limit exceeded. Please try again later.",
+          "RATE_LIMITED",
+          status,
+          retryAfter
+        );
+      }
+      return new GitHubError(
+        "Access forbidden. You may not have permission to perform this action.",
+        "FORBIDDEN",
+        status
+      );
+    case 404:
+      return new GitHubError(
+        "Resource not found. The repository or file may have been deleted.",
+        "NOT_FOUND",
+        status
+      );
+    case 409:
+      return new GitHubError(
+        "Conflict detected. The file may have been modified by someone else.",
+        "CONFLICT",
+        status
+      );
+    case 422:
+      return new GitHubError(
+        "Validation failed. Please check your input.",
+        "VALIDATION_ERROR",
+        status
+      );
+    default:
+      if (status >= 500) {
+        return new GitHubError(
+          "GitHub server error. Please try again later.",
+          "SERVER_ERROR",
+          status
+        );
+      }
+      return new GitHubError(message, "UNKNOWN", status);
+  }
+}
+
 export class GitHubError extends Error {
   code: GitHubErrorCode;
   status?: number;
@@ -79,102 +174,25 @@ export class GitHubError extends Error {
       return error;
     }
 
-    // Handle Octokit RequestError
-    if (
-      error &&
-      typeof error === "object" &&
-      "status" in error &&
-      typeof error.status === "number"
-    ) {
-      const status = error.status;
-      const message =
-        "message" in error && typeof error.message === "string"
-          ? error.message
-          : "GitHub API error";
-
-      // Extract rate limit reset time if available
-      let retryAfter: number | undefined;
-      if (
-        "response" in error &&
-        error.response &&
-        typeof error.response === "object" &&
-        "headers" in error.response
-      ) {
-        const headers = error.response.headers as Record<string, string>;
-        if (headers["retry-after"]) {
-          retryAfter = parseInt(headers["retry-after"], 10) * 1000;
-        } else if (headers["x-ratelimit-reset"]) {
-          const resetTime = parseInt(headers["x-ratelimit-reset"], 10) * 1000;
-          retryAfter = Math.max(0, resetTime - Date.now());
-        }
-      }
-
-      switch (status) {
-        case 401:
-          return new GitHubError(
-            "Authentication failed. Please reconnect your GitHub account.",
-            "UNAUTHORIZED",
-            status
-          );
-        case 403:
-          if (message.toLowerCase().includes("rate limit")) {
-            return new GitHubError(
-              "GitHub API rate limit exceeded. Please try again later.",
-              "RATE_LIMITED",
-              status,
-              retryAfter
-            );
-          }
-          return new GitHubError(
-            "Access forbidden. You may not have permission to perform this action.",
-            "FORBIDDEN",
-            status
-          );
-        case 404:
-          return new GitHubError(
-            "Resource not found. The repository or file may have been deleted.",
-            "NOT_FOUND",
-            status
-          );
-        case 409:
-          return new GitHubError(
-            "Conflict detected. The file may have been modified by someone else.",
-            "CONFLICT",
-            status
-          );
-        case 422:
-          return new GitHubError(
-            "Validation failed. Please check your input.",
-            "VALIDATION_ERROR",
-            status
-          );
-        default:
-          if (status >= 500) {
-            return new GitHubError(
-              "GitHub server error. Please try again later.",
-              "SERVER_ERROR",
-              status
-            );
-          }
-          return new GitHubError(message, "UNKNOWN", status);
-      }
-    }
-
-    // Handle network errors
     if (error instanceof Error) {
-      if (
-        error.message.includes("fetch") ||
-        error.message.includes("network")
-      ) {
+      const isNetworkError =
+        error.message.includes("fetch") || error.message.includes("network");
+      if (isNetworkError) {
         return new GitHubError(
           "Network error. Please check your connection.",
           "NETWORK_ERROR"
         );
       }
-      return new GitHubError(error.message, "UNKNOWN");
     }
 
-    return new GitHubError("An unknown error occurred", "UNKNOWN");
+    if (!isOctokitError(error)) {
+      const message =
+        error instanceof Error ? error.message : "An unknown error occurred";
+      return new GitHubError(message, "UNKNOWN");
+    }
+
+    const { status, message, retryAfter } = extractErrorDetails(error);
+    return createErrorFromStatus(status, message, retryAfter);
   }
 }
 
@@ -184,6 +202,15 @@ export class GitHubError extends Error {
 
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_BASE_DELAY = 1000;
+const MAX_RETRY_DELAY = 60000;
+
+const NON_RETRYABLE_ERRORS = new Set<GitHubErrorCode>([
+  "NOT_FOUND",
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "VALIDATION_ERROR",
+  "CONFLICT",
+]);
 
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -198,31 +225,14 @@ async function withRetry<T>(
     } catch (error) {
       lastError = GitHubError.fromOctokitError(error);
 
-      // Don't retry certain errors
-      if (
-        lastError.code === "NOT_FOUND" ||
-        lastError.code === "UNAUTHORIZED" ||
-        lastError.code === "FORBIDDEN" ||
-        lastError.code === "VALIDATION_ERROR" ||
-        lastError.code === "CONFLICT"
-      ) {
+      if (NON_RETRYABLE_ERRORS.has(lastError.code) || attempt === maxRetries) {
         throw lastError;
       }
 
-      // Last attempt, throw the error
-      if (attempt === maxRetries) {
-        throw lastError;
-      }
-
-      // Calculate delay with exponential backoff
-      let delay: number;
-      if (lastError.code === "RATE_LIMITED" && lastError.retryAfter) {
-        // Use the retry-after header if available
-        delay = Math.min(lastError.retryAfter, 60000); // Cap at 1 minute
-      } else {
-        // Exponential backoff with jitter
-        delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-      }
+      const delay =
+        lastError.code === "RATE_LIMITED" && lastError.retryAfter
+          ? Math.min(lastError.retryAfter, MAX_RETRY_DELAY)
+          : baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
 
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -602,6 +612,57 @@ export async function getFileAtCommit(
 // Repository Structure Detection
 // ============================================================================
 
+const PROJECT_FILE_PATTERNS = [
+  "readme",
+  "license",
+  "claude",
+  "contributing",
+  "changelog",
+  "code_of_conduct",
+  "security",
+] as const;
+
+const EXCLUDED_DIRECTORIES = new Set([
+  "node_modules",
+  ".git",
+  ".github",
+  "docs",
+  "scripts",
+]);
+
+function isProjectFile(path: string): boolean {
+  const fileName = path.toLowerCase();
+  return PROJECT_FILE_PATTERNS.some((pattern) => fileName.includes(pattern));
+}
+
+function isExcludedDirectory(dir: string): boolean {
+  return EXCLUDED_DIRECTORIES.has(dir) || dir.startsWith(".");
+}
+
+function groupFilesByTopDirectory(
+  files: Array<{ path?: string }>
+): Map<string, string[]> {
+  const candidates = new Map<string, string[]>();
+
+  for (const item of files) {
+    if (!item.path) continue;
+
+    const parts = item.path.split("/");
+    if (parts.length < 2) continue;
+
+    const topDir = parts[0];
+    if (isExcludedDirectory(topDir)) continue;
+    if (parts.some((p) => p.startsWith("."))) continue;
+
+    if (!candidates.has(topDir)) {
+      candidates.set(topDir, []);
+    }
+    candidates.get(topDir)!.push(item.path);
+  }
+
+  return candidates;
+}
+
 /**
  * Analyzes repository structure to detect if it's single-book or multi-book.
  *
@@ -641,93 +702,36 @@ export async function detectRepoStructure(
         item.type === "blob" && item.path?.endsWith(".md") && item.path
     );
 
-    // Common project files to exclude (not book content)
-    const projectFiles = [
-      "readme",
-      "license",
-      "claude",
-      "contributing",
-      "changelog",
-      "code_of_conduct",
-      "security",
-    ];
-
-    // Check for root-level .md files (excluding project files)
     const rootMdFiles = mdFiles.filter((item) => {
       const path = item.path!;
-      const fileName = path.toLowerCase();
-      return (
-        !path.includes("/") &&
-        !projectFiles.some((pf) => fileName.includes(pf))
-      );
+      return !path.includes("/") && !isProjectFile(path);
     });
 
-    // Check for chapters folder at root
     const chaptersFiles = mdFiles.filter(
       (item) =>
         item.path?.startsWith("chapters/") && !item.path.includes("/", 9)
     );
 
-    // Look for multi-book structure FIRST
-    // Group files by their top-level directory
-    const bookCandidates = new Map<string, string[]>();
+    const bookCandidates = groupFilesByTopDirectory(mdFiles);
 
-    for (const item of mdFiles) {
-      if (!item.path) continue;
-
-      const parts = item.path.split("/");
-      if (parts.length < 2) continue;
-
-      const topDir = parts[0];
-      // Skip common non-book directories and hidden directories
-      if (
-        ["node_modules", ".git", ".github", "docs", "scripts"].includes(topDir) ||
-        topDir.startsWith(".")
-      ) {
-        continue;
-      }
-
-      // Skip files in hidden subdirectories (e.g., .claude/)
-      if (parts.some((p) => p.startsWith("."))) {
-        continue;
-      }
-
-      if (!bookCandidates.has(topDir)) {
-        bookCandidates.set(topDir, []);
-      }
-      bookCandidates.get(topDir)!.push(item.path);
-    }
-
-    // Filter to only directories that have multiple .md files
     const books: { name: string; path: string }[] = [];
-
     bookCandidates.forEach((files, dir) => {
       if (files.length >= 2) {
-        // At least 2 .md files to be considered a book
-        // Find the most specific common path for chapters
-        // Look for patterns like: book/output/chapters, book/chapters, book/
-        const chaptersPath = findChaptersPath(files, dir);
-
         books.push({
           name: formatBookName(dir),
-          path: chaptersPath,
+          path: findChaptersPath(files, dir),
         });
       }
     });
 
-    // If we found multiple book directories, it's multi-book
     if (books.length > 1) {
       return { type: "multi", books };
     }
 
-    // If we have root content files or a chapters folder, it's single-book
-    // (Even if we found one book directory, prefer single-book detection
-    // since root content is a stronger signal)
     if (rootMdFiles.length > 0 || chaptersFiles.length > 0) {
       return { type: "single" };
     }
 
-    // Default to single if we can't determine structure
     return { type: "single" };
   });
 }
@@ -736,7 +740,6 @@ export async function detectRepoStructure(
  * Finds the common chapters path from a list of file paths.
  */
 function findChaptersPath(files: string[], topDir: string): string {
-  // Look for common patterns
   const patterns = [
     `${topDir}/output/chapters`,
     `${topDir}/chapters`,
@@ -746,13 +749,11 @@ function findChaptersPath(files: string[], topDir: string): string {
   ];
 
   for (const pattern of patterns) {
-    const matchingFiles = files.filter((f) => f.startsWith(pattern + "/"));
-    if (matchingFiles.length > 0) {
+    if (files.some((f) => f.startsWith(pattern + "/"))) {
       return pattern;
     }
   }
 
-  // Find common prefix
   const sortedFiles = [...files].sort();
   const first = sortedFiles[0];
   const last = sortedFiles[sortedFiles.length - 1];
@@ -766,13 +767,8 @@ function findChaptersPath(files: string[], topDir: string): string {
     }
   }
 
-  // Remove trailing filename part
   const lastSlash = commonPrefix.lastIndexOf("/");
-  if (lastSlash > 0) {
-    return commonPrefix.substring(0, lastSlash);
-  }
-
-  return topDir;
+  return lastSlash > 0 ? commonPrefix.substring(0, lastSlash) : topDir;
 }
 
 /**
@@ -813,7 +809,31 @@ export async function getRepoContents(
   octokit: Octokit,
   { owner, repo, branch }: GitHubRepo,
   path: string = ""
-) {
+): Promise<
+  | {
+      type: string;
+      size: number;
+      name: string;
+      path: string;
+      content?: string;
+      sha: string;
+      url: string;
+      git_url: string | null;
+      html_url: string | null;
+      download_url: string | null;
+    }
+  | Array<{
+      type: string;
+      size: number;
+      name: string;
+      path: string;
+      sha: string;
+      url: string;
+      git_url: string | null;
+      html_url: string | null;
+      download_url: string | null;
+    }>
+> {
   const { data } = await octokit.repos.getContent({
     owner,
     repo,
@@ -832,7 +852,7 @@ export async function getFileContent(
   octokit: Octokit,
   { owner, repo, branch }: GitHubRepo,
   path: string
-) {
+): Promise<{ content: string; sha: string; path: string }> {
   const { data } = await octokit.repos.getContent({
     owner,
     repo,
@@ -844,7 +864,6 @@ export async function getFileContent(
     throw new Error("Path is not a file");
   }
 
-  // Content is base64 encoded
   const content = Buffer.from(data.content, "base64").toString("utf-8");
 
   return {
@@ -916,14 +935,12 @@ export async function createBranch(
     sourceBranch: string;
   }
 ) {
-  // Get the SHA of the source branch
   const { data: ref } = await octokit.git.getRef({
     owner,
     repo,
     ref: `heads/${sourceBranch}`,
   });
 
-  // Create new branch
   const { data } = await octokit.git.createRef({
     owner,
     repo,

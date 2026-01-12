@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, projects, documents, accounts } from "@/lib/db";
+import { projects, documents } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import {
-  getDocument,
-  deleteDocument,
-} from "@/lib/github";
+import { getDocument, deleteDocument } from "@/lib/github";
 import { countWords, extractTitle } from "@/lib/editor-utils";
+import {
+  ApiError,
+  requireDatabase,
+  requireGitHubAccessToken,
+} from "@/lib/api-utils";
 
 interface RouteParams {
   params: Promise<{
@@ -15,46 +17,43 @@ interface RouteParams {
   }>;
 }
 
+// ============================================================================
+// Helper: Parse GitHub repo info
+// ============================================================================
+
+function parseGitHubRepo(githubRepo: string): { owner: string; repo: string } {
+  const [owner, repo] = githubRepo.split("/");
+  return { owner, repo };
+}
+
+// ============================================================================
 // GET - Fetch document content
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// ============================================================================
+
+export async function GET(
+  _request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
     const session = await auth();
 
-    if (!session?.user?.id || !db) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      throw ApiError.unauthorized();
     }
 
-    // Get user's GitHub access token
-    const userAccount = await db
-      .select({ accessToken: accounts.access_token })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.userId, session.user.id),
-          eq(accounts.provider, "github")
-        )
-      )
-      .limit(1);
+    const database = requireDatabase();
+    const accessToken = await requireGitHubAccessToken(session.user.id);
 
-    const accessToken = userAccount[0]?.accessToken;
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: "GitHub not connected" },
-        { status: 403 }
-      );
-    }
-
-    // Get project
-    const project = await db.query.projects.findFirst({
+    const project = await database.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
 
-    if (!project || !project.githubRepo) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project?.githubRepo) {
+      throw ApiError.notFound("Project not found");
     }
 
-    const [owner, repo] = project.githubRepo.split("/");
+    const { owner, repo } = parseGitHubRepo(project.githubRepo);
     const branch = project.githubBranch || "main";
     const documentPath = decodeURIComponent(docPath);
 
@@ -71,70 +70,53 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       sha: documentData.sha,
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return error.toResponse();
+    }
     console.error("GET document error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch document" },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to fetch document").toResponse();
   }
 }
 
-// PUT - Save document content
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+// ============================================================================
+// PUT - Save document content (draft, no GitHub commit)
+// ============================================================================
+
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
     const session = await auth();
 
-    if (!session?.user?.id || !db) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      throw ApiError.unauthorized();
     }
 
     const body = await request.json();
     const { content } = body;
 
     if (typeof content !== "string") {
-      return NextResponse.json(
-        { error: "Content is required" },
-        { status: 400 }
-      );
+      throw ApiError.badRequest("Content is required");
     }
 
-    // Get user's GitHub access token
-    const userAccount = await db
-      .select({ accessToken: accounts.access_token })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.userId, session.user.id),
-          eq(accounts.provider, "github")
-        )
-      )
-      .limit(1);
+    const database = requireDatabase();
+    await requireGitHubAccessToken(session.user.id);
 
-    const accessToken = userAccount[0]?.accessToken;
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: "GitHub not connected" },
-        { status: 403 }
-      );
-    }
-
-    // Get project
-    const project = await db.query.projects.findFirst({
+    const project = await database.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
 
     if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      throw ApiError.notFound("Project not found");
     }
 
     const documentPath = decodeURIComponent(docPath);
-
-    // Update local document with draft content (no GitHub commit)
     const wordCount = countWords(content);
     const title = extractTitle(content);
 
-    await db
+    await database
       .update(documents)
       .set({
         draftContent: content,
@@ -146,94 +128,71 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         and(eq(documents.projectId, projectId), eq(documents.path, documentPath))
       );
 
-    return NextResponse.json({
-      saved: true,
-      wordCount,
-      title,
-    });
+    return NextResponse.json({ saved: true, wordCount, title });
   } catch (error) {
-    console.error("PUT document error:", error);
+    if (error instanceof ApiError) {
+      return error.toResponse();
+    }
 
-    // Check for conflict error
     if (
       error instanceof Error &&
       error.message.toLowerCase().includes("conflict")
     ) {
-      return NextResponse.json(
-        {
-          error: "Conflict detected",
-          message:
-            "The document has been modified. Please refresh and try again.",
-        },
-        { status: 409 }
-      );
+      return ApiError.conflict(
+        "The document has been modified. Please refresh and try again."
+      ).toResponse();
     }
 
-    return NextResponse.json(
-      { error: "Failed to save document" },
-      { status: 500 }
-    );
+    console.error("PUT document error:", error);
+    return ApiError.internal("Failed to save document").toResponse();
   }
 }
 
+// ============================================================================
 // DELETE - Delete document
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+// ============================================================================
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
     const session = await auth();
 
-    if (!session?.user?.id || !db) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      throw ApiError.unauthorized();
     }
 
     const body = await request.json();
     const { sha } = body;
 
     if (!sha) {
-      return NextResponse.json({ error: "SHA is required" }, { status: 400 });
+      throw ApiError.badRequest("SHA is required");
     }
 
-    // Get user's GitHub access token
-    const userAccount = await db
-      .select({ accessToken: accounts.access_token })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.userId, session.user.id),
-          eq(accounts.provider, "github")
-        )
-      )
-      .limit(1);
+    const database = requireDatabase();
+    const accessToken = await requireGitHubAccessToken(session.user.id);
 
-    const accessToken = userAccount[0]?.accessToken;
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: "GitHub not connected" },
-        { status: 403 }
-      );
-    }
-
-    // Get project and verify ownership
-    const project = await db.query.projects.findFirst({
+    // Verify ownership
+    const project = await database.query.projects.findFirst({
       where: and(
         eq(projects.id, projectId),
         eq(projects.userId, session.user.id)
       ),
     });
 
-    if (!project || !project.githubRepo) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project?.githubRepo) {
+      throw ApiError.notFound("Project not found");
     }
 
-    const [owner, repo] = project.githubRepo.split("/");
+    const { owner, repo } = parseGitHubRepo(project.githubRepo);
     const branch = project.githubBranch || "main";
     const documentPath = decodeURIComponent(docPath);
 
-    // Delete from GitHub
     await deleteDocument(accessToken, owner, repo, documentPath, sha, branch);
 
-    // Delete from local database
-    await db
+    await database
       .delete(documents)
       .where(
         and(eq(documents.projectId, projectId), eq(documents.path, documentPath))
@@ -241,10 +200,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return error.toResponse();
+    }
     console.error("DELETE document error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete document" },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to delete document").toResponse();
   }
 }

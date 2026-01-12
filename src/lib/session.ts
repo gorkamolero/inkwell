@@ -14,83 +14,41 @@ import { getDefaultConfig, type FormatConfig, type ContentType } from "./format-
 // Re-export types for convenience
 export type { ContentType, FormatConfig };
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/**
- * Cookie name for storing the current session ID.
- */
 export const SESSION_COOKIE = "hp_session";
 
-/**
- * Default session expiration time (30 days in milliseconds).
- */
-const SESSION_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
-
-/**
- * Share slug length for URL-friendly IDs.
- */
+const SESSION_EXPIRY_DAYS = 30;
+const SESSION_EXPIRY_SECONDS = SESSION_EXPIRY_DAYS * 24 * 60 * 60;
+const SESSION_EXPIRY_MS = SESSION_EXPIRY_SECONDS * 1000;
 const SHARE_SLUG_LENGTH = 10;
 
-// ============================================================================
-// Session ID Generation
-// ============================================================================
-
-/**
- * Generates a new unique session ID using cuid2.
- */
 export function generateSessionId(): string {
   return createId();
 }
 
-/**
- * Generates a unique share slug for session sharing.
- * Creates a URL-friendly alphanumeric string.
- */
 export function generateShareSlug(): string {
-  const id = createId();
-  // Take first N characters and ensure URL-safe
-  return id.slice(0, SHARE_SLUG_LENGTH).toLowerCase();
+  return createId().slice(0, SHARE_SLUG_LENGTH).toLowerCase();
 }
 
-// ============================================================================
-// Cookie Management
-// ============================================================================
-
-/**
- * Gets the current session ID from cookies.
- */
 export async function getSessionIdFromCookie(): Promise<string | undefined> {
   const cookieStore = await cookies();
   return cookieStore.get(SESSION_COOKIE)?.value;
 }
 
-/**
- * Sets the session ID in cookies.
- */
 export async function setSessionCookie(sessionId: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, sessionId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    maxAge: SESSION_EXPIRY_SECONDS,
     path: "/",
   });
 }
 
-/**
- * Clears the session cookie.
- */
 export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
 }
-
-// ============================================================================
-// Database Helper
-// ============================================================================
 
 function requireDb(): NonNullable<typeof db> {
   if (!db) {
@@ -98,10 +56,6 @@ function requireDb(): NonNullable<typeof db> {
   }
   return db;
 }
-
-// ============================================================================
-// Session CRUD Operations
-// ============================================================================
 
 /**
  * Creates a new ephemeral writing session.
@@ -138,9 +92,6 @@ export async function createSession(options?: {
   return session;
 }
 
-/**
- * Gets a session by its ID.
- */
 export async function getSessionById(id: string): Promise<WritingSession | null> {
   const database = requireDb();
   const session = await database.query.writingSessions.findFirst({
@@ -149,9 +100,6 @@ export async function getSessionById(id: string): Promise<WritingSession | null>
   return session ?? null;
 }
 
-/**
- * Gets a session by its share slug.
- */
 export async function getSessionByShareSlug(slug: string): Promise<WritingSession | null> {
   const database = requireDb();
   const session = await database.query.writingSessions.findFirst({
@@ -162,32 +110,25 @@ export async function getSessionByShareSlug(slug: string): Promise<WritingSessio
 
 /**
  * Gets or creates a session based on the cookie.
- * If a valid session exists in the cookie, returns it.
- * Otherwise, creates a new ephemeral session and sets the cookie.
+ * If a valid, non-expired session exists, returns it.
+ * Otherwise creates a new ephemeral session and sets the cookie.
  */
 export async function getOrCreateSession(): Promise<WritingSession> {
   const existingId = await getSessionIdFromCookie();
 
   if (existingId) {
     const session = await getSessionById(existingId);
-    if (session) {
-      // Check if session hasn't expired
-      if (!session.expiresAt || session.expiresAt > new Date()) {
-        return session;
-      }
+    if (session && !isSessionExpired(session)) {
+      return session;
     }
   }
 
-  // Create new ephemeral session
   const newSession = await createSession();
   await setSessionCookie(newSession.id);
 
   return newSession;
 }
 
-/**
- * Updates a session with new data.
- */
 export async function updateSession(
   id: string,
   data: {
@@ -203,18 +144,19 @@ export async function updateSession(
 ): Promise<WritingSession | null> {
   const database = requireDb();
 
-  const updateData: Partial<NewWritingSession> = { updatedAt: new Date() };
-
-  if (data.title !== undefined) updateData.title = data.title;
-  if (data.type !== undefined) updateData.type = data.type;
-  if (data.content !== undefined) updateData.content = data.content;
-  if (data.formatConfig !== undefined) {
-    updateData.formatConfig = data.formatConfig as unknown as Record<string, unknown>;
-  }
-  if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
-  if (data.githubRepo !== undefined) updateData.githubRepo = data.githubRepo;
-  if (data.githubPath !== undefined) updateData.githubPath = data.githubPath;
-  if (data.lastGithubSha !== undefined) updateData.lastGithubSha = data.lastGithubSha;
+  const updateData: Partial<NewWritingSession> = {
+    updatedAt: new Date(),
+    ...(data.title !== undefined && { title: data.title }),
+    ...(data.type !== undefined && { type: data.type }),
+    ...(data.content !== undefined && { content: data.content }),
+    ...(data.formatConfig !== undefined && {
+      formatConfig: data.formatConfig as unknown as Record<string, unknown>,
+    }),
+    ...(data.passwordHash !== undefined && { passwordHash: data.passwordHash }),
+    ...(data.githubRepo !== undefined && { githubRepo: data.githubRepo }),
+    ...(data.githubPath !== undefined && { githubPath: data.githubPath }),
+    ...(data.lastGithubSha !== undefined && { lastGithubSha: data.lastGithubSha }),
+  };
 
   const [updated] = await database
     .update(writingSessions)
@@ -266,18 +208,7 @@ export async function createShareLink(sessionId: string): Promise<WritingSession
   if (!session) return null;
   if (session.shareSlug) return session;
 
-  // Generate unique share slug with retry logic
-  let shareSlug = "";
-  const maxAttempts = 5;
-
-  for (let i = 0; i < maxAttempts; i++) {
-    shareSlug = generateShareSlug();
-    const existing = await getSessionByShareSlug(shareSlug);
-    if (!existing) break;
-    if (i === maxAttempts - 1) {
-      throw new Error("Failed to generate unique share slug");
-    }
-  }
+  const shareSlug = await generateUniqueShareSlug();
 
   const [updated] = await database
     .update(writingSessions)
@@ -288,9 +219,17 @@ export async function createShareLink(sessionId: string): Promise<WritingSession
   return updated ?? null;
 }
 
+async function generateUniqueShareSlug(maxAttempts = 5): Promise<string> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const slug = generateShareSlug();
+    const existing = await getSessionByShareSlug(slug);
+    if (!existing) return slug;
+  }
+  throw new Error("Failed to generate unique share slug");
+}
+
 /**
- * Deletes a session by ID.
- * Only the owner can delete their session.
+ * Deletes a session by ID. Only the owner can delete their session.
  */
 export async function deleteSession(
   sessionId: string,
@@ -309,9 +248,6 @@ export async function deleteSession(
   return true;
 }
 
-/**
- * Gets all sessions owned by a user.
- */
 export async function getUserSessions(userId: string): Promise<WritingSession[]> {
   const database = requireDb();
   return database.query.writingSessions.findMany({
@@ -321,14 +257,15 @@ export async function getUserSessions(userId: string): Promise<WritingSession[]>
 }
 
 /**
- * Extends the expiration time of a session.
+ * Extends the expiration time of an ephemeral session.
+ * Owned sessions do not expire and are returned unchanged.
  */
 export async function extendSessionExpiry(sessionId: string): Promise<WritingSession | null> {
   const database = requireDb();
 
   const session = await getSessionById(sessionId);
   if (!session) return null;
-  if (session.ownerId) return session; // Owned sessions don't expire
+  if (session.ownerId) return session;
 
   const [updated] = await database
     .update(writingSessions)
@@ -343,29 +280,79 @@ export async function extendSessionExpiry(sessionId: string): Promise<WritingSes
 }
 
 // ============================================================================
-// Utility Functions
+// Access Control Functions
 // ============================================================================
 
-/**
- * Checks if a session is expired.
- */
-export function isSessionExpired(session: WritingSession): boolean {
-  if (!session.expiresAt) {
-    return false; // Owned sessions don't expire
-  }
-  return session.expiresAt < new Date();
+export interface SessionAccessContext {
+  userId?: string;
+  cookieSessionId?: string;
 }
 
 /**
- * Checks if a session is password protected.
+ * Determines if a user can access a session for reading or writing.
  */
+export function canAccessSession(
+  session: WritingSession,
+  context: SessionAccessContext,
+  requireWrite: boolean = false
+): boolean {
+  const { userId, cookieSessionId } = context;
+
+  // Owner always has access
+  if (userId && session.ownerId === userId) {
+    return true;
+  }
+
+  // Cookie matches session ID (creator of anonymous session)
+  if (cookieSessionId === session.id) {
+    return true;
+  }
+
+  // Shared sessions are accessible to everyone for read/write
+  if (session.shareSlug) {
+    return true;
+  }
+
+  // Anonymous sessions without owner are readable
+  if (!requireWrite && !session.ownerId) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Determines if a user can delete a session.
+ * More restrictive than general access - requires ownership.
+ */
+export function canDeleteSession(
+  session: WritingSession,
+  context: SessionAccessContext
+): boolean {
+  const { userId, cookieSessionId } = context;
+
+  // Owner can always delete
+  if (userId && session.ownerId === userId) {
+    return true;
+  }
+
+  // Cookie matches AND session has no owner (original creator of anonymous session)
+  if (cookieSessionId === session.id && !session.ownerId) {
+    return true;
+  }
+
+  return false;
+}
+
+export function isSessionExpired(session: WritingSession): boolean {
+  if (!session.expiresAt) return false;
+  return session.expiresAt < new Date();
+}
+
 export function isPasswordProtected(session: WritingSession): boolean {
   return session.passwordHash !== null;
 }
 
-/**
- * Gets the format config from a session, with type safety.
- */
 export function getSessionFormatConfig(session: WritingSession): FormatConfig {
   if (session.formatConfig) {
     return session.formatConfig as unknown as FormatConfig;
@@ -373,10 +360,6 @@ export function getSessionFormatConfig(session: WritingSession): FormatConfig {
   return getDefaultConfig((session.type as ContentType) ?? "book");
 }
 
-/**
- * Updates a session with GitHub repository information.
- * Convenience wrapper for updateSession that only updates GitHub-related fields.
- */
 export async function updateSessionGitHub(
   sessionId: string,
   data: {

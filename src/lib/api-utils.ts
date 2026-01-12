@@ -357,6 +357,51 @@ export function successResponse(
 }
 
 // ============================================================================
+// GitHub Access Token Helper
+// ============================================================================
+
+/**
+ * Fetches the GitHub access token for a user.
+ * Returns null if not connected to GitHub.
+ */
+export async function getGitHubAccessToken(userId: string): Promise<string | null> {
+  if (!db) return null;
+
+  const userAccount = await db
+    .select({ accessToken: accounts.access_token })
+    .from(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.provider, "github")))
+    .limit(1);
+
+  return userAccount[0]?.accessToken ?? null;
+}
+
+/**
+ * Fetches the GitHub access token for a user, throwing if not connected.
+ */
+export async function requireGitHubAccessToken(userId: string): Promise<string> {
+  const token = await getGitHubAccessToken(userId);
+  if (!token) {
+    throw ApiError.forbidden("GitHub not connected");
+  }
+  return token;
+}
+
+// ============================================================================
+// Database Helper
+// ============================================================================
+
+/**
+ * Ensures database is configured, throwing if not.
+ */
+export function requireDatabase(): NonNullable<typeof db> {
+  if (!db) {
+    throw ApiError.internal("Database not configured");
+  }
+  return db;
+}
+
+// ============================================================================
 // ID Generation
 // ============================================================================
 

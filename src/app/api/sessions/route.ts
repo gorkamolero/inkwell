@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { desc, eq, or, isNull } from "drizzle-orm";
 import { ApiError, validateBody } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
+import { db, writingSessions } from "@/lib/db";
 import {
   createSession,
   setSessionCookie,
+  getSessionIdFromCookie,
+  getSessionById,
   type ContentType,
 } from "@/lib/session";
 
@@ -126,6 +130,60 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return error.toResponse();
     }
     console.error("Error creating session:", error);
+    return ApiError.internal().toResponse();
+  }
+}
+
+// ============================================================================
+// GET /api/sessions - List sessions or get current session
+// ============================================================================
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const { searchParams } = new URL(request.url);
+    const current = searchParams.get("current") === "true";
+
+    // Get current session from cookie
+    if (current) {
+      const sessionId = await getSessionIdFromCookie();
+      if (sessionId) {
+        const session = await getSessionById(sessionId);
+        if (session && (!session.expiresAt || session.expiresAt > new Date())) {
+          return NextResponse.json({ session: formatSessionResponse(session) });
+        }
+      }
+      // No valid current session
+      return NextResponse.json({ session: null });
+    }
+
+    // List sessions for authenticated user or from cookie
+    const authSession = await auth();
+    const userId = authSession?.user?.id;
+    const cookieSessionId = await getSessionIdFromCookie();
+
+    if (!db) {
+      return ApiError.internal("Database not available").toResponse();
+    }
+
+    // Get sessions owned by user OR the current cookie session
+    const sessions = await db.query.writingSessions.findMany({
+      where: userId
+        ? or(
+            eq(writingSessions.ownerId, userId),
+            cookieSessionId ? eq(writingSessions.id, cookieSessionId) : undefined
+          )
+        : cookieSessionId
+          ? eq(writingSessions.id, cookieSessionId)
+          : isNull(writingSessions.id), // No sessions if no user and no cookie
+      orderBy: [desc(writingSessions.updatedAt)],
+      limit: 50,
+    });
+
+    return NextResponse.json({
+      sessions: sessions.map(formatSessionResponse),
+    });
+  } catch (error) {
+    console.error("Error listing sessions:", error);
     return ApiError.internal().toResponse();
   }
 }

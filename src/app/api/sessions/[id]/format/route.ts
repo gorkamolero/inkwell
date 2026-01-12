@@ -6,8 +6,8 @@ import {
   getSessionById,
   getSessionIdFromCookie,
   updateSession,
+  canAccessSession,
 } from "@/lib/session";
-// FormatConfig import removed - using local type
 
 // ============================================================================
 // Types
@@ -155,6 +155,37 @@ export interface UpdateFormatResponse {
 }
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+const DEFAULT_FORMAT_CONFIG: FormatConfig = {
+  typography: {
+    body: { font: "Cormorant Garamond", size: "11pt", lineHeight: 1.5 },
+    headings: { font: "Cinzel", size: "18pt" },
+  },
+  chapters: {
+    numbering: { enabled: true, format: "Chapter {n}" },
+    dropCaps: { enabled: true, lines: 3, font: "Cinzel" },
+  },
+  page: { size: "6x9" },
+};
+
+// ============================================================================
+// Helper: Build access context
+// ============================================================================
+
+async function getAccessContext(): Promise<{ userId?: string; cookieSessionId?: string }> {
+  const [authSession, cookieSessionId] = await Promise.all([
+    auth(),
+    getSessionIdFromCookie(),
+  ]);
+  return {
+    userId: authSession?.user?.id,
+    cookieSessionId,
+  };
+}
+
+// ============================================================================
 // GET /api/sessions/[id]/format - Get format configuration for a session
 // ============================================================================
 
@@ -165,48 +196,19 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Find session by ID
     const session = await getSessionById(id);
     if (!session) {
       throw ApiError.notFound("Session not found");
     }
 
-    // Verify access (owner, session cookie, or anonymous session)
-    const authSession = await auth();
-    const userId = authSession?.user?.id;
-    const cookieSessionId = await getSessionIdFromCookie();
-
-    const hasAccess =
-      (userId && session.ownerId === userId) ||
-      cookieSessionId === id ||
-      !session.ownerId; // Anonymous sessions are accessible
-
-    if (!hasAccess) {
+    const context = await getAccessContext();
+    if (!canAccessSession(session, context)) {
       throw ApiError.forbidden("You don't have access to this session's format");
     }
 
-    // Return the format config (or default if not set)
-    const formatConfig = session.formatConfig as FormatConfig | null;
+    const formatConfig = (session.formatConfig as FormatConfig | null) ?? DEFAULT_FORMAT_CONFIG;
 
-    // Use a simple default if no format config is set
-    const defaultConfig: FormatConfig = {
-      typography: {
-        body: { font: "Cormorant Garamond", size: "11pt", lineHeight: 1.5 },
-        headings: { font: "Cinzel", size: "18pt" },
-      },
-      chapters: {
-        numbering: { enabled: true, format: "Chapter {n}" },
-        dropCaps: { enabled: true, lines: 3, font: "Cinzel" },
-      },
-      page: { size: "6x9" },
-    };
-
-    const response: GetFormatResponse = {
-      sessionId: id,
-      formatConfig: formatConfig || defaultConfig,
-    };
-
-    return NextResponse.json(response);
+    return NextResponse.json({ sessionId: id, formatConfig });
   } catch (error) {
     if (error instanceof ApiError) {
       return error.toResponse();
@@ -214,6 +216,45 @@ export async function GET(
     console.error("Error getting format config:", error);
     return ApiError.internal().toResponse();
   }
+}
+
+// ============================================================================
+// Helper: Deep merge format configs
+// ============================================================================
+
+function mergeFormatConfig(existing: FormatConfig, updates: UpdateFormatRequest): FormatConfig {
+  return {
+    ...existing,
+    ...(updates.meta && {
+      meta: { ...existing.meta, ...updates.meta },
+    }),
+    ...(updates.typography && {
+      typography: {
+        ...existing.typography,
+        ...updates.typography,
+        body: { ...existing.typography?.body, ...updates.typography.body },
+        headings: { ...existing.typography?.headings, ...updates.typography.headings },
+      },
+    }),
+    ...(updates.chapters && {
+      chapters: {
+        ...existing.chapters,
+        ...updates.chapters,
+        numbering: { ...existing.chapters?.numbering, ...updates.chapters.numbering },
+        dropCaps: { ...existing.chapters?.dropCaps, ...updates.chapters.dropCaps },
+      },
+    }),
+    ...(updates.page && {
+      page: {
+        ...existing.page,
+        ...updates.page,
+        margins: { ...existing.page?.margins, ...updates.page.margins },
+      },
+    }),
+    ...(updates.output && {
+      output: { ...existing.output, ...updates.output },
+    }),
+  };
 }
 
 // ============================================================================
@@ -228,77 +269,19 @@ export async function PUT(
     const { id } = await params;
     const updates = await validateBody(request, UpdateFormatSchema);
 
-    // Find session by ID
     const session = await getSessionById(id);
     if (!session) {
       throw ApiError.notFound("Session not found");
     }
 
-    // Verify write access (owner or session cookie matches)
-    const authSession = await auth();
-    const userId = authSession?.user?.id;
-    const cookieSessionId = await getSessionIdFromCookie();
-
-    const hasAccess =
-      (userId && session.ownerId === userId) ||
-      cookieSessionId === id ||
-      !session.ownerId; // Anonymous sessions can be edited by anyone with access
-
-    if (!hasAccess) {
+    const context = await getAccessContext();
+    if (!canAccessSession(session, context, true)) {
       throw ApiError.forbidden("You don't have permission to update this session's format");
     }
 
-    // Deep merge existing formatConfig with new values
     const existingConfig = (session.formatConfig as FormatConfig) || {};
-    const mergedConfig: FormatConfig = {
-      ...existingConfig,
-      ...(updates.meta && {
-        meta: { ...existingConfig.meta, ...updates.meta },
-      }),
-      ...(updates.typography && {
-        typography: {
-          ...existingConfig.typography,
-          ...updates.typography,
-          body: {
-            ...existingConfig.typography?.body,
-            ...updates.typography.body,
-          },
-          headings: {
-            ...existingConfig.typography?.headings,
-            ...updates.typography.headings,
-          },
-        },
-      }),
-      ...(updates.chapters && {
-        chapters: {
-          ...existingConfig.chapters,
-          ...updates.chapters,
-          numbering: {
-            ...existingConfig.chapters?.numbering,
-            ...updates.chapters.numbering,
-          },
-          dropCaps: {
-            ...existingConfig.chapters?.dropCaps,
-            ...updates.chapters.dropCaps,
-          },
-        },
-      }),
-      ...(updates.page && {
-        page: {
-          ...existingConfig.page,
-          ...updates.page,
-          margins: {
-            ...existingConfig.page?.margins,
-            ...updates.page.margins,
-          },
-        },
-      }),
-      ...(updates.output && {
-        output: { ...existingConfig.output, ...updates.output },
-      }),
-    };
+    const mergedConfig = mergeFormatConfig(existingConfig, updates);
 
-    // Update session record
     const updated = await updateSession(id, {
       formatConfig: mergedConfig as unknown as import("@/lib/format-schema").FormatConfig,
     });
@@ -307,12 +290,7 @@ export async function PUT(
       throw ApiError.internal("Failed to update format config");
     }
 
-    const response: UpdateFormatResponse = {
-      sessionId: id,
-      formatConfig: mergedConfig,
-    };
-
-    return NextResponse.json(response);
+    return NextResponse.json({ sessionId: id, formatConfig: mergedConfig });
   } catch (error) {
     if (error instanceof ApiError) {
       return error.toResponse();

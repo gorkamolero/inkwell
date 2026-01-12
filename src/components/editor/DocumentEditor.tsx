@@ -9,11 +9,6 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { TableNode, TableCellNode, TableRowNode } from "@lexical/table";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { TRANSFORMERS } from "@lexical/markdown";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
@@ -24,6 +19,7 @@ import type { EditorState, SerializedEditorState } from "lexical";
 import { EditorToolbar } from "./editor-toolbar";
 import { EditorHeader } from "./EditorHeader";
 import { VersionHistory } from "./VersionHistory";
+import { BrutalButton } from "@/components/ui/brutal-button";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import {
   markdownToLexical,
@@ -31,6 +27,7 @@ import {
   countWords,
   generateCommitMessage,
 } from "@/lib/editor-utils";
+import { createEditorConfig } from "@/lib/editor-config";
 import { cn } from "@/lib/utils";
 
 interface DocumentEditorProps {
@@ -45,55 +42,6 @@ interface DocumentEditorProps {
   canCommit?: boolean;
 }
 
-// Editor configuration
-const editorTheme = {
-  root: "hotpress-editor",
-  paragraph: "mb-4",
-  heading: {
-    h1: "text-4xl font-black mb-6 mt-8",
-    h2: "text-3xl font-bold mb-4 mt-6",
-    h3: "text-2xl font-bold mb-3 mt-5",
-    h4: "text-xl font-bold mb-2 mt-4",
-    h5: "text-lg font-bold mb-2 mt-3",
-    h6: "text-base font-bold mb-2 mt-3",
-  },
-  text: {
-    bold: "font-bold",
-    italic: "italic",
-    underline: "underline",
-    strikethrough: "line-through",
-    code: "font-mono bg-gray-100 px-1.5 py-0.5 border border-gray-300 text-sm",
-  },
-  list: {
-    ul: "list-disc ml-6 mb-4",
-    ol: "list-decimal ml-6 mb-4",
-    listitem: "mb-1",
-    nested: {
-      listitem: "list-none",
-    },
-  },
-  quote: "border-l-4 border-black pl-4 italic my-4 text-gray-700",
-  code: "font-mono bg-gray-900 text-gray-100 p-4 rounded-none border-4 border-black my-4 overflow-x-auto",
-  link: "text-blue-600 underline hover:text-blue-800",
-  table: "w-full border-collapse border-4 border-black my-4",
-  tableCell: "border-2 border-black p-2",
-  tableCellHeader: "border-2 border-black p-2 bg-gray-100 font-bold",
-};
-
-const editorNodes = [
-  HeadingNode,
-  QuoteNode,
-  ListNode,
-  ListItemNode,
-  CodeNode,
-  CodeHighlightNode,
-  LinkNode,
-  AutoLinkNode,
-  TableNode,
-  TableCellNode,
-  TableRowNode,
-];
-
 export function DocumentEditor({
   projectId,
   projectName,
@@ -104,7 +52,7 @@ export function DocumentEditor({
   initialSha,
   hasDraft = false,
   canCommit = false,
-}: DocumentEditorProps) {
+}: DocumentEditorProps): React.ReactElement {
   const router = useRouter();
   const [editorState, setEditorState] = useState<SerializedEditorState | null>(
     () => {
@@ -287,17 +235,10 @@ export function DocumentEditor({
     [markChanged]
   );
 
-  // Editor config
+  const baseConfig = createEditorConfig({ includeTableNodes: true });
   const editorConfig = {
-    namespace: "HotpressEditor",
-    theme: editorTheme,
-    nodes: editorNodes,
-    editorState: editorState
-      ? JSON.stringify(editorState)
-      : undefined,
-    onError: (error: Error) => {
-      console.error("Lexical error:", error);
-    },
+    ...baseConfig,
+    editorState: editorState ? JSON.stringify(editorState) : undefined,
   };
 
   // Mobile warning
@@ -405,8 +346,7 @@ export function DocumentEditor({
   );
 }
 
-// Plugin to handle Cmd/Ctrl+S
-function SavePlugin({ onSave }: { onSave: () => void }) {
+function SavePlugin({ onSave }: { onSave: () => void }): null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -422,32 +362,4 @@ function SavePlugin({ onSave }: { onSave: () => void }) {
   }, [editor, onSave]);
 
   return null;
-}
-
-// Brutal button for mobile view
-function BrutalButton({
-  children,
-  onClick,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center justify-center gap-2",
-        "font-bold text-sm",
-        "border-3 border-black",
-        "bg-white text-black",
-        "px-4 py-2",
-        "shadow-[4px_4px_0_0_#000000]",
-        "transition-all duration-100 ease-out",
-        "hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000000]",
-        "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000000]"
-      )}
-    >
-      {children}
-    </button>
-  );
 }

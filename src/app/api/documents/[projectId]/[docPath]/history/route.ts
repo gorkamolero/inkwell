@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, projects, accounts } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { projects } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { getCommitHistory } from "@/lib/github";
+import {
+  ApiError,
+  requireDatabase,
+  requireGitHubAccessToken,
+} from "@/lib/api-utils";
 
 interface RouteParams {
   params: Promise<{
@@ -11,43 +16,31 @@ interface RouteParams {
   }>;
 }
 
+// ============================================================================
 // GET - Fetch commit history for a document
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// ============================================================================
+
+export async function GET(
+  _request: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
     const session = await auth();
 
-    if (!session?.user?.id || !db) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id) {
+      throw ApiError.unauthorized();
     }
 
-    // Get user's GitHub access token
-    const userAccount = await db
-      .select({ accessToken: accounts.access_token })
-      .from(accounts)
-      .where(
-        and(
-          eq(accounts.userId, session.user.id),
-          eq(accounts.provider, "github")
-        )
-      )
-      .limit(1);
+    const database = requireDatabase();
+    const accessToken = await requireGitHubAccessToken(session.user.id);
 
-    const accessToken = userAccount[0]?.accessToken;
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: "GitHub not connected" },
-        { status: 403 }
-      );
-    }
-
-    // Get project
-    const project = await db.query.projects.findFirst({
+    const project = await database.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
 
-    if (!project || !project.githubRepo) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project?.githubRepo) {
+      throw ApiError.notFound("Project not found");
     }
 
     const [owner, repo] = project.githubRepo.split("/");
@@ -64,10 +57,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ commits });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return error.toResponse();
+    }
     console.error("GET history error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch history" },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to fetch history").toResponse();
   }
 }
