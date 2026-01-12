@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
-import { withProject, ApiError, type ProjectContext } from "@/lib/api-utils";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { ApiError, type ProjectContext, withProject } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
 import { getCommitHistory } from "@/lib/github";
 
@@ -35,7 +35,7 @@ async function getDocumentRecord(projectId: string, docId: string) {
   const docByPath = await db.query.documents.findFirst({
     where: and(
       eq(documents.projectId, projectId),
-      eq(documents.path, decodedPath)
+      eq(documents.path, decodedPath),
     ),
   });
 
@@ -51,9 +51,9 @@ async function getDocumentRecord(projectId: string, docId: string) {
 // ============================================================================
 
 async function getHistoryHandler(
-  request: NextRequest,
+  _request: NextRequest,
   context: ProjectContext,
-  docId: string
+  docId: string,
 ) {
   const { project, accessToken } = context;
 
@@ -64,7 +64,7 @@ async function getHistoryHandler(
   // Require GitHub for history
   if (!accessToken || !project.githubRepo) {
     throw ApiError.forbidden(
-      "GitHub must be connected to view document history"
+      "GitHub must be connected to view document history",
     );
   }
 
@@ -79,7 +79,7 @@ async function getHistoryHandler(
       owner,
       repo,
       document.path,
-      branch
+      branch,
     );
 
     return NextResponse.json({
@@ -100,15 +100,12 @@ async function getHistoryHandler(
 // Route Export
 // ============================================================================
 
-export async function GET(
-  request: NextRequest,
-  routeContext: DocRouteContext
-) {
+export async function GET(request: NextRequest, routeContext: DocRouteContext) {
   const { projectId, docId } = await routeContext.params;
 
   const handler = withProject(
     (req, ctx) => getHistoryHandler(req, ctx, docId),
-    { requireGitHub: true }
+    { requireGitHub: true },
   );
 
   return handler(request, { params: Promise.resolve({ projectId }) });

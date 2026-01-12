@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z, ZodSchema } from "zod";
+import { and, eq, or } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { type ZodSchema, z } from "zod";
 import { auth } from "@/lib/auth";
-import { db, projects, projectCollaborators, accounts } from "@/lib/db";
-import { eq, and, or } from "drizzle-orm";
-import type { Project, CollaboratorRole } from "@/lib/db/schema";
+import { accounts, db, projectCollaborators, projects } from "@/lib/db";
+import type { CollaboratorRole, Project } from "@/lib/db/schema";
 
 // ============================================================================
 // ApiError Class
@@ -49,7 +49,7 @@ export class ApiError extends Error {
         error: this.message,
         code: this.code,
       },
-      { status: this.status }
+      { status: this.status },
     );
   }
 
@@ -104,12 +104,12 @@ export interface ProjectContext extends AuthContext {
 
 export type AuthenticatedHandler<T = unknown> = (
   request: NextRequest,
-  context: AuthContext
+  context: AuthContext,
 ) => Promise<NextResponse<T>>;
 
 export type ProjectHandler = (
   request: NextRequest,
-  context: ProjectContext
+  context: ProjectContext,
 ) => Promise<NextResponse>;
 
 // ============================================================================
@@ -121,7 +121,7 @@ export type ProjectHandler = (
  * Ensures the user is logged in and provides their session info.
  */
 export function withAuth<T = unknown>(
-  handler: AuthenticatedHandler<T>
+  handler: AuthenticatedHandler<T>,
 ): (request: NextRequest) => Promise<NextResponse> {
   return async (request: NextRequest) => {
     try {
@@ -142,8 +142,8 @@ export function withAuth<T = unknown>(
         .where(
           and(
             eq(accounts.userId, session.user.id),
-            eq(accounts.provider, "github")
-          )
+            eq(accounts.provider, "github"),
+          ),
         )
         .limit(1);
 
@@ -184,10 +184,10 @@ interface WithProjectOptions {
  */
 export function withProject(
   handler: ProjectHandler,
-  options: WithProjectOptions = {}
+  options: WithProjectOptions = {},
 ): (
   request: NextRequest,
-  routeContext: { params: Promise<{ projectId: string }> }
+  routeContext: { params: Promise<{ projectId: string }> },
 ) => Promise<NextResponse> {
   const { requireOwner = false, minRole, requireGitHub = false } = options;
 
@@ -222,7 +222,7 @@ export function withProject(
         const collaboration = await db.query.projectCollaborators.findFirst({
           where: and(
             eq(projectCollaborators.projectId, projectId),
-            eq(projectCollaborators.userId, session.user.id)
+            eq(projectCollaborators.userId, session.user.id),
           ),
         });
 
@@ -240,7 +240,9 @@ export function withProject(
 
       // Check owner requirement
       if (requireOwner && !isOwner) {
-        throw ApiError.forbidden("Only the project owner can perform this action");
+        throw ApiError.forbidden(
+          "Only the project owner can perform this action",
+        );
       }
 
       // Check minimum role requirement
@@ -253,7 +255,7 @@ export function withProject(
 
         if (roleHierarchy[role as CollaboratorRole] < roleHierarchy[minRole]) {
           throw ApiError.forbidden(
-            `You need at least ${minRole} permissions for this action`
+            `You need at least ${minRole} permissions for this action`,
           );
         }
       }
@@ -265,8 +267,8 @@ export function withProject(
         .where(
           and(
             eq(accounts.userId, session.user.id),
-            eq(accounts.provider, "github")
-          )
+            eq(accounts.provider, "github"),
+          ),
         )
         .limit(1);
 
@@ -308,7 +310,7 @@ export function withProject(
  */
 export async function validateBody<T>(
   request: NextRequest,
-  schema: ZodSchema<T>
+  schema: ZodSchema<T>,
 ): Promise<T> {
   try {
     const body = await request.json();
@@ -328,7 +330,7 @@ export async function validateBody<T>(
  */
 export function validateQuery<T>(
   request: NextRequest,
-  schema: ZodSchema<T>
+  schema: ZodSchema<T>,
 ): T {
   try {
     const params = Object.fromEntries(request.nextUrl.searchParams);
@@ -346,12 +348,15 @@ export function validateQuery<T>(
 // Response Helpers
 // ============================================================================
 
-export function jsonResponse<T>(data: T, status: number = 200): NextResponse<T> {
+export function jsonResponse<T>(
+  data: T,
+  status: number = 200,
+): NextResponse<T> {
   return NextResponse.json(data, { status });
 }
 
 export function successResponse(
-  message: string = "Success"
+  message: string = "Success",
 ): NextResponse<{ success: boolean; message: string }> {
   return NextResponse.json({ success: true, message });
 }
@@ -364,7 +369,9 @@ export function successResponse(
  * Fetches the GitHub access token for a user.
  * Returns null if not connected to GitHub.
  */
-export async function getGitHubAccessToken(userId: string): Promise<string | null> {
+export async function getGitHubAccessToken(
+  userId: string,
+): Promise<string | null> {
   if (!db) return null;
 
   const userAccount = await db
@@ -379,7 +386,9 @@ export async function getGitHubAccessToken(userId: string): Promise<string | nul
 /**
  * Fetches the GitHub access token for a user, throwing if not connected.
  */
-export async function requireGitHubAccessToken(userId: string): Promise<string> {
+export async function requireGitHubAccessToken(
+  userId: string,
+): Promise<string> {
   const token = await getGitHubAccessToken(userId);
   if (!token) {
     throw ApiError.forbidden("GitHub not connected");

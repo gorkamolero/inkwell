@@ -1,22 +1,22 @@
-import { Suspense } from "react";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
 import {
-  Plus,
-  FileText,
-  Users,
-  Settings,
+  ArrowLeft,
+  Clock,
   Edit3,
   ExternalLink,
+  FileText,
   Github,
-  Clock,
-  ArrowLeft,
+  Plus,
+  Settings,
+  Users,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
-import { db, projects, projectCollaborators } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { SyncButton } from "@/components/dashboard/SyncButton";
+import { auth } from "@/lib/auth";
+import { db, projectCollaborators, projects } from "@/lib/db";
+import { cn } from "@/lib/utils";
 
 interface ProjectPageProps {
   params: Promise<{ projectId: string }>;
@@ -140,7 +140,7 @@ export default async function ProjectPage({
               "flex items-center gap-2 border-3 border-b-0 px-6 py-3 font-bold transition-colors",
               tab === t.id
                 ? "border-black bg-brutal-yellow text-black"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-black"
+                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-black",
             )}
           >
             <t.icon className="h-4 w-4" />
@@ -152,9 +152,7 @@ export default async function ProjectPage({
       {/* Tab Content */}
       <Suspense fallback={<TabContentSkeleton />}>
         {tab === "documents" && <DocumentsTab project={project} />}
-        {tab === "collaborators" && (
-          <CollaboratorsTab projectId={project.id} />
-        )}
+        {tab === "collaborators" && <CollaboratorsTab projectId={project.id} />}
         {tab === "settings" && <SettingsTab project={project} />}
       </Suspense>
     </div>
@@ -182,18 +180,14 @@ function DocumentsTab({ project }: DocumentsTabProps) {
     return (
       <div className="border-3 border-dashed border-gray-300 bg-white p-12 text-center">
         <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-        <h3 className="mb-2 text-xl font-black text-black">
-          No documents yet
-        </h3>
+        <h3 className="mb-2 text-xl font-black text-black">No documents yet</h3>
         <p className="mx-auto mb-6 max-w-md text-gray-600">
           {project.githubRepo
             ? "Sync documents from your GitHub repository to get started."
             : "Create your first document to get started."}
         </p>
         <div className="flex justify-center gap-4">
-          {project.githubRepo && (
-            <SyncButton projectSlug={project.slug} />
-          )}
+          {project.githubRepo && <SyncButton projectSlug={project.slug} />}
           <Link
             href={`/${project.slug}/new`}
             className="inline-flex items-center gap-2 border-3 border-black bg-brutal-yellow px-6 py-3 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
@@ -254,9 +248,7 @@ function DocumentsTab({ project }: DocumentsTabProps) {
             New Document
           </Link>
         </div>
-        {project.githubRepo && (
-          <SyncButton projectSlug={project.slug} />
-        )}
+        {project.githubRepo && <SyncButton projectSlug={project.slug} />}
       </div>
     </div>
   );
@@ -365,7 +357,7 @@ function SettingsTab({ project }: SettingsTabProps) {
                   "border-2 border-black px-2 py-1 text-xs font-bold uppercase",
                   project.isPublic
                     ? "bg-brutal-green text-black"
-                    : "bg-gray-100 text-gray-700"
+                    : "bg-gray-100 text-gray-700",
                 )}
               >
                 {project.isPublic ? "Public" : "Private"}

@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { projects, documents } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
-import { getDocument, deleteDocument } from "@/lib/github";
-import { countWords, extractTitle } from "@/lib/editor-utils";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   ApiError,
   requireDatabase,
   requireGitHubAccessToken,
 } from "@/lib/api-utils";
+import { auth } from "@/lib/auth";
+import { documents, projects } from "@/lib/db";
+import { countWords, extractTitle } from "@/lib/editor-utils";
+import { deleteDocument, getDocument } from "@/lib/github";
 
 interface RouteParams {
   params: Promise<{
@@ -32,7 +32,7 @@ function parseGitHubRepo(githubRepo: string): { owner: string; repo: string } {
 
 export async function GET(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
@@ -62,7 +62,7 @@ export async function GET(
       owner,
       repo,
       documentPath,
-      branch
+      branch,
     );
 
     return NextResponse.json({
@@ -84,7 +84,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
@@ -125,7 +125,10 @@ export async function PUT(
         updatedAt: new Date(),
       })
       .where(
-        and(eq(documents.projectId, projectId), eq(documents.path, documentPath))
+        and(
+          eq(documents.projectId, projectId),
+          eq(documents.path, documentPath),
+        ),
       );
 
     return NextResponse.json({ saved: true, wordCount, title });
@@ -139,7 +142,7 @@ export async function PUT(
       error.message.toLowerCase().includes("conflict")
     ) {
       return ApiError.conflict(
-        "The document has been modified. Please refresh and try again."
+        "The document has been modified. Please refresh and try again.",
       ).toResponse();
     }
 
@@ -154,7 +157,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
@@ -178,7 +181,7 @@ export async function DELETE(
     const project = await database.query.projects.findFirst({
       where: and(
         eq(projects.id, projectId),
-        eq(projects.userId, session.user.id)
+        eq(projects.userId, session.user.id),
       ),
     });
 
@@ -195,7 +198,10 @@ export async function DELETE(
     await database
       .delete(documents)
       .where(
-        and(eq(documents.projectId, projectId), eq(documents.path, documentPath))
+        and(
+          eq(documents.projectId, projectId),
+          eq(documents.path, documentPath),
+        ),
       );
 
     return NextResponse.json({ success: true });

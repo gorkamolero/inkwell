@@ -1,18 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { and, desc, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { eq, desc } from "drizzle-orm";
 import {
-  withAuth,
-  validateBody,
   ApiError,
+  type AuthContext,
   generateId,
   generateSlug,
-  type AuthContext,
+  validateBody,
+  withAuth,
 } from "@/lib/api-utils";
-import { getInstallationId, getInstallationOctokit, createRepository } from "@/lib/github-app";
-import { db, projects, projectCollaborators, accounts } from "@/lib/db";
+import { accounts, db, projectCollaborators, projects } from "@/lib/db";
+import {
+  createRepository,
+  getInstallationId,
+  getInstallationOctokit,
+} from "@/lib/github-app";
 import { canCreateProject } from "@/lib/subscription";
-import { and } from "drizzle-orm";
 
 // ============================================================================
 // Schemas
@@ -26,7 +29,10 @@ const createProjectSchema = z.object({
   description: z.string().max(500).optional(),
   githubRepo: z
     .string()
-    .regex(/^(__NEW__:.+:.+|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)$/, "Invalid repository format")
+    .regex(
+      /^(__NEW__:.+:.+|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)$/,
+      "Invalid repository format",
+    )
     .optional(),
   githubBranch: z.string().max(100).optional(),
   chaptersPath: z.string().max(500).optional(),
@@ -38,8 +44,8 @@ const createProjectSchema = z.object({
 // ============================================================================
 
 async function listProjectsHandler(
-  request: NextRequest,
-  { userId }: AuthContext
+  _request: NextRequest,
+  { userId }: AuthContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -150,7 +156,7 @@ export const GET = withAuth(listProjectsHandler);
 
 async function createProjectHandler(
   request: NextRequest,
-  { userId }: AuthContext
+  { userId }: AuthContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -160,7 +166,7 @@ async function createProjectHandler(
   const canCreate = await canCreateProject(userId);
   if (!canCreate) {
     throw ApiError.limitExceeded(
-      "You have reached your project limit. Please upgrade your plan to create more projects."
+      "You have reached your project limit. Please upgrade your plan to create more projects.",
     );
   }
 
@@ -207,12 +213,12 @@ async function createProjectHandler(
       userAccount[0].accessToken,
       repoName,
       isPrivate,
-      body.description
+      body.description,
     );
 
     if (!result) {
       throw ApiError.badRequest(
-        "Could not create repository. Make sure you have permission to create repositories."
+        "Could not create repository. Make sure you have permission to create repositories.",
       );
     }
 
@@ -225,7 +231,10 @@ async function createProjectHandler(
       const installationId = await getInstallationId(owner);
       if (installationId) {
         const octokit = await getInstallationOctokit(installationId);
-        const { data: repoData } = await octokit.repos.get({ owner, repo: repoName });
+        const { data: repoData } = await octokit.repos.get({
+          owner,
+          repo: repoName,
+        });
         githubBranch = repoData.default_branch;
       }
     } catch (error) {

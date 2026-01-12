@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, validateBody } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import {
+  canAccessSession,
   getSessionById,
   getSessionIdFromCookie,
   updateSession,
-  canAccessSession,
 } from "@/lib/session";
 
 // ============================================================================
@@ -174,7 +174,10 @@ const DEFAULT_FORMAT_CONFIG: FormatConfig = {
 // Helper: Build access context
 // ============================================================================
 
-async function getAccessContext(): Promise<{ userId?: string; cookieSessionId?: string }> {
+async function getAccessContext(): Promise<{
+  userId?: string;
+  cookieSessionId?: string;
+}> {
   const [authSession, cookieSessionId] = await Promise.all([
     auth(),
     getSessionIdFromCookie(),
@@ -191,7 +194,7 @@ async function getAccessContext(): Promise<{ userId?: string; cookieSessionId?: 
 
 export async function GET(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
@@ -203,10 +206,13 @@ export async function GET(
 
     const context = await getAccessContext();
     if (!canAccessSession(session, context)) {
-      throw ApiError.forbidden("You don't have access to this session's format");
+      throw ApiError.forbidden(
+        "You don't have access to this session's format",
+      );
     }
 
-    const formatConfig = (session.formatConfig as FormatConfig | null) ?? DEFAULT_FORMAT_CONFIG;
+    const formatConfig =
+      (session.formatConfig as FormatConfig | null) ?? DEFAULT_FORMAT_CONFIG;
 
     return NextResponse.json({ sessionId: id, formatConfig });
   } catch (error) {
@@ -222,7 +228,10 @@ export async function GET(
 // Helper: Deep merge format configs
 // ============================================================================
 
-function mergeFormatConfig(existing: FormatConfig, updates: UpdateFormatRequest): FormatConfig {
+function mergeFormatConfig(
+  existing: FormatConfig,
+  updates: UpdateFormatRequest,
+): FormatConfig {
   return {
     ...existing,
     ...(updates.meta && {
@@ -233,15 +242,24 @@ function mergeFormatConfig(existing: FormatConfig, updates: UpdateFormatRequest)
         ...existing.typography,
         ...updates.typography,
         body: { ...existing.typography?.body, ...updates.typography.body },
-        headings: { ...existing.typography?.headings, ...updates.typography.headings },
+        headings: {
+          ...existing.typography?.headings,
+          ...updates.typography.headings,
+        },
       },
     }),
     ...(updates.chapters && {
       chapters: {
         ...existing.chapters,
         ...updates.chapters,
-        numbering: { ...existing.chapters?.numbering, ...updates.chapters.numbering },
-        dropCaps: { ...existing.chapters?.dropCaps, ...updates.chapters.dropCaps },
+        numbering: {
+          ...existing.chapters?.numbering,
+          ...updates.chapters.numbering,
+        },
+        dropCaps: {
+          ...existing.chapters?.dropCaps,
+          ...updates.chapters.dropCaps,
+        },
       },
     }),
     ...(updates.page && {
@@ -263,7 +281,7 @@ function mergeFormatConfig(existing: FormatConfig, updates: UpdateFormatRequest)
 
 export async function PUT(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
@@ -276,14 +294,17 @@ export async function PUT(
 
     const context = await getAccessContext();
     if (!canAccessSession(session, context, true)) {
-      throw ApiError.forbidden("You don't have permission to update this session's format");
+      throw ApiError.forbidden(
+        "You don't have permission to update this session's format",
+      );
     }
 
     const existingConfig = (session.formatConfig as FormatConfig) || {};
     const mergedConfig = mergeFormatConfig(existingConfig, updates);
 
     const updated = await updateSession(id, {
-      formatConfig: mergedConfig as unknown as import("@/lib/format-schema").FormatConfig,
+      formatConfig:
+        mergedConfig as unknown as import("@/lib/format-schema").FormatConfig,
     });
 
     if (!updated) {

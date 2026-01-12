@@ -1,10 +1,10 @@
 "use client";
 
-import * as React from "react";
 import { FileText } from "lucide-react";
+import * as React from "react";
 import { BrutalInput } from "@/components/ui";
-import { FormatSection, useFormatContext } from "./FormatPanel";
 import { cn } from "@/lib/utils";
+import { FormatSection, useFormatContext } from "./FormatPanel";
 
 /**
  * PageLayoutSection - Page size and margin settings
@@ -41,7 +41,12 @@ const MARGIN_PRESETS = [
   {
     value: "standard",
     label: "Standard",
-    margins: { top: "0.75in", bottom: "0.75in", outer: "0.625in", gutter: "0.875in" },
+    margins: {
+      top: "0.75in",
+      bottom: "0.75in",
+      outer: "0.625in",
+      gutter: "0.875in",
+    },
   },
   {
     value: "wide",
@@ -51,7 +56,12 @@ const MARGIN_PRESETS = [
   {
     value: "narrow",
     label: "Narrow",
-    margins: { top: "0.5in", bottom: "0.5in", outer: "0.5in", gutter: "0.75in" },
+    margins: {
+      top: "0.5in",
+      bottom: "0.5in",
+      outer: "0.5in",
+      gutter: "0.75in",
+    },
   },
   {
     value: "custom",
@@ -69,7 +79,9 @@ export function PageLayoutSection({
 }: PageLayoutSectionProps) {
   const { config, updateConfig } = useFormatContext();
   const page = config.page || {};
-  const [selectedPreset, setSelectedPreset] = React.useState(page.size || "6x9");
+  const [selectedPreset, setSelectedPreset] = React.useState(
+    page.size || "6x9",
+  );
   const [marginPreset, setMarginPreset] = React.useState("standard");
 
   // TODO: Add bleed settings for print
@@ -95,7 +107,7 @@ export function PageLayoutSection({
   const handleMarginPresetChange = (presetValue: string) => {
     setMarginPreset(presetValue);
     const preset = MARGIN_PRESETS.find((p) => p.value === presetValue);
-    if (preset && preset.margins) {
+    if (preset?.margins) {
       updateConfig({
         page: {
           ...page,
@@ -152,7 +164,7 @@ export function PageLayoutSection({
                 "transition-all duration-100",
                 selectedPreset === preset.value
                   ? "bg-brutal-blue text-white shadow-[4px_4px_0_0_#000]"
-                  : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+                  : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]",
               )}
             >
               {preset.label}
@@ -198,7 +210,7 @@ export function PageLayoutSection({
                 "transition-all duration-100",
                 marginPreset === preset.value
                   ? "bg-brutal-yellow text-black shadow-[4px_4px_0_0_#000]"
-                  : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+                  : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]",
               )}
             >
               {preset.label}

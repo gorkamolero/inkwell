@@ -1,30 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import {
+  AlertCircle,
   ArrowLeft,
   Check,
-  Loader2,
-  AlertCircle,
-  MoreHorizontal,
-  History,
   Download,
-  Trash2,
   FileText,
   GitCommit,
+  History,
+  Loader2,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { SaveStatus } from "@/hooks/useAutoSave";
+import Link from "next/link";
+import { useState } from "react";
+import { BrutalButton } from "@/components/ui/brutal-button";
 import {
   BrutalDialog,
   BrutalDialogContent,
-  BrutalDialogHeader,
-  BrutalDialogTitle,
   BrutalDialogDescription,
   BrutalDialogFooter,
+  BrutalDialogHeader,
+  BrutalDialogTitle,
 } from "@/components/ui/brutal-dialog";
-import { BrutalButton } from "@/components/ui/brutal-button";
+import type { SaveStatus } from "@/hooks/useAutoSave";
+import { cn } from "@/lib/utils";
 
 interface EditorHeaderProps {
   projectName: string;
@@ -117,7 +117,7 @@ export function EditorHeader({
                 "flex items-center gap-2 border-2 border-black px-3 py-1.5 text-sm font-bold transition-all",
                 isCommitting
                   ? "cursor-not-allowed bg-gray-100 text-gray-400"
-                  : "bg-green-400 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                  : "bg-green-400 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
               )}
               title="Commit changes to GitHub"
             >
@@ -232,7 +232,14 @@ function formatTime(date: Date): string {
   });
 }
 
-function getStatusContent(status: SaveStatus, lastSavedAt: Date | null): { icon: typeof Check | typeof Loader2 | typeof AlertCircle; label: string; animate?: boolean } {
+function getStatusContent(
+  status: SaveStatus,
+  lastSavedAt: Date | null,
+): {
+  icon: typeof Check | typeof Loader2 | typeof AlertCircle;
+  label: string;
+  animate?: boolean;
+} {
   switch (status) {
     case "idle":
       return {
@@ -250,14 +257,17 @@ function getStatusContent(status: SaveStatus, lastSavedAt: Date | null): { icon:
   }
 }
 
-function SaveStatusIndicator({ status, lastSavedAt }: SaveStatusIndicatorProps): React.ReactElement {
+function SaveStatusIndicator({
+  status,
+  lastSavedAt,
+}: SaveStatusIndicatorProps): React.ReactElement {
   const { icon: Icon, label, animate } = getStatusContent(status, lastSavedAt);
 
   return (
     <div
       className={cn(
         "flex items-center gap-2 rounded-none border-2 px-3 py-1 text-xs font-bold transition-all",
-        STATUS_STYLES[status]
+        STATUS_STYLES[status],
       )}
     >
       <Icon className={cn("h-3 w-3", animate && "animate-spin")} />

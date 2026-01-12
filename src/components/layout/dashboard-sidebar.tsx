@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
 import {
+  Crown,
+  FileEdit,
   FolderOpen,
-  Settings,
   LogOut,
   PenTool,
-  Crown,
+  Settings,
   Sparkles,
-  FileEdit,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { User } from "next-auth";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
@@ -78,7 +78,7 @@ export function DashboardSidebar({ user, tier }: DashboardSidebarProps) {
                     "flex items-center gap-3 border-3 px-4 py-3 font-bold transition-all",
                     isActive
                       ? "border-black bg-brutal-yellow shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                      : "border-transparent text-gray-700 hover:border-black hover:bg-gray-50"
+                      : "border-transparent text-gray-700 hover:border-black hover:bg-gray-50",
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -113,7 +113,7 @@ export function DashboardSidebar({ user, tier }: DashboardSidebarProps) {
                 className={cn(
                   "inline-flex items-center gap-1 border-2 border-black px-1.5 py-0.5 text-[10px] font-bold",
                   badge.bg,
-                  badge.text
+                  badge.text,
                 )}
               >
                 {tier !== "free" && <Crown className="h-3 w-3" />}

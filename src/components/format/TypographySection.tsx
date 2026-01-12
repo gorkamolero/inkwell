@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { Type } from "lucide-react";
-import { FormatSection, useFormatContext } from "./FormatPanel";
 import { cn } from "@/lib/utils";
+import { FormatSection, useFormatContext } from "./FormatPanel";
 
 /**
  * TypographySection - Font and size settings
@@ -44,14 +43,7 @@ const DEFAULT_FONTS = [
   "Georgia",
 ];
 
-const FONT_SIZES = [
-  "9pt",
-  "10pt",
-  "11pt",
-  "12pt",
-  "13pt",
-  "14pt",
-];
+const FONT_SIZES = ["9pt", "10pt", "11pt", "12pt", "13pt", "14pt"];
 
 const LINE_HEIGHTS = [
   { value: 1.2, label: "Tight (1.2)" },
@@ -87,7 +79,7 @@ function FontSelect({ label, value, onChange, fonts }: FontSelectProps) {
           "bg-white text-black",
           "font-medium",
           "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
-          "transition-shadow duration-100"
+          "transition-shadow duration-100",
         )}
         style={{ fontFamily: value }}
       >
@@ -123,7 +115,7 @@ function SizeSelect({ label, value, onChange, options }: SizeSelectProps) {
           "bg-white text-black",
           "font-medium",
           "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
-          "transition-shadow duration-100"
+          "transition-shadow duration-100",
         )}
       >
         {options.map((size) => (
@@ -206,7 +198,7 @@ export function TypographySection({
               "bg-white text-black",
               "font-medium",
               "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
-              "transition-shadow duration-100"
+              "transition-shadow duration-100",
             )}
           >
             {LINE_HEIGHTS.map(({ value, label }) => (

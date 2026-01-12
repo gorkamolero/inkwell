@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
+import { useState } from "react";
 import type { User } from "@/types";
 
 interface SettingsFormProps {
@@ -25,10 +25,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label
-          htmlFor="name"
-          className="mb-2 block font-bold text-black"
-        >
+        <label htmlFor="name" className="mb-2 block font-bold text-black">
           Display Name
         </label>
         <input
@@ -41,10 +38,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
       </div>
 
       <div>
-        <label
-          htmlFor="email"
-          className="mb-2 block font-bold text-black"
-        >
+        <label htmlFor="email" className="mb-2 block font-bold text-black">
           Email
         </label>
         <input
@@ -54,9 +48,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
           disabled
           className="w-full border-4 border-gray-300 bg-gray-100 px-4 py-2 font-medium text-gray-500"
         />
-        <p className="mt-1 text-sm text-gray-500">
-          Email cannot be changed
-        </p>
+        <p className="mt-1 text-sm text-gray-500">Email cannot be changed</p>
       </div>
 
       <div className="flex items-center gap-4">

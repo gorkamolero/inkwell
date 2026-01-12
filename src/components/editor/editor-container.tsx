@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Link from "next/link";
-import { ArrowLeft, Save, MoreHorizontal } from "lucide-react";
 import type { SerializedEditorState } from "lexical";
-import { Editor } from "./editor";
+import { ArrowLeft, MoreHorizontal, Save } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useState } from "react";
 import type { EditorDocument } from "@/types";
+import { Editor } from "./editor";
 
 interface EditorContainerProps {
   document: EditorDocument;
@@ -43,7 +43,7 @@ export function EditorContainer({
         setIsSaving(false);
       }
     },
-    [document.id, title]
+    [document.id, title],
   );
 
   return (
@@ -75,7 +75,9 @@ export function EditorContainer({
             </span>
           )}
           <button
-            onClick={() => handleSave(document.content as SerializedEditorState)}
+            onClick={() =>
+              handleSave(document.content as SerializedEditorState)
+            }
             disabled={isSaving}
             className="flex items-center gap-2 border-4 border-black bg-yellow-400 px-4 py-1.5 font-bold text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -94,10 +96,7 @@ export function EditorContainer({
       {/* Editor Content */}
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-4xl px-8 py-12">
-          <Editor
-            initialContent={document.content}
-            onSave={handleSave}
-          />
+          <Editor initialContent={document.content} onSave={handleSave} />
         </div>
       </div>
     </>

@@ -1,28 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { CodeHighlightNode, CodeNode } from "@lexical/code";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ListItemNode, ListNode } from "@lexical/list";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
-import { $createHeadingNode } from "@lexical/rich-text";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { $createHeadingNode, HeadingNode, QuoteNode } from "@lexical/rich-text";
 import type { EditorState, SerializedEditorState } from "lexical";
-import { Github, Save, FileText } from "lucide-react";
+import { $createParagraphNode, $createTextNode, $getRoot } from "lexical";
+import { FileText, Github, Save } from "lucide-react";
 import Link from "next/link";
-import { BrutalBadge } from "@/components/ui";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
+import { BrutalBadge } from "@/components/ui";
 
 const STORAGE_KEY = "hotpress-demo-content";
 
@@ -112,7 +111,7 @@ function InitialContentPlugin() {
       // CTA paragraph
       const p3 = $createParagraphNode();
       p3.append(
-        $createTextNode("This is YOUR editor. No account needed to try it.")
+        $createTextNode("This is YOUR editor. No account needed to try it."),
       );
       root.append(p3);
     });
@@ -209,7 +208,6 @@ function EditorContent({
   wordCount: number;
   lastSaved: Date | null;
 }) {
-   
   const handleChange = useCallback((_editorState: EditorState) => {
     // State changes are handled by the plugins
   }, []);
@@ -232,7 +230,7 @@ function EditorContent({
         console.error("Lexical error:", error);
       },
     }),
-    []
+    [],
   );
 
   return (

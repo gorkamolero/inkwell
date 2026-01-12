@@ -1,20 +1,21 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import type { SerializedEditorState } from "lexical";
-import { EditorToolbar } from "./editor-toolbar";
+import type React from "react";
+import { useEffect } from "react";
 import { createEditorConfig } from "@/lib/editor-config";
+import { EditorToolbar } from "./editor-toolbar";
 
 interface EditorProps {
   initialContent: SerializedEditorState | null;
@@ -23,7 +24,11 @@ interface EditorProps {
 
 const editorConfig = createEditorConfig({ includeTableNodes: true });
 
-function SavePlugin({ onSave }: { onSave?: (content: SerializedEditorState) => void }) {
+function SavePlugin({
+  onSave,
+}: {
+  onSave?: (content: SerializedEditorState) => void;
+}) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -61,7 +66,10 @@ function InitialContentPlugin({
   return null;
 }
 
-export function Editor({ initialContent, onSave }: EditorProps): React.ReactElement {
+export function Editor({
+  initialContent,
+  onSave,
+}: EditorProps): React.ReactElement {
   return (
     <LexicalComposer initialConfig={editorConfig}>
       <div className="relative">

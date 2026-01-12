@@ -1,12 +1,12 @@
-import { eq, count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import {
   db,
-  subscriptions,
-  projects,
   documents,
   projectCollaborators,
+  projects,
+  subscriptions,
 } from "@/lib/db";
-import { PRICING, getTierFromPriceId, type Tier } from "@/lib/stripe";
+import { getTierFromPriceId, PRICING, type Tier } from "@/lib/stripe";
 
 // ============================================================================
 // Tier Determination
@@ -17,7 +17,7 @@ import { PRICING, getTierFromPriceId, type Tier } from "@/lib/stripe";
  * Returns 'free' | 'pro' | 'team' based on their active subscription
  */
 export async function getUserTier(
-  userId: string
+  userId: string,
 ): Promise<"free" | "pro" | "team"> {
   if (!db) {
     return "free";
@@ -244,7 +244,8 @@ export async function getProjectUsage(projectId: string) {
     documents: {
       used: docCount,
       limit: limits.docsPerProject,
-      canAdd: docCount < limits.docsPerProject || limits.docsPerProject === Infinity,
+      canAdd:
+        docCount < limits.docsPerProject || limits.docsPerProject === Infinity,
     },
     collaborators: {
       used: collaboratorCount,

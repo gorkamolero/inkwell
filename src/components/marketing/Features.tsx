@@ -1,11 +1,4 @@
-import {
-  History,
-  Users,
-  FileText,
-  Download,
-  Wifi,
-  Code2,
-} from "lucide-react";
+import { Code2, Download, FileText, History, Users, Wifi } from "lucide-react";
 import { BrutalCard } from "@/components/ui";
 
 const features = [

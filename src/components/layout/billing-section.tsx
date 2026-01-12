@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Check, Crown } from "lucide-react";
-import type { UserWithSubscription } from "@/types";
+import { useState } from "react";
 import { PLANS, type PlanType } from "@/lib/stripe";
+import type { UserWithSubscription } from "@/types";
 
 function getCurrentPlan(stripePriceId: string | undefined | null): PlanType {
   if (!stripePriceId) {

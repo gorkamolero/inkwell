@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { projects } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { getCommitHistory } from "@/lib/github";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   ApiError,
   requireDatabase,
   requireGitHubAccessToken,
 } from "@/lib/api-utils";
+import { auth } from "@/lib/auth";
+import { projects } from "@/lib/db";
+import { getCommitHistory } from "@/lib/github";
 
 interface RouteParams {
   params: Promise<{
@@ -22,7 +22,7 @@ interface RouteParams {
 
 export async function GET(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
@@ -52,7 +52,7 @@ export async function GET(
       owner,
       repo,
       documentPath,
-      branch
+      branch,
     );
 
     return NextResponse.json({ commits });

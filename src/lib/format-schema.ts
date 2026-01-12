@@ -67,7 +67,12 @@ const THREAD_DEFAULTS = {
 
 const FontStyleSchema = z.enum(["normal", "italic", "oblique"]);
 const TextAlignSchema = z.enum(["left", "center", "right"]);
-const TextTransformSchema = z.enum(["none", "uppercase", "lowercase", "capitalize"]);
+const TextTransformSchema = z.enum([
+  "none",
+  "uppercase",
+  "lowercase",
+  "capitalize",
+]);
 const NormalItalicSchema = z.enum(["normal", "italic"]);
 
 // ============================================================================
@@ -319,7 +324,10 @@ export const FrontMatterItemSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const FrontMatterSchema = z.array(FrontMatterItemSchema).optional().default([]);
+export const FrontMatterSchema = z
+  .array(FrontMatterItemSchema)
+  .optional()
+  .default([]);
 
 export type FrontMatterItem = z.infer<typeof FrontMatterItemSchema>;
 export type FrontMatter = z.infer<typeof FrontMatterSchema>;
@@ -362,7 +370,10 @@ export const BackMatterItemSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const BackMatterSchema = z.array(BackMatterItemSchema).optional().default([]);
+export const BackMatterSchema = z
+  .array(BackMatterItemSchema)
+  .optional()
+  .default([]);
 
 export type BackMatterItem = z.infer<typeof BackMatterItemSchema>;
 export type BackMatter = z.infer<typeof BackMatterSchema>;
@@ -504,9 +515,20 @@ export const ArticleSettingsSchema = z.object({
 });
 
 export const ThreadSettingsSchema = z.object({
-  platform: z.enum(["twitter", "linkedin", "bluesky"]).optional().default("twitter"),
-  splitStrategy: z.enum(["paragraph", "sentence", "manual"]).optional().default("paragraph"),
-  maxLength: z.number().int().positive().optional().default(THREAD_DEFAULTS.maxLength),
+  platform: z
+    .enum(["twitter", "linkedin", "bluesky"])
+    .optional()
+    .default("twitter"),
+  splitStrategy: z
+    .enum(["paragraph", "sentence", "manual"])
+    .optional()
+    .default("paragraph"),
+  maxLength: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(THREAD_DEFAULTS.maxLength),
   numbering: z.boolean().optional().default(true),
 });
 
@@ -1171,7 +1193,7 @@ export function getDefaultConfig(type: ContentType): FormatConfig {
  */
 export function mergeFormatConfig(
   existing: FormatConfig,
-  updates: Partial<FormatConfig>
+  updates: Partial<FormatConfig>,
 ): FormatConfig {
   return validateFormatConfig(deepMerge(existing, updates));
 }
@@ -1182,7 +1204,7 @@ export function mergeFormatConfig(
  */
 function deepMerge<T extends Record<string, unknown>>(
   target: T,
-  source: Partial<T>
+  source: Partial<T>,
 ): T {
   const result = { ...target };
 
@@ -1201,7 +1223,7 @@ function deepMerge<T extends Record<string, unknown>>(
     ) {
       result[key] = deepMerge(
         targetValue as Record<string, unknown>,
-        sourceValue as Record<string, unknown>
+        sourceValue as Record<string, unknown>,
       ) as T[Extract<keyof T, string>];
     } else if (sourceValue !== undefined) {
       result[key] = sourceValue as T[Extract<keyof T, string>];

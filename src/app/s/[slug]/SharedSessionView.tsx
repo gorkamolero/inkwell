@@ -1,24 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { CodeHighlightNode, CodeNode } from "@lexical/code";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ListItemNode, ListNode } from "@lexical/list";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { $getRoot } from "lexical";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import type { SerializedEditorState } from "lexical";
-import { FileText, Check, Loader2, Copy, ExternalLink } from "lucide-react";
+import { $getRoot } from "lexical";
+import { Check, Copy, ExternalLink, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
 import { BrutalBadge } from "@/components/ui";
 
@@ -139,7 +139,9 @@ function AutoSavePlugin({
           lastSavedRef.current = serialized;
           onSaveComplete();
         } catch (error) {
-          onSaveError(error instanceof Error ? error : new Error("Save failed"));
+          onSaveError(
+            error instanceof Error ? error : new Error("Save failed"),
+          );
         }
       }, 1000);
     });
@@ -192,7 +194,9 @@ function WordCountPlugin({
 // ============================================================================
 
 export function SharedSessionView({ session }: SharedSessionViewProps) {
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const [wordCount, setWordCount] = useState(0);
   const [copied, setCopied] = useState(false);
 
@@ -245,7 +249,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
         console.error("Lexical error:", error);
       },
     }),
-    []
+    [],
   );
 
   return (
@@ -253,7 +257,10 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between">
-          <Link href="/" className="text-2xl font-black tracking-tight text-black">
+          <Link
+            href="/"
+            className="text-2xl font-black tracking-tight text-black"
+          >
             HOTPRESS
           </Link>
           <div className="flex items-center gap-3">

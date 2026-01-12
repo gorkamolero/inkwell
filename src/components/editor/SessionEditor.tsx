@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import type { SerializedEditorState } from "lexical";
 
 /**
@@ -70,14 +69,10 @@ export function SessionEditor({
           </p>
         )}
         {initialContent && (
-          <p className="text-xs text-gray-400 mt-2">
-            Has initial content
-          </p>
+          <p className="text-xs text-gray-400 mt-2">Has initial content</p>
         )}
         {onContentChange && (
-          <p className="text-xs text-gray-400">
-            Auto-save enabled
-          </p>
+          <p className="text-xs text-gray-400">Auto-save enabled</p>
         )}
       </div>
     </div>

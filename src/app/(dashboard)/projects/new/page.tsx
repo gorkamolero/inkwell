@@ -1,6 +1,8 @@
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { CreateProjectForm } from "./create-project-form";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Create Project",

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, validateBody } from "@/lib/api-utils";
 import type { PublicSession } from "../route";
@@ -33,7 +33,7 @@ export interface VerifyPasswordResponse {
 
 export async function POST(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { slug } = await params;
@@ -52,7 +52,10 @@ export async function POST(
 
     console.log("Verifying password for shared session:", slug);
 
-    return NextResponse.json({ message: "Not implemented yet" }, { status: 501 });
+    return NextResponse.json(
+      { message: "Not implemented yet" },
+      { status: 501 },
+    );
   } catch (error) {
     if (error instanceof ApiError) {
       return error.toResponse();

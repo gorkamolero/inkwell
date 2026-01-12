@@ -1,22 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { desc, eq, isNull, or } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { desc, eq, or, isNull } from "drizzle-orm";
 import { ApiError, validateBody } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { db, writingSessions } from "@/lib/db";
 import {
-  createSession,
-  setSessionCookie,
-  getSessionIdFromCookie,
-  getSessionById,
   type ContentType,
+  createSession,
+  getSessionById,
+  getSessionIdFromCookie,
+  setSessionCookie,
 } from "@/lib/session";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type SessionContentType = "book" | "article" | "thread" | "newsletter" | "docs";
+export type SessionContentType =
+  | "book"
+  | "article"
+  | "thread"
+  | "newsletter"
+  | "docs";
 
 export interface WritingSessionResponse {
   id: string;
@@ -54,7 +59,9 @@ interface SessionInput {
 /**
  * Formats a database session object into an API response.
  */
-export function formatSessionResponse(session: SessionInput): WritingSessionResponse {
+export function formatSessionResponse(
+  session: SessionInput,
+): WritingSessionResponse {
   return {
     id: session.id,
     shareSlug: session.shareSlug,
@@ -123,7 +130,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(
       { session: formatSessionResponse(session) },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     if (error instanceof ApiError) {
@@ -170,7 +177,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       where: userId
         ? or(
             eq(writingSessions.ownerId, userId),
-            cookieSessionId ? eq(writingSessions.id, cookieSessionId) : undefined
+            cookieSessionId
+              ? eq(writingSessions.id, cookieSessionId)
+              : undefined,
           )
         : cookieSessionId
           ? eq(writingSessions.id, cookieSessionId)

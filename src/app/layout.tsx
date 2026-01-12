@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ToastProvider } from "@/components/ui/toast";
 import { Providers } from "@/components/providers";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://hotpress.app"
+    process.env.NEXT_PUBLIC_APP_URL || "https://hotpress.app",
   ),
   title: {
     default: "Hotpress - Write together. Publish instantly.",

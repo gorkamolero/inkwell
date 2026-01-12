@@ -1,9 +1,9 @@
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
-import { stripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 import { db, subscriptions } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
       const subscription = await stripe.subscriptions.retrieve(
         session.subscription as string,
-        { expand: ["items.data"] }
+        { expand: ["items.data"] },
       );
 
       // Get billing period from the first subscription item
@@ -85,17 +85,14 @@ export async function POST(req: Request) {
       const invoice = event.data.object as Stripe.Invoice;
 
       // Get subscription ID from parent.subscription_details
-      const subscriptionId =
-        invoice.parent?.subscription_details?.subscription;
+      const subscriptionId = invoice.parent?.subscription_details?.subscription;
 
       if (!subscriptionId) {
         break;
       }
 
       const subId =
-        typeof subscriptionId === "string"
-          ? subscriptionId
-          : subscriptionId.id;
+        typeof subscriptionId === "string" ? subscriptionId : subscriptionId.id;
 
       const subscription = await stripe.subscriptions.retrieve(subId, {
         expand: ["items.data"],
@@ -156,17 +153,14 @@ export async function POST(req: Request) {
       const invoice = event.data.object as Stripe.Invoice;
 
       // Get subscription ID from parent.subscription_details
-      const subscriptionId =
-        invoice.parent?.subscription_details?.subscription;
+      const subscriptionId = invoice.parent?.subscription_details?.subscription;
 
       if (!subscriptionId) {
         break;
       }
 
       const subId =
-        typeof subscriptionId === "string"
-          ? subscriptionId
-          : subscriptionId.id;
+        typeof subscriptionId === "string" ? subscriptionId : subscriptionId.id;
 
       // Mark subscription as past_due
       await db

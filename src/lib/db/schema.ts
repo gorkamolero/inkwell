@@ -39,7 +39,12 @@ export const accounts = pgTable(
     id_token: text("id_token"),
     session_state: text("session_state"),
   },
-  (table) => [unique("account_provider_unique").on(table.provider, table.providerAccountId)]
+  (table) => [
+    unique("account_provider_unique").on(
+      table.provider,
+      table.providerAccountId,
+    ),
+  ],
 );
 
 export const sessions = pgTable("session", {
@@ -71,7 +76,7 @@ export const projects = pgTable(
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },
-  (table) => [unique("projects_user_slug_unique").on(table.userId, table.slug)]
+  (table) => [unique("projects_user_slug_unique").on(table.userId, table.slug)],
 );
 
 export const projectCollaborators = pgTable("project_collaborators", {
@@ -130,7 +135,9 @@ export const writingSessions = pgTable(
     content: text("content"), // Lexical JSON or markdown
     formatConfig: jsonb("format_config"), // hotpress.yaml as JSON
     passwordHash: text("password_hash"), // bcrypt, optional
-    ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }), // NULL for anonymous
+    ownerId: text("owner_id").references(() => users.id, {
+      onDelete: "set null",
+    }), // NULL for anonymous
     githubRepo: text("github_repo"),
     githubPath: text("github_path"),
     lastGithubSha: text("last_github_sha"),
@@ -141,12 +148,14 @@ export const writingSessions = pgTable(
   (table) => [
     index("writing_sessions_share_slug_idx").on(table.shareSlug),
     index("writing_sessions_owner_id_idx").on(table.ownerId),
-  ]
+  ],
 );
 
 export const liveblocksRooms = pgTable("liveblocks_rooms", {
   id: text("id").primaryKey(),
-  sessionId: text("session_id").references(() => writingSessions.id, { onDelete: "cascade" }),
+  sessionId: text("session_id").references(() => writingSessions.id, {
+    onDelete: "cascade",
+  }),
   roomName: text("room_name"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -201,7 +210,7 @@ export const projectCollaboratorsRelations = relations(
       fields: [projectCollaborators.userId],
       references: [users.id],
     }),
-  })
+  }),
 );
 
 export const documentsRelations = relations(documents, ({ one }) => ({
@@ -218,28 +227,43 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   }),
 }));
 
-export const writingSessionsRelations = relations(writingSessions, ({ one, many }) => ({
-  owner: one(users, {
-    fields: [writingSessions.ownerId],
-    references: [users.id],
+export const writingSessionsRelations = relations(
+  writingSessions,
+  ({ one, many }) => ({
+    owner: one(users, {
+      fields: [writingSessions.ownerId],
+      references: [users.id],
+    }),
+    liveblocksRooms: many(liveblocksRooms),
   }),
-  liveblocksRooms: many(liveblocksRooms),
-}));
+);
 
-export const liveblocksRoomsRelations = relations(liveblocksRooms, ({ one }) => ({
-  session: one(writingSessions, {
-    fields: [liveblocksRooms.sessionId],
-    references: [writingSessions.id],
+export const liveblocksRoomsRelations = relations(
+  liveblocksRooms,
+  ({ one }) => ({
+    session: one(writingSessions, {
+      fields: [liveblocksRooms.sessionId],
+      references: [writingSessions.id],
+    }),
   }),
-}));
+);
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type CollaboratorRole = "viewer" | "editor" | "admin";
-export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
-export type WritingSessionType = "book" | "article" | "thread" | "newsletter" | "docs";
+export type SubscriptionStatus =
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "trialing";
+export type WritingSessionType =
+  | "book"
+  | "article"
+  | "thread"
+  | "newsletter"
+  | "docs";
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

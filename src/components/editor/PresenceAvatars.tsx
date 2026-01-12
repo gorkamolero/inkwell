@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -82,7 +81,7 @@ function Avatar({ user, size, isFirst = false }: AvatarProps) {
         "shadow-[2px_2px_0_0_#000]",
         SIZES[size],
         !isFirst && OVERLAP[size],
-        user.isSelf && "ring-2 ring-brutal-yellow ring-offset-1"
+        user.isSelf && "ring-2 ring-brutal-yellow ring-offset-1",
       )}
       style={{ backgroundColor: user.color }}
       title={user.isSelf ? `${user.name} (you)` : user.name}
@@ -116,7 +115,7 @@ function OverflowCount({ count, size }: OverflowCountProps) {
         "bg-gray-200 text-black font-bold",
         "shadow-[2px_2px_0_0_#000]",
         SIZES[size],
-        OVERLAP[size]
+        OVERLAP[size],
       )}
       title={`${count} more collaborator${count > 1 ? "s" : ""}`}
     >
@@ -160,17 +159,10 @@ export function PresenceAvatars({
       aria-label={`${users.length} user${users.length > 1 ? "s" : ""} in session`}
     >
       {visibleUsers.map((user, index) => (
-        <Avatar
-          key={user.id}
-          user={user}
-          size={size}
-          isFirst={index === 0}
-        />
+        <Avatar key={user.id} user={user} size={size} isFirst={index === 0} />
       ))}
 
-      {overflowCount > 0 && (
-        <OverflowCount count={overflowCount} size={size} />
-      )}
+      {overflowCount > 0 && <OverflowCount count={overflowCount} size={size} />}
     </div>
   );
 }

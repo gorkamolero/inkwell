@@ -1,8 +1,8 @@
+import { CodeHighlightNode, CodeNode } from "@lexical/code";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ListItemNode, ListNode } from "@lexical/list";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { TableNode, TableCellNode, TableRowNode } from "@lexical/table";
+import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import type { Klass, LexicalNode } from "lexical";
 
 /**
@@ -85,7 +85,8 @@ export function createEditorConfig(options?: {
   nodes: Klass<LexicalNode>[];
   onError: (error: Error) => void;
 } {
-  const { namespace = "HotpressEditor", includeTableNodes = false } = options ?? {};
+  const { namespace = "HotpressEditor", includeTableNodes = false } =
+    options ?? {};
 
   return {
     namespace,

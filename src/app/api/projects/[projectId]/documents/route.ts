@@ -1,19 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
-  withProject,
-  validateBody,
   ApiError,
   generateId,
   type ProjectContext,
+  validateBody,
+  withProject,
 } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
-import {
-  listDocuments,
-  listDocumentsInPath,
-  saveDocument,
-} from "@/lib/github";
+import { listDocuments, listDocumentsInPath, saveDocument } from "@/lib/github";
 import { canAddDocument } from "@/lib/subscription";
 
 // ============================================================================
@@ -35,8 +31,8 @@ const createDocumentSchema = z.object({
 // ============================================================================
 
 async function listDocumentsHandler(
-  request: NextRequest,
-  { project, accessToken }: ProjectContext
+  _request: NextRequest,
+  { project, accessToken }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -70,7 +66,7 @@ async function listDocumentsHandler(
           owner,
           repo,
           project.chaptersPath,
-          branch
+          branch,
         );
       } else {
         githubDocs = await listDocuments(accessToken, owner, repo, branch);
@@ -151,7 +147,7 @@ export const GET = withProject(listDocumentsHandler);
 
 async function createDocumentHandler(
   request: NextRequest,
-  { project, accessToken, role, isOwner }: ProjectContext
+  { project, accessToken, role, isOwner }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -166,7 +162,7 @@ async function createDocumentHandler(
   const canAdd = await canAddDocument(project.id);
   if (!canAdd) {
     throw ApiError.limitExceeded(
-      "You have reached your document limit for this project. Please upgrade your plan."
+      "You have reached your document limit for this project. Please upgrade your plan.",
     );
   }
 
@@ -191,8 +187,10 @@ async function createDocumentHandler(
   let sha: string | undefined;
   const content = body.content || `# ${body.title || "New Document"}\n`;
 
-  const hasValidGitHubRepo = accessToken && project.githubRepo && 
-    project.githubRepo.includes("/") && 
+  const hasValidGitHubRepo =
+    accessToken &&
+    project.githubRepo &&
+    project.githubRepo.includes("/") &&
     !project.githubRepo.startsWith("__NEW__");
 
   if (hasValidGitHubRepo) {
@@ -208,7 +206,7 @@ async function createDocumentHandler(
         content,
         null, // null sha for new file
         `Create ${fullPath}`,
-        branch
+        branch,
       );
     } catch (error) {
       console.error("Error creating document on GitHub:", error);
@@ -243,7 +241,7 @@ async function createDocumentHandler(
         existsOnGitHub: !!sha,
       },
     },
-    { status: 201 }
+    { status: 201 },
   );
 }
 

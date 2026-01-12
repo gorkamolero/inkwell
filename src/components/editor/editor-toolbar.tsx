@@ -1,35 +1,35 @@
 "use client";
 
-import { useCallback } from "react";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $getSelection,
-  $isRangeSelection,
-  FORMAT_TEXT_COMMAND,
-  UNDO_COMMAND,
-  REDO_COMMAND,
-} from "lexical";
-import { $setBlocksType } from "@lexical/selection";
-import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text";
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
 } from "@lexical/list";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text";
+import { $setBlocksType } from "@lexical/selection";
+import {
+  $getSelection,
+  $isRangeSelection,
+  FORMAT_TEXT_COMMAND,
+  REDO_COMMAND,
+  UNDO_COMMAND,
+} from "lexical";
 import {
   Bold,
-  Italic,
-  Underline,
-  Strikethrough,
   Code,
-  List,
-  ListOrdered,
-  Quote,
   Heading1,
   Heading2,
   Heading3,
-  Undo,
+  Italic,
+  List,
+  ListOrdered,
+  Quote,
   Redo,
+  Strikethrough,
+  Underline,
+  Undo,
 } from "lucide-react";
+import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 export function EditorToolbar() {
@@ -39,7 +39,7 @@ export function EditorToolbar() {
     (format: "bold" | "italic" | "underline" | "strikethrough" | "code") => {
       editor.dispatchCommand(FORMAT_TEXT_COMMAND, format);
     },
-    [editor]
+    [editor],
   );
 
   const formatHeading = useCallback(
@@ -51,7 +51,7 @@ export function EditorToolbar() {
         }
       });
     },
-    [editor]
+    [editor],
   );
 
   const formatQuote = useCallback(() => {
@@ -71,7 +71,7 @@ export function EditorToolbar() {
         editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
       }
     },
-    [editor]
+    [editor],
   );
 
   const undo = useCallback(() => {
@@ -163,7 +163,7 @@ function ToolbarButton({
       title={title}
       className={cn(
         "flex h-8 w-8 items-center justify-center border-2 border-transparent transition-all hover:border-black hover:bg-gray-100",
-        active && "border-black bg-yellow-400"
+        active && "border-black bg-yellow-400",
       )}
     >
       {children}

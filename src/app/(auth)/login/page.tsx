@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import Link from "next/link";
-import { BrutalCard } from "@/components/ui";
+import { redirect } from "next/navigation";
 import { AuthButtons } from "@/components/layout/auth-buttons";
+import { BrutalCard } from "@/components/ui";
+import { auth } from "@/lib/auth";
 
 export const metadata = {
   title: "Sign In",

@@ -1,8 +1,14 @@
+import { and, eq, or } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { db, documents, projects, projectCollaborators, accounts } from "@/lib/db";
-import { eq, and, or } from "drizzle-orm";
 import { LazyDocumentEditor } from "@/components/editor/LazyEditor";
+import { auth } from "@/lib/auth";
+import {
+  accounts,
+  db,
+  documents,
+  projectCollaborators,
+  projects,
+} from "@/lib/db";
 import { getDocument } from "@/lib/github";
 
 interface EditorPageProps {
@@ -25,7 +31,10 @@ export default async function EditorPage({ params }: EditorPageProps) {
     .select({ accessToken: accounts.access_token })
     .from(accounts)
     .where(
-      and(eq(accounts.userId, session.user.id), eq(accounts.provider, "github"))
+      and(
+        eq(accounts.userId, session.user.id),
+        eq(accounts.provider, "github"),
+      ),
     )
     .limit(1);
 
@@ -40,7 +49,7 @@ export default async function EditorPage({ params }: EditorPageProps) {
   let project = await db.query.projects.findFirst({
     where: or(
       and(eq(projects.slug, projectId), eq(projects.userId, session.user.id)),
-      and(eq(projects.slug, projectId), eq(projects.isPublic, true))
+      and(eq(projects.slug, projectId), eq(projects.isPublic, true)),
     ),
   });
 
@@ -54,7 +63,7 @@ export default async function EditorPage({ params }: EditorPageProps) {
       const collaboration = await db.query.projectCollaborators.findFirst({
         where: and(
           eq(projectCollaborators.userId, session.user.id),
-          eq(projectCollaborators.projectId, projectBySlug.id)
+          eq(projectCollaborators.projectId, projectBySlug.id),
         ),
       });
 
@@ -70,10 +79,7 @@ export default async function EditorPage({ params }: EditorPageProps) {
 
   // Get the document from our database by ID (not path)
   const document = await db.query.documents.findFirst({
-    where: and(
-      eq(documents.id, docId),
-      eq(documents.projectId, project.id)
-    ),
+    where: and(eq(documents.id, docId), eq(documents.projectId, project.id)),
   });
 
   if (!document) {
@@ -81,9 +87,10 @@ export default async function EditorPage({ params }: EditorPageProps) {
   }
 
   // Check if project has valid GitHub repo (not __NEW__ placeholder)
-  const hasValidGitHubRepo = !!(project.githubRepo && 
-    project.githubRepo.includes("/") && 
-    !project.githubRepo.startsWith("__NEW__"));
+  const hasValidGitHubRepo = !!(
+    project.githubRepo?.includes("/") &&
+    !project.githubRepo.startsWith("__NEW__")
+  );
 
   // Use draft content if available, otherwise fetch from GitHub
   let content: string = document.draftContent || "";
@@ -100,7 +107,7 @@ export default async function EditorPage({ params }: EditorPageProps) {
         owner,
         repo,
         document.path,
-        branch
+        branch,
       );
       content = documentData.content;
       sha = documentData.sha;

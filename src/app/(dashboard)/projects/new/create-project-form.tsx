@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect, useTransition, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
-  Github,
-  Plus,
-  Link as LinkIcon,
-  Loader2,
-  FolderPlus,
-  Lock,
-  Globe,
   AlertCircle,
   CheckCircle,
+  FolderPlus,
+  Github,
+  Globe,
+  Link as LinkIcon,
+  Loader2,
+  Lock,
+  Plus,
 } from "lucide-react";
-import { BrutalInput, BrutalTextarea } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { BookSelector } from "@/components/dashboard/BookSelector";
 import { FolderPicker } from "@/components/dashboard/FolderPicker";
-import { cn } from "@/lib/utils";
+import { BrutalInput, BrutalTextarea } from "@/components/ui";
 import type { RepoInfo, RepoStructure } from "@/lib/github";
+import { cn } from "@/lib/utils";
 
 interface CreateProjectFormProps {
   accessToken: string | null;
@@ -51,7 +51,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
 
   // Repo structure detection
   const [repoStructure, setRepoStructure] = useState<RepoStructure | null>(
-    null
+    null,
   );
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [structureError, setStructureError] = useState<string | null>(null);
@@ -107,7 +107,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
 
     try {
       const response = await fetch(
-        `/api/github/detect-structure?repo=${encodeURIComponent(selectedRepo)}`
+        `/api/github/detect-structure?repo=${encodeURIComponent(selectedRepo)}`,
       );
       if (!response.ok) {
         throw new Error("Failed to detect repository structure");
@@ -127,7 +127,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
     } finally {
       setIsDetectingStructure(false);
     }
-  }, [accessToken, selectedRepo, name, repos]);
+  }, [accessToken, selectedRepo, name, repos, formatRepoName]);
 
   // Load user repos when switching to existing mode
   useEffect(() => {
@@ -201,8 +201,8 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                 description: description || undefined,
                 githubRepo: selectedRepo,
                 chaptersPath: book.path,
-              })
-            )
+              }),
+            ),
           );
 
           const failedCount = results.filter((r) => !r.success).length;
@@ -323,7 +323,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                   "flex flex-1 items-center justify-center gap-2 border-3 px-4 py-3 font-bold transition-all",
                   repoMode === "new"
                     ? "border-black bg-brutal-yellow shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                    : "border-gray-300 bg-white text-gray-600 hover:border-black"
+                    : "border-gray-300 bg-white text-gray-600 hover:border-black",
                 )}
               >
                 <FolderPlus className="h-5 w-5" />
@@ -336,7 +336,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                   "flex flex-1 items-center justify-center gap-2 border-3 px-4 py-3 font-bold transition-all",
                   repoMode === "existing"
                     ? "border-black bg-brutal-yellow shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                    : "border-gray-300 bg-white text-gray-600 hover:border-black"
+                    : "border-gray-300 bg-white text-gray-600 hover:border-black",
                 )}
               >
                 <LinkIcon className="h-5 w-5" />
@@ -371,7 +371,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                         "flex flex-1 items-center justify-center gap-2 border-3 px-4 py-3 font-bold transition-all",
                         isPrivate
                           ? "border-black bg-gray-900 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                          : "border-gray-300 bg-white text-gray-600 hover:border-black"
+                          : "border-gray-300 bg-white text-gray-600 hover:border-black",
                       )}
                     >
                       <Lock className="h-4 w-4" />
@@ -384,7 +384,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                         "flex flex-1 items-center justify-center gap-2 border-3 px-4 py-3 font-bold transition-all",
                         !isPrivate
                           ? "border-black bg-brutal-green text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                          : "border-gray-300 bg-white text-gray-600 hover:border-black"
+                          : "border-gray-300 bg-white text-gray-600 hover:border-black",
                       )}
                     >
                       <Globe className="h-4 w-4" />
@@ -432,7 +432,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                           "w-full border-3 bg-white px-4 py-3 font-medium transition-shadow focus:outline-none focus:shadow-[4px_4px_0_0_#000000]",
                           errors.selectedRepo
                             ? "border-brutal-red"
-                            : "border-black"
+                            : "border-black",
                         )}
                       >
                         <option value="">Choose a repository...</option>
@@ -501,7 +501,10 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
                     />
                     {chaptersPath && (
                       <p className="mt-2 text-sm text-gray-600">
-                        Selected: <code className="bg-gray-100 px-1">{chaptersPath || "(root)"}</code>
+                        Selected:{" "}
+                        <code className="bg-gray-100 px-1">
+                          {chaptersPath || "(root)"}
+                        </code>
                       </p>
                     )}
                   </div>
@@ -546,7 +549,7 @@ export function CreateProjectForm({ accessToken }: CreateProjectFormProps) {
             "flex flex-1 items-center justify-center gap-2 border-3 border-black px-6 py-3 font-bold transition-all",
             isPending || submitSuccess
               ? "cursor-not-allowed bg-gray-200 text-gray-500"
-              : "bg-brutal-yellow text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              : "bg-brutal-yellow text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
           )}
         >
           {isPending ? (

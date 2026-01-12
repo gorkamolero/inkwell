@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Book, Check, CheckSquare, Square } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface DetectedBook {
@@ -19,7 +19,10 @@ interface SelectAllIconProps {
   someSelected: boolean;
 }
 
-function SelectAllIcon({ allSelected, someSelected }: SelectAllIconProps): React.ReactNode {
+function SelectAllIcon({
+  allSelected,
+  someSelected,
+}: SelectAllIconProps): React.ReactNode {
   if (allSelected) {
     return <CheckSquare className="h-4 w-4 text-brutal-blue" />;
   }
@@ -64,15 +67,14 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
   };
 
   const allSelected = selectedBooks.size === books.length;
-  const someSelected = selectedBooks.size > 0 && selectedBooks.size < books.length;
+  const someSelected =
+    selectedBooks.size > 0 && selectedBooks.size < books.length;
 
   return (
     <div className="border-3 border-black bg-white">
       {/* Header */}
       <div className="flex items-center justify-between border-b-3 border-black bg-brutal-blue px-4 py-3">
-        <h4 className="font-bold text-white">
-          Multi-Book Repository Detected
-        </h4>
+        <h4 className="font-bold text-white">Multi-Book Repository Detected</h4>
         <span className="border-2 border-white bg-white px-2 py-0.5 text-xs font-bold text-black">
           {books.length} books found
         </span>
@@ -93,7 +95,10 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
           onClick={handleSelectAll}
           className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-black"
         >
-          <SelectAllIcon allSelected={allSelected} someSelected={someSelected} />
+          <SelectAllIcon
+            allSelected={allSelected}
+            someSelected={someSelected}
+          />
           {allSelected ? "Deselect All" : "Select All"}
         </button>
       </div>
@@ -109,7 +114,7 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
                 onClick={() => handleToggle(book.path)}
                 className={cn(
                   "flex w-full items-center gap-4 px-4 py-4 text-left transition-colors",
-                  isSelected ? "bg-brutal-yellow/20" : "hover:bg-gray-50"
+                  isSelected ? "bg-brutal-yellow/20" : "hover:bg-gray-50",
                 )}
               >
                 {/* Checkbox */}
@@ -118,7 +123,7 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
                     "flex h-6 w-6 items-center justify-center border-3 transition-colors",
                     isSelected
                       ? "border-black bg-brutal-green"
-                      : "border-gray-400 bg-white"
+                      : "border-gray-400 bg-white",
                   )}
                 >
                   {isSelected && (
@@ -132,13 +137,13 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
                     "flex h-10 w-10 items-center justify-center border-2",
                     isSelected
                       ? "border-black bg-brutal-yellow"
-                      : "border-gray-300 bg-gray-100"
+                      : "border-gray-300 bg-gray-100",
                   )}
                 >
                   <Book
                     className={cn(
                       "h-5 w-5",
-                      isSelected ? "text-black" : "text-gray-500"
+                      isSelected ? "text-black" : "text-gray-500",
                     )}
                   />
                 </div>
@@ -148,7 +153,7 @@ export function BookSelector({ books, onSelectionChange }: BookSelectorProps) {
                   <p
                     className={cn(
                       "font-bold",
-                      isSelected ? "text-black" : "text-gray-700"
+                      isSelected ? "text-black" : "text-gray-700",
                     )}
                   >
                     {book.name}

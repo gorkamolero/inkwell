@@ -1,22 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { $createHeadingNode } from "@lexical/rich-text";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { $createHeadingNode } from "@lexical/rich-text";
 import type { SerializedEditorState } from "lexical";
-import { Share2, FileText, Check, Loader2, ChevronDown, Copy } from "lucide-react";
+import { $createParagraphNode, $createTextNode, $getRoot } from "lexical";
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  FileText,
+  Loader2,
+  Share2,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
-import { BrutalBadge, BrutalButton, BrutalInput, BrutalDialog, BrutalDialogContent, BrutalDialogHeader, BrutalDialogTitle, BrutalDialogDescription, BrutalDialogFooter } from "@/components/ui";
+import {
+  BrutalBadge,
+  BrutalButton,
+  BrutalDialog,
+  BrutalDialogContent,
+  BrutalDialogDescription,
+  BrutalDialogFooter,
+  BrutalDialogHeader,
+  BrutalDialogTitle,
+  BrutalInput,
+} from "@/components/ui";
 import { createEditorConfig } from "@/lib/editor-config";
 
 type ContentType = "book" | "article" | "thread" | "newsletter" | "docs";
@@ -30,26 +47,49 @@ interface SessionData {
   shareSlug: string | null;
 }
 
-const CONTENT_TYPES: { value: ContentType; label: string; description: string }[] = [
-  { value: "book", label: "Book", description: "Long-form writing with chapters" },
+const CONTENT_TYPES: {
+  value: ContentType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "book",
+    label: "Book",
+    description: "Long-form writing with chapters",
+  },
   { value: "article", label: "Article", description: "Blog posts and essays" },
   { value: "thread", label: "Thread", description: "Social media threads" },
 ];
 
-const SAVE_STATUS_CONFIG: Record<SaveStatus, { variant: "default" | "success" | "destructive"; icon?: typeof Check; label: string }> = {
+const SAVE_STATUS_CONFIG: Record<
+  SaveStatus,
+  {
+    variant: "default" | "success" | "destructive";
+    icon?: typeof Check;
+    label: string;
+  }
+> = {
   idle: { variant: "default", label: "Auto-saving" },
   saving: { variant: "default", icon: Loader2, label: "Saving..." },
   saved: { variant: "success", icon: Check, label: "Saved" },
   error: { variant: "destructive", label: "Save failed" },
 };
 
-function SaveStatusBadge({ status }: { status: SaveStatus }): React.ReactElement {
+function SaveStatusBadge({
+  status,
+}: {
+  status: SaveStatus;
+}): React.ReactElement {
   const config = SAVE_STATUS_CONFIG[status];
   const Icon = config.icon;
   const iconClass = status === "saving" ? "h-3 w-3 animate-spin" : "h-3 w-3";
 
   return (
-    <BrutalBadge variant={config.variant} size="sm" className={Icon ? "gap-1.5" : undefined}>
+    <BrutalBadge
+      variant={config.variant}
+      size="sm"
+      className={Icon ? "gap-1.5" : undefined}
+    >
       {Icon && <Icon className={iconClass} />}
       {config.label}
     </BrutalBadge>
@@ -88,12 +128,20 @@ function InitialContentPlugin({ content }: { content: string | null }): null {
 
       // Welcome paragraph
       const p1 = $createParagraphNode();
-      p1.append($createTextNode("This is Hotpress. Write here, collaborate in real-time, and publish anywhere."));
+      p1.append(
+        $createTextNode(
+          "This is Hotpress. Write here, collaborate in real-time, and publish anywhere.",
+        ),
+      );
       root.append(p1);
 
       // Second paragraph
       const p2 = $createParagraphNode();
-      p2.append($createTextNode("Your content saves automatically. Share the link to collaborate."));
+      p2.append(
+        $createTextNode(
+          "Your content saves automatically. Share the link to collaborate.",
+        ),
+      );
       root.append(p2);
     });
   }, [editor, content]);
@@ -147,7 +195,9 @@ function AutoSavePlugin({
           lastSavedRef.current = serialized;
           onSaveComplete();
         } catch (error) {
-          onSaveError(error instanceof Error ? error : new Error("Save failed"));
+          onSaveError(
+            error instanceof Error ? error : new Error("Save failed"),
+          );
         }
       }, 1000);
     });
@@ -201,7 +251,8 @@ function TypeSelector({
   disabled: boolean;
 }): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
-  const currentType = CONTENT_TYPES.find((t) => t.value === value) || CONTENT_TYPES[0];
+  const currentType =
+    CONTENT_TYPES.find((t) => t.value === value) || CONTENT_TYPES[0];
 
   return (
     <div className="relative">
@@ -213,12 +264,17 @@ function TypeSelector({
       >
         <FileText className="h-4 w-4" />
         {currentType.label}
-        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+        />
       </button>
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
           <div className="absolute left-0 top-full z-20 mt-1 w-56 border-3 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             {CONTENT_TYPES.map((type) => (
               <button
@@ -331,7 +387,7 @@ export function HotpressEditor(): React.ReactElement {
         console.error("Failed to update type:", error);
       }
     },
-    [session]
+    [session],
   );
 
   // Handle share button click - opens dialog
@@ -363,7 +419,9 @@ export function HotpressEditor(): React.ReactElement {
 
       const data = await response.json();
       setShareUrl(data.shareUrl);
-      setSession((prev) => (prev ? { ...prev, shareSlug: data.shareSlug } : null));
+      setSession((prev) =>
+        prev ? { ...prev, shareSlug: data.shareSlug } : null,
+      );
     } catch (error) {
       console.error("Failed to share:", error);
     } finally {
@@ -495,7 +553,8 @@ export function HotpressEditor(): React.ReactElement {
           <BrutalDialogHeader>
             <BrutalDialogTitle>Share Session</BrutalDialogTitle>
             <BrutalDialogDescription>
-              Share this writing session with others. Anyone with the link can view and edit.
+              Share this writing session with others. Anyone with the link can
+              view and edit.
             </BrutalDialogDescription>
           </BrutalDialogHeader>
 
@@ -525,7 +584,9 @@ export function HotpressEditor(): React.ReactElement {
                   </BrutalButton>
                 </div>
                 {shareCopied && (
-                  <p className="text-sm text-green-600 font-medium">Link copied to clipboard!</p>
+                  <p className="text-sm text-green-600 font-medium">
+                    Link copied to clipboard!
+                  </p>
                 )}
               </div>
             ) : (
@@ -553,7 +614,10 @@ export function HotpressEditor(): React.ReactElement {
           </div>
 
           <BrutalDialogFooter>
-            <BrutalButton variant="outline" onClick={() => setShareDialogOpen(false)}>
+            <BrutalButton
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+            >
               Done
             </BrutalButton>
           </BrutalDialogFooter>

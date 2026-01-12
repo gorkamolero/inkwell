@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
-import { BrutalCard, BrutalButton, BrutalBadge } from "@/components/ui";
+import { BrutalBadge, BrutalButton, BrutalCard } from "@/components/ui";
 
 const plans = [
   {
@@ -53,7 +53,10 @@ const plans = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="border-y-4 border-black bg-[#F5F5F5] py-16 sm:py-20 md:py-24">
+    <section
+      id="pricing"
+      className="border-y-4 border-black bg-[#F5F5F5] py-16 sm:py-20 md:py-24"
+    >
       <div className="container mx-auto px-4">
         {/* Section header */}
         <div className="mx-auto mb-12 max-w-3xl text-center sm:mb-16">
@@ -93,9 +96,7 @@ export function Pricing() {
               <BrutalCard
                 padding="lg"
                 className={`flex h-full flex-col ${
-                  plan.popular
-                    ? "border-4 shadow-[6px_6px_0_0_#000000]"
-                    : ""
+                  plan.popular ? "border-4 shadow-[6px_6px_0_0_#000000]" : ""
                 }`}
               >
                 {/* Plan name */}

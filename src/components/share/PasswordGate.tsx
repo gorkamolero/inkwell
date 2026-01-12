@@ -1,14 +1,14 @@
 "use client";
 
-import * as React from "react";
+import { AlertCircle, Lock } from "lucide-react";
 import Link from "next/link";
-import { Lock, AlertCircle } from "lucide-react";
+import * as React from "react";
 import {
+  BrutalButton,
   BrutalCard,
+  BrutalCardDescription,
   BrutalCardHeader,
   BrutalCardTitle,
-  BrutalCardDescription,
-  BrutalButton,
   BrutalInput,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -85,7 +85,7 @@ export function PasswordGate({
       className={cn(
         "min-h-screen flex items-center justify-center p-4",
         "bg-gray-50",
-        className
+        className,
       )}
     >
       <BrutalCard className="w-full max-w-md" padding="lg">
@@ -96,7 +96,7 @@ export function PasswordGate({
               "flex items-center justify-center",
               "bg-brutal-yellow",
               "border-3 border-black",
-              "shadow-[4px_4px_0_0_#000]"
+              "shadow-[4px_4px_0_0_#000]",
             )}
           >
             <Lock className="h-8 w-8" strokeWidth={2.5} />
@@ -137,7 +137,7 @@ export function PasswordGate({
                 "flex items-center gap-2",
                 "p-3",
                 "bg-red-50 border-3 border-brutal-red",
-                "text-sm font-medium text-brutal-red"
+                "text-sm font-medium text-brutal-red",
               )}
               role="alert"
             >

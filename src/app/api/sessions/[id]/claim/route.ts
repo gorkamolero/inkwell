@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { ApiError } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import {
+  claimSession,
   getSessionById,
   getSessionIdFromCookie,
-  claimSession,
 } from "@/lib/session";
-import { formatSessionResponse, type WritingSessionResponse } from "../../route";
+import {
+  formatSessionResponse,
+  type WritingSessionResponse,
+} from "../../route";
 
 // ============================================================================
 // Types
@@ -28,7 +31,7 @@ export interface ClaimSessionResponse {
 
 export async function POST(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;

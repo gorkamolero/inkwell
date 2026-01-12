@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { BookOpen } from "lucide-react";
-import { FormatSection, useFormatContext } from "./FormatPanel";
 import { cn } from "@/lib/utils";
+import { FormatSection, useFormatContext } from "./FormatPanel";
 
 /**
  * ChapterSection - Chapter numbering and drop caps settings
@@ -29,7 +28,7 @@ export interface ChapterSectionProps {
 // =============================================================================
 
 const NUMBERING_FORMATS = [
-  { value: "Chapter {n}", label: 'Chapter 1, Chapter 2...' },
+  { value: "Chapter {n}", label: "Chapter 1, Chapter 2..." },
   { value: "{n}", label: "1, 2, 3..." },
   { value: "{roman}", label: "I, II, III..." },
   { value: "{word}", label: "One, Two, Three..." },
@@ -65,7 +64,7 @@ function ToggleSwitch({
           "relative w-12 h-7 flex-shrink-0",
           "border-3 border-black",
           "transition-colors duration-100",
-          checked ? "bg-brutal-green" : "bg-gray-200"
+          checked ? "bg-brutal-green" : "bg-gray-200",
         )}
       >
         <span
@@ -73,7 +72,7 @@ function ToggleSwitch({
             "absolute top-0.5 w-5 h-5",
             "bg-white border-2 border-black",
             "transition-transform duration-100",
-            checked ? "translate-x-5" : "translate-x-0.5"
+            checked ? "translate-x-5" : "translate-x-0.5",
           )}
         />
       </button>
@@ -142,7 +141,7 @@ export function ChapterSection({
                 "bg-white text-black",
                 "font-medium",
                 "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
-                "transition-shadow duration-100"
+                "transition-shadow duration-100",
               )}
             >
               {NUMBERING_FORMATS.map(({ value, label }) => (
@@ -181,7 +180,7 @@ export function ChapterSection({
                     "transition-all duration-100",
                     chapters.dropCapsLines === lines
                       ? "bg-brutal-blue text-white shadow-[4px_4px_0_0_#000]"
-                      : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+                      : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]",
                   )}
                 >
                   {lines}

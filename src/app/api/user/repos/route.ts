@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getInstallationId, listInstallationRepos } from "@/lib/github-app";
 
@@ -19,8 +19,11 @@ export async function GET(_request: NextRequest) {
   const username = session.user.login;
   if (!username) {
     return NextResponse.json(
-      { error: "GitHub username not found in session. Please sign out and sign in again." },
-      { status: 400 }
+      {
+        error:
+          "GitHub username not found in session. Please sign out and sign in again.",
+      },
+      { status: 400 },
     );
   }
 
@@ -48,7 +51,7 @@ export async function GET(_request: NextRequest) {
     console.error("Error listing repos:", error);
     return NextResponse.json(
       { error: "Failed to fetch repositories" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

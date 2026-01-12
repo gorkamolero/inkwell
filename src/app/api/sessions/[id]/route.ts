@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, validateBody } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import {
+  type ContentType,
+  canAccessSession,
+  canDeleteSession,
+  deleteSession,
   getSessionById,
   getSessionIdFromCookie,
   updateSession,
-  deleteSession,
-  canAccessSession,
-  canDeleteSession,
-  type ContentType,
 } from "@/lib/session";
 import { formatSessionResponse, type WritingSessionResponse } from "../route";
 
@@ -44,7 +44,10 @@ export interface DeleteSessionResponse {
 // Helper: Build access context
 // ============================================================================
 
-async function getAccessContext(): Promise<{ userId?: string; cookieSessionId?: string }> {
+async function getAccessContext(): Promise<{
+  userId?: string;
+  cookieSessionId?: string;
+}> {
   const [authSession, cookieSessionId] = await Promise.all([
     auth(),
     getSessionIdFromCookie(),
@@ -61,7 +64,7 @@ async function getAccessContext(): Promise<{ userId?: string; cookieSessionId?: 
 
 export async function GET(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
@@ -92,7 +95,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
@@ -105,7 +108,9 @@ export async function PATCH(
 
     const context = await getAccessContext();
     if (!canAccessSession(session, context, true)) {
-      throw ApiError.forbidden("You don't have permission to update this session");
+      throw ApiError.forbidden(
+        "You don't have permission to update this session",
+      );
     }
 
     const updated = await updateSession(id, {
@@ -134,7 +139,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
@@ -146,7 +151,9 @@ export async function DELETE(
 
     const context = await getAccessContext();
     if (!canDeleteSession(session, context)) {
-      throw ApiError.forbidden("You don't have permission to delete this session");
+      throw ApiError.forbidden(
+        "You don't have permission to delete this session",
+      );
     }
 
     const deleted = await deleteSession(id, context.userId);

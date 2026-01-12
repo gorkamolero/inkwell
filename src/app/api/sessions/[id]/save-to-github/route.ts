@@ -1,16 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { ApiError, validateBody, withAuth, type AuthContext } from "@/lib/api-utils";
-import { getSessionById, getSessionIdFromCookie, updateSessionGitHub } from "@/lib/session";
-import { createRepository, commitMultipleFiles } from "@/lib/github-app";
+import { CodeHighlightNode, CodeNode } from "@lexical/code";
 // $generateHtmlFromNodes removed - unused
 import { createHeadlessEditor } from "@lexical/headless";
-import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import type { SerializedEditorState } from "lexical";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ListItemNode, ListNode } from "@lexical/list";
 import { $convertToMarkdownString, TRANSFORMERS } from "@lexical/markdown";
+import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import type { SerializedEditorState } from "lexical";
+import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import {
+  ApiError,
+  type AuthContext,
+  validateBody,
+  withAuth,
+} from "@/lib/api-utils";
+import { commitMultipleFiles, createRepository } from "@/lib/github-app";
+import {
+  getSessionById,
+  getSessionIdFromCookie,
+  updateSessionGitHub,
+} from "@/lib/session";
 
 // ============================================================================
 // Types
@@ -99,7 +108,7 @@ async function convertToMarkdown(content: string | null): Promise<string> {
  */
 function generateHotpressYaml(
   session: { title: string | null; type: string | null; formatConfig: unknown },
-  path: string
+  path: string,
 ): string {
   const config = {
     version: "1.0",
@@ -131,13 +140,13 @@ function generateHotpressYaml(
 
 async function saveToGitHubHandler(
   request: NextRequest,
-  context: AuthContext & { sessionId: string }
+  context: AuthContext & { sessionId: string },
 ): Promise<NextResponse> {
   const { sessionId, accessToken } = context;
 
   if (!accessToken) {
     throw ApiError.forbidden(
-      "GitHub is not connected. Please sign in with GitHub to save."
+      "GitHub is not connected. Please sign in with GitHub to save.",
     );
   }
 
@@ -174,7 +183,7 @@ async function saveToGitHubHandler(
       accessToken,
       body.repoName,
       body.private ?? true,
-      body.repoDescription
+      body.repoDescription,
     );
 
     if (!created) {
@@ -186,7 +195,9 @@ async function saveToGitHubHandler(
     branch = created.defaultBranch;
   } else {
     if (!body.repo) {
-      throw ApiError.badRequest("repo is required when not creating a new repo");
+      throw ApiError.badRequest(
+        "repo is required when not creating a new repo",
+      );
     }
 
     const [o, r] = body.repo.split("/");
@@ -219,7 +230,7 @@ async function saveToGitHubHandler(
     repoName,
     files,
     commitMessage,
-    branch
+    branch,
   );
 
   if (!result) {
@@ -248,7 +259,7 @@ async function saveToGitHubHandler(
 
 export async function POST(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   const { id } = await params;
 

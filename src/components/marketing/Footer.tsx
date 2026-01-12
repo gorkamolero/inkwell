@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Github, Twitter } from "lucide-react";
+import Link from "next/link";
 import { BrutalButton } from "@/components/ui";
 
 export function MarketingFooter() {
@@ -15,11 +15,7 @@ export function MarketingFooter() {
             Stop letting someone else hold your writing hostage.
           </p>
           <Link href="/signup">
-            <BrutalButton
-              variant="primary"
-              size="xl"
-              className="min-w-[200px]"
-            >
+            <BrutalButton variant="primary" size="xl" className="min-w-[200px]">
               Start Writing
             </BrutalButton>
           </Link>

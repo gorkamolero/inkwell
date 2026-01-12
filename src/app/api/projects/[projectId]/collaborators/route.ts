@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
 import {
-  withProject,
-  validateBody,
   ApiError,
   generateId,
   type ProjectContext,
+  validateBody,
+  withProject,
 } from "@/lib/api-utils";
 import { db, projectCollaborators, users } from "@/lib/db";
-import { canAddCollaborator } from "@/lib/subscription";
 import type { CollaboratorRole } from "@/lib/db/schema";
+import { canAddCollaborator } from "@/lib/subscription";
 
 // ============================================================================
 // Schemas
@@ -32,8 +32,8 @@ const removeCollaboratorSchema = z.object({
 // ============================================================================
 
 async function listCollaboratorsHandler(
-  request: NextRequest,
-  { project, isOwner, role }: ProjectContext
+  _request: NextRequest,
+  { project, isOwner, role }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -42,7 +42,7 @@ async function listCollaboratorsHandler(
   // Only owner and admins can view full collaborator list
   if (!isOwner && role !== "admin") {
     throw ApiError.forbidden(
-      "Only the project owner or admins can view collaborators"
+      "Only the project owner or admins can view collaborators",
     );
   }
 
@@ -92,7 +92,7 @@ export const GET = withProject(listCollaboratorsHandler);
 
 async function inviteCollaboratorHandler(
   request: NextRequest,
-  { project, isOwner, role }: ProjectContext
+  { project, isOwner, role }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -101,7 +101,7 @@ async function inviteCollaboratorHandler(
   // Only owner and admins can invite collaborators
   if (!isOwner && role !== "admin") {
     throw ApiError.forbidden(
-      "Only the project owner or admins can invite collaborators"
+      "Only the project owner or admins can invite collaborators",
     );
   }
 
@@ -109,7 +109,7 @@ async function inviteCollaboratorHandler(
   const canAdd = await canAddCollaborator(project.id);
   if (!canAdd) {
     throw ApiError.limitExceeded(
-      "You have reached your collaborator limit for this project. Please upgrade your plan."
+      "You have reached your collaborator limit for this project. Please upgrade your plan.",
     );
   }
 
@@ -122,25 +122,29 @@ async function inviteCollaboratorHandler(
 
   if (!invitedUser) {
     throw ApiError.notFound(
-      "User not found. They must have a Hotpress account first."
+      "User not found. They must have a Hotpress account first.",
     );
   }
 
   // Can't invite the owner
   if (invitedUser.id === project.userId) {
-    throw ApiError.badRequest("Cannot invite the project owner as a collaborator");
+    throw ApiError.badRequest(
+      "Cannot invite the project owner as a collaborator",
+    );
   }
 
   // Check if already a collaborator
   const existingCollaboration = await db.query.projectCollaborators.findFirst({
     where: and(
       eq(projectCollaborators.projectId, project.id),
-      eq(projectCollaborators.userId, invitedUser.id)
+      eq(projectCollaborators.userId, invitedUser.id),
     ),
   });
 
   if (existingCollaboration) {
-    throw ApiError.conflict("This user is already a collaborator on this project");
+    throw ApiError.conflict(
+      "This user is already a collaborator on this project",
+    );
   }
 
   // Create collaboration
@@ -175,7 +179,7 @@ async function inviteCollaboratorHandler(
         },
       },
     },
-    { status: 201 }
+    { status: 201 },
   );
 }
 
@@ -187,7 +191,7 @@ export const POST = withProject(inviteCollaboratorHandler);
 
 async function removeCollaboratorHandler(
   request: NextRequest,
-  { project, isOwner, role, userId }: ProjectContext
+  { project, isOwner, role, userId }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -199,7 +203,7 @@ async function removeCollaboratorHandler(
   const collaboration = await db.query.projectCollaborators.findFirst({
     where: and(
       eq(projectCollaborators.projectId, project.id),
-      eq(projectCollaborators.userId, body.userId)
+      eq(projectCollaborators.userId, body.userId),
     ),
   });
 
@@ -214,7 +218,9 @@ async function removeCollaboratorHandler(
   if (!isOwner && !isSelf) {
     // Non-owners can only remove themselves or (if admin) non-admins
     if (role !== "admin") {
-      throw ApiError.forbidden("You can only remove yourself from this project");
+      throw ApiError.forbidden(
+        "You can only remove yourself from this project",
+      );
     }
     if (targetIsAdmin) {
       throw ApiError.forbidden("Admins cannot remove other admins");
@@ -249,7 +255,7 @@ const updateCollaboratorSchema = z.object({
 
 async function updateCollaboratorHandler(
   request: NextRequest,
-  { project, isOwner, role }: ProjectContext
+  { project, isOwner, role }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -258,7 +264,7 @@ async function updateCollaboratorHandler(
   // Only owner and admins can update roles
   if (!isOwner && role !== "admin") {
     throw ApiError.forbidden(
-      "Only the project owner or admins can update collaborator roles"
+      "Only the project owner or admins can update collaborator roles",
     );
   }
 
@@ -268,7 +274,7 @@ async function updateCollaboratorHandler(
   const collaboration = await db.query.projectCollaborators.findFirst({
     where: and(
       eq(projectCollaborators.projectId, project.id),
-      eq(projectCollaborators.userId, body.userId)
+      eq(projectCollaborators.userId, body.userId),
     ),
   });
 

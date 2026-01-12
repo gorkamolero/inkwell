@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { ChevronRight } from "lucide-react";
-import { BrutalCard, BrutalButton } from "@/components/ui";
+import * as React from "react";
+import { BrutalButton, BrutalCard } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 /**
@@ -117,7 +117,7 @@ export function FormatSection({
           "px-4 py-3",
           "font-bold text-left",
           "hover:bg-gray-50",
-          "transition-colors duration-100"
+          "transition-colors duration-100",
         )}
         aria-expanded={expanded}
       >
@@ -128,16 +128,12 @@ export function FormatSection({
         <ChevronRight
           className={cn(
             "h-5 w-5 transition-transform duration-200",
-            expanded && "rotate-90"
+            expanded && "rotate-90",
           )}
         />
       </button>
 
-      {expanded && (
-        <div className="px-4 pb-4 space-y-4">
-          {children}
-        </div>
-      )}
+      {expanded && <div className="px-4 pb-4 space-y-4">{children}</div>}
     </div>
   );
 }
@@ -165,12 +161,12 @@ export function FormatPanel({
     (partial: Partial<FormatConfig>) => {
       onConfigChange({ ...config, ...partial });
     },
-    [config, onConfigChange]
+    [config, onConfigChange],
   );
 
   const contextValue = React.useMemo(
     () => ({ config, updateConfig }),
-    [config, updateConfig]
+    [config, updateConfig],
   );
 
   return (
@@ -187,10 +183,7 @@ export function FormatPanel({
         </div>
 
         {/* Sections */}
-        <BrutalCard
-          className="flex-1 overflow-y-auto"
-          padding="none"
-        >
+        <BrutalCard className="flex-1 overflow-y-auto" padding="none">
           {children || (
             <div className="p-4 text-center text-gray-500">
               <p>No format sections configured</p>

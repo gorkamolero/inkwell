@@ -1,17 +1,24 @@
 "use client";
 
-import * as React from "react";
-import { Github, Plus, Folder, ChevronRight, Check, AlertTriangle } from "lucide-react";
 import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  Folder,
+  Github,
+  Plus,
+} from "lucide-react";
+import * as React from "react";
+import {
+  BrutalButton,
+  BrutalCard,
   BrutalDialog,
   BrutalDialogContent,
-  BrutalDialogHeader,
-  BrutalDialogTitle,
   BrutalDialogDescription,
   BrutalDialogFooter,
-  BrutalButton,
+  BrutalDialogHeader,
+  BrutalDialogTitle,
   BrutalInput,
-  BrutalCard,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -102,7 +109,9 @@ export function SaveToGitHubDialog({
   onLogin,
 }: SaveToGitHubDialogProps) {
   const [step, setStep] = React.useState<Step>("select-repo");
-  const [selectedRepo, setSelectedRepo] = React.useState<GitHubRepo | null>(null);
+  const [selectedRepo, setSelectedRepo] = React.useState<GitHubRepo | null>(
+    null,
+  );
   const [newRepoName, setNewRepoName] = React.useState("");
   const [newRepoPrivate, setNewRepoPrivate] = React.useState(false);
   const [filePath, setFilePath] = React.useState("");
@@ -120,7 +129,9 @@ export function SaveToGitHubDialog({
     if (open) {
       if (linkedRepo) {
         setStep("confirm");
-        const repo = repositories.find((r) => r.fullName === linkedRepo.fullName);
+        const repo = repositories.find(
+          (r) => r.fullName === linkedRepo.fullName,
+        );
         if (repo) setSelectedRepo(repo);
         setFilePath(linkedRepo.path);
         setCommitMessage(`Update ${sessionTitle || "document"}`);
@@ -186,15 +197,15 @@ export function SaveToGitHubDialog({
                 "mx-auto mb-4 w-16 h-16",
                 "flex items-center justify-center",
                 "bg-black text-white",
-                "border-3 border-black"
+                "border-3 border-black",
               )}
             >
               <Github className="h-8 w-8" />
             </div>
             <BrutalDialogTitle>Connect to GitHub</BrutalDialogTitle>
             <BrutalDialogDescription>
-              Sign in with GitHub to save your work to a repository.
-              Your content stays yours.
+              Sign in with GitHub to save your work to a repository. Your
+              content stays yours.
             </BrutalDialogDescription>
           </BrutalDialogHeader>
 
@@ -277,7 +288,7 @@ export function SaveToGitHubDialog({
                           "border-3 border-black",
                           "text-left",
                           "hover:bg-gray-50",
-                          "transition-colors duration-100"
+                          "transition-colors duration-100",
                         )}
                       >
                         <span className="flex items-center gap-2">
@@ -342,7 +353,7 @@ export function SaveToGitHubDialog({
               <div
                 className={cn(
                   "flex items-start gap-2 p-3",
-                  "bg-brutal-yellow/20 border-3 border-brutal-yellow"
+                  "bg-brutal-yellow/20 border-3 border-brutal-yellow",
                 )}
               >
                 <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
@@ -382,7 +393,7 @@ export function SaveToGitHubDialog({
               <div
                 className={cn(
                   "flex items-center gap-2 p-3",
-                  "bg-brutal-green/20 border-3 border-brutal-green"
+                  "bg-brutal-green/20 border-3 border-brutal-green",
                 )}
               >
                 <Check className="h-5 w-5" />
@@ -397,7 +408,11 @@ export function SaveToGitHubDialog({
 
         <BrutalDialogFooter>
           {step !== "select-repo" && (
-            <BrutalButton variant="ghost" onClick={handleBack} disabled={saving}>
+            <BrutalButton
+              variant="ghost"
+              onClick={handleBack}
+              disabled={saving}
+            >
               Back
             </BrutalButton>
           )}

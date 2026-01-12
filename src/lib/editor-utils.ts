@@ -1,15 +1,15 @@
+import { CodeHighlightNode, CodeNode } from "@lexical/code";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ListItemNode, ListNode } from "@lexical/list";
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
   TRANSFORMERS,
   type Transformer,
 } from "@lexical/markdown";
-import { createEditor, type SerializedEditorState } from "lexical";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { ListNode, ListItemNode } from "@lexical/list";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { TableNode, TableCellNode, TableRowNode } from "@lexical/table";
+import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
+import { createEditor, type SerializedEditorState } from "lexical";
 
 // Extended transformers for better markdown support
 const EXTENDED_TRANSFORMERS: Transformer[] = TRANSFORMERS;
@@ -48,7 +48,7 @@ export function markdownToLexical(markdown: string): SerializedEditorState {
     () => {
       $convertFromMarkdownString(markdown, EXTENDED_TRANSFORMERS);
     },
-    { discrete: true }
+    { discrete: true },
   );
 
   // Get the serialized state
@@ -137,7 +137,7 @@ export function extractTitle(markdown: string): string | null {
     const firstLine = lines[0].trim();
     // Limit length for title
     if (firstLine.length > 100) {
-      return firstLine.slice(0, 97) + "...";
+      return `${firstLine.slice(0, 97)}...`;
     }
     return firstLine;
   }
@@ -164,7 +164,7 @@ export function isEditorStateEmpty(state: SerializedEditorState): boolean {
         }
         // Check if paragraph only contains empty text
         return paragraph.children.every(
-          (textNode) => !textNode.text || textNode.text.trim() === ""
+          (textNode) => !textNode.text || textNode.text.trim() === "",
         );
       }
       return false;
@@ -207,7 +207,7 @@ export function formatRelativeTime(date: Date): string {
  */
 export function generateCommitMessage(
   docPath: string,
-  isNew: boolean = false
+  isNew: boolean = false,
 ): string {
   const filename = docPath.split("/").pop() || docPath;
   const action = isNew ? "Create" : "Update";

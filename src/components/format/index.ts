@@ -4,14 +4,24 @@
  * Components for configuring document formatting and output settings.
  */
 
+export { ChapterSection, type ChapterSectionProps } from "./ChapterSection";
 export {
+  type FormatConfig,
   FormatPanel,
+  type FormatPanelProps,
   FormatSection,
   useFormatContext,
-  type FormatPanelProps,
-  type FormatConfig,
 } from "./FormatPanel";
-export { TypographySection, type TypographySectionProps } from "./TypographySection";
-export { ChapterSection, type ChapterSectionProps } from "./ChapterSection";
-export { PageLayoutSection, type PageLayoutSectionProps } from "./PageLayoutSection";
-export { PreviewPane, type PreviewPaneProps, type PreviewStatus } from "./PreviewPane";
+export {
+  PageLayoutSection,
+  type PageLayoutSectionProps,
+} from "./PageLayoutSection";
+export {
+  PreviewPane,
+  type PreviewPaneProps,
+  type PreviewStatus,
+} from "./PreviewPane";
+export {
+  TypographySection,
+  type TypographySectionProps,
+} from "./TypographySection";

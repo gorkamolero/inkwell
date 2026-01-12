@@ -1,10 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
-import { withProject, validateBody, ApiError, type ProjectContext } from "@/lib/api-utils";
+import {
+  ApiError,
+  type ProjectContext,
+  validateBody,
+  withProject,
+} from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
-import { getDocument, saveDocument, deleteDocument } from "@/lib/github";
 import { countWords, extractTitle } from "@/lib/editor-utils";
+import { deleteDocument, getDocument, saveDocument } from "@/lib/github";
 
 // ============================================================================
 // Schemas
@@ -43,7 +48,7 @@ async function getDocumentRecord(projectId: string, docId: string) {
   const docByPath = await db.query.documents.findFirst({
     where: and(
       eq(documents.projectId, projectId),
-      eq(documents.path, decodedPath)
+      eq(documents.path, decodedPath),
     ),
   });
 
@@ -67,9 +72,9 @@ interface DocRouteContext {
 // ============================================================================
 
 async function getDocumentHandler(
-  request: NextRequest,
+  _request: NextRequest,
   context: ProjectContext,
-  docId: string
+  docId: string,
 ) {
   const { project, accessToken } = context;
 
@@ -90,7 +95,7 @@ async function getDocumentHandler(
         owner,
         repo,
         document.path,
-        branch
+        branch,
       );
 
       return NextResponse.json({
@@ -132,7 +137,7 @@ async function getDocumentHandler(
 async function saveDocumentHandler(
   request: NextRequest,
   context: ProjectContext,
-  docId: string
+  docId: string,
 ) {
   const { project, accessToken, role, isOwner } = context;
 
@@ -147,9 +152,7 @@ async function saveDocumentHandler(
 
   // Require GitHub for saving
   if (!accessToken || !project.githubRepo) {
-    throw ApiError.forbidden(
-      "GitHub must be connected to save documents"
-    );
+    throw ApiError.forbidden("GitHub must be connected to save documents");
   }
 
   const document = await getDocumentRecord(project.id, docId);
@@ -167,7 +170,7 @@ async function saveDocumentHandler(
       body.content,
       body.sha || null,
       body.message || `Update ${document.path}`,
-      branch
+      branch,
     );
 
     // Update local document metadata
@@ -198,7 +201,7 @@ async function saveDocumentHandler(
       error.message.toLowerCase().includes("conflict")
     ) {
       throw ApiError.conflict(
-        "The document has been modified. Please refresh and try again."
+        "The document has been modified. Please refresh and try again.",
       );
     }
 
@@ -213,7 +216,7 @@ async function saveDocumentHandler(
 async function deleteDocumentHandler(
   request: NextRequest,
   context: ProjectContext,
-  docId: string
+  docId: string,
 ) {
   const { project, accessToken, isOwner } = context;
 
@@ -241,7 +244,7 @@ async function deleteDocumentHandler(
         repo,
         document.path,
         body.sha,
-        branch
+        branch,
       );
     } catch (error) {
       console.error("Error deleting from GitHub:", error);
@@ -259,29 +262,23 @@ async function deleteDocumentHandler(
 // Route Exports with proper parameter handling
 // ============================================================================
 
-export async function GET(
-  request: NextRequest,
-  routeContext: DocRouteContext
-) {
+export async function GET(request: NextRequest, routeContext: DocRouteContext) {
   const { projectId, docId } = await routeContext.params;
 
   // Create a handler that uses withProject and passes docId
-  const handler = withProject(
-    (req, ctx) => getDocumentHandler(req, ctx, docId)
+  const handler = withProject((req, ctx) =>
+    getDocumentHandler(req, ctx, docId),
   );
 
   return handler(request, { params: Promise.resolve({ projectId }) });
 }
 
-export async function PUT(
-  request: NextRequest,
-  routeContext: DocRouteContext
-) {
+export async function PUT(request: NextRequest, routeContext: DocRouteContext) {
   const { projectId, docId } = await routeContext.params;
 
   const handler = withProject(
     (req, ctx) => saveDocumentHandler(req, ctx, docId),
-    { minRole: "editor", requireGitHub: true }
+    { minRole: "editor", requireGitHub: true },
   );
 
   return handler(request, { params: Promise.resolve({ projectId }) });
@@ -289,13 +286,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  routeContext: DocRouteContext
+  routeContext: DocRouteContext,
 ) {
   const { projectId, docId } = await routeContext.params;
 
   const handler = withProject(
     (req, ctx) => deleteDocumentHandler(req, ctx, docId),
-    { requireOwner: true }
+    { requireOwner: true },
   );
 
   return handler(request, { params: Promise.resolve({ projectId }) });

@@ -1,33 +1,36 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { X } from "lucide-react"
+import { X } from "lucide-react";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
-import { BrutalButton } from "./brutal-button"
+import { cn } from "@/lib/utils";
+import { BrutalButton } from "./brutal-button";
 
 interface BrutalDialogContextValue {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const BrutalDialogContext = React.createContext<BrutalDialogContextValue | null>(null)
+const BrutalDialogContext =
+  React.createContext<BrutalDialogContextValue | null>(null);
 
 function useBrutalDialog(): BrutalDialogContextValue {
-  const context = React.useContext(BrutalDialogContext)
+  const context = React.useContext(BrutalDialogContext);
   if (!context) {
-    throw new Error("BrutalDialog components must be used within a BrutalDialog")
+    throw new Error(
+      "BrutalDialog components must be used within a BrutalDialog",
+    );
   }
-  return context
+  return context;
 }
 
 function noop(): void {}
 
 interface BrutalDialogProps {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  defaultOpen?: boolean
-  children: React.ReactNode
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
 }
 
 function BrutalDialog({
@@ -36,28 +39,28 @@ function BrutalDialog({
   defaultOpen = false,
   children,
 }: BrutalDialogProps): React.ReactNode {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
 
-  const isControlled = controlledOpen !== undefined
-  const open = isControlled ? controlledOpen : uncontrolledOpen
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
   const onOpenChange = isControlled
-    ? controlledOnOpenChange ?? noop
-    : setUncontrolledOpen
+    ? (controlledOnOpenChange ?? noop)
+    : setUncontrolledOpen;
 
   return (
     <BrutalDialogContext.Provider value={{ open, onOpenChange }}>
       {children}
     </BrutalDialogContext.Provider>
-  )
+  );
 }
 
-type BrutalDialogTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement>
+type BrutalDialogTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const BrutalDialogTrigger = React.forwardRef<
   HTMLButtonElement,
   BrutalDialogTriggerProps
 >(function BrutalDialogTrigger({ className, children, ...props }, ref) {
-  const { onOpenChange } = useBrutalDialog()
+  const { onOpenChange } = useBrutalDialog();
 
   return (
     <BrutalButton
@@ -68,27 +71,29 @@ const BrutalDialogTrigger = React.forwardRef<
     >
       {children}
     </BrutalButton>
-  )
-})
-BrutalDialogTrigger.displayName = "BrutalDialogTrigger"
+  );
+});
+BrutalDialogTrigger.displayName = "BrutalDialogTrigger";
 
 interface BrutalDialogPortalProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
-function BrutalDialogPortal({ children }: BrutalDialogPortalProps): React.ReactNode {
-  const { open } = useBrutalDialog()
+function BrutalDialogPortal({
+  children,
+}: BrutalDialogPortalProps): React.ReactNode {
+  const { open } = useBrutalDialog();
 
-  if (!open) return null
+  if (!open) return null;
 
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 const BrutalDialogOverlay = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(function BrutalDialogOverlay({ className, ...props }, ref) {
-  const { onOpenChange } = useBrutalDialog()
+  const { onOpenChange } = useBrutalDialog();
 
   return (
     <div
@@ -97,42 +102,46 @@ const BrutalDialogOverlay = React.forwardRef<
         "fixed inset-0 z-50",
         "bg-black/50 backdrop-blur-sm",
         "animate-in fade-in-0",
-        className
+        className,
       )}
       onClick={() => onOpenChange(false)}
       {...props}
     />
-  )
-})
-BrutalDialogOverlay.displayName = "BrutalDialogOverlay"
+  );
+});
+BrutalDialogOverlay.displayName = "BrutalDialogOverlay";
 
-interface BrutalDialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
-  showClose?: boolean
+interface BrutalDialogContentProps
+  extends React.HTMLAttributes<HTMLDivElement> {
+  showClose?: boolean;
 }
 
 const BrutalDialogContent = React.forwardRef<
   HTMLDivElement,
   BrutalDialogContentProps
->(function BrutalDialogContent({ className, children, showClose = true, ...props }, ref) {
-  const { onOpenChange } = useBrutalDialog()
+>(function BrutalDialogContent(
+  { className, children, showClose = true, ...props },
+  ref,
+) {
+  const { onOpenChange } = useBrutalDialog();
 
   React.useEffect(() => {
     function handleEscape(event: KeyboardEvent): void {
       if (event.key === "Escape") {
-        onOpenChange(false)
+        onOpenChange(false);
       }
     }
 
-    document.addEventListener("keydown", handleEscape)
-    return () => document.removeEventListener("keydown", handleEscape)
-  }, [onOpenChange])
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onOpenChange]);
 
   React.useEffect(() => {
-    document.body.style.overflow = "hidden"
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = ""
-    }
-  }, [])
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   return (
     <BrutalDialogPortal>
@@ -150,7 +159,7 @@ const BrutalDialogContent = React.forwardRef<
           "animate-in fade-in-0 zoom-in-95",
           "duration-200",
           "p-6",
-          className
+          className,
         )}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -171,7 +180,7 @@ const BrutalDialogContent = React.forwardRef<
               "hover:shadow-[3px_3px_0_0_#000000]",
               "active:translate-x-[1px] active:translate-y-[1px]",
               "active:shadow-[1px_1px_0_0_#000000]",
-              "focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+              "focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2",
             )}
             onClick={() => onOpenChange(false)}
             aria-label="Close dialog"
@@ -182,9 +191,9 @@ const BrutalDialogContent = React.forwardRef<
         {children}
       </div>
     </BrutalDialogPortal>
-  )
-})
-BrutalDialogContent.displayName = "BrutalDialogContent"
+  );
+});
+BrutalDialogContent.displayName = "BrutalDialogContent";
 
 const BrutalDialogHeader = React.forwardRef<
   HTMLDivElement,
@@ -196,9 +205,9 @@ const BrutalDialogHeader = React.forwardRef<
       className={cn("flex flex-col space-y-2 mb-4", className)}
       {...props}
     />
-  )
-})
-BrutalDialogHeader.displayName = "BrutalDialogHeader"
+  );
+});
+BrutalDialogHeader.displayName = "BrutalDialogHeader";
 
 const BrutalDialogFooter = React.forwardRef<
   HTMLDivElement,
@@ -211,13 +220,13 @@ const BrutalDialogFooter = React.forwardRef<
         "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3",
         "mt-6 pt-4",
         "border-t-3 border-black dark:border-white",
-        className
+        className,
       )}
       {...props}
     />
-  )
-})
-BrutalDialogFooter.displayName = "BrutalDialogFooter"
+  );
+});
+BrutalDialogFooter.displayName = "BrutalDialogFooter";
 
 const BrutalDialogTitle = React.forwardRef<
   HTMLHeadingElement,
@@ -228,13 +237,13 @@ const BrutalDialogTitle = React.forwardRef<
       ref={ref}
       className={cn(
         "text-xl font-black tracking-tight text-black dark:text-white pr-8",
-        className
+        className,
       )}
       {...props}
     />
-  )
-})
-BrutalDialogTitle.displayName = "BrutalDialogTitle"
+  );
+});
+BrutalDialogTitle.displayName = "BrutalDialogTitle";
 
 const BrutalDialogDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -246,20 +255,20 @@ const BrutalDialogDescription = React.forwardRef<
       className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
-  )
-})
-BrutalDialogDescription.displayName = "BrutalDialogDescription"
+  );
+});
+BrutalDialogDescription.displayName = "BrutalDialogDescription";
 
 interface BrutalAlertDialogProps {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  title: string
-  description?: string
-  cancelLabel?: string
-  confirmLabel?: string
-  onCancel?: () => void
-  onConfirm?: () => void
-  destructive?: boolean
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  title: string;
+  description?: string;
+  cancelLabel?: string;
+  confirmLabel?: string;
+  onCancel?: () => void;
+  onConfirm?: () => void;
+  destructive?: boolean;
 }
 
 function BrutalAlertDialog({
@@ -274,13 +283,13 @@ function BrutalAlertDialog({
   destructive = false,
 }: BrutalAlertDialogProps): React.ReactNode {
   function handleCancel(): void {
-    onCancel?.()
-    onOpenChange?.(false)
+    onCancel?.();
+    onOpenChange?.(false);
   }
 
   function handleConfirm(): void {
-    onConfirm?.()
-    onOpenChange?.(false)
+    onConfirm?.();
+    onOpenChange?.(false);
   }
 
   return (
@@ -305,7 +314,7 @@ function BrutalAlertDialog({
         </BrutalDialogFooter>
       </BrutalDialogContent>
     </BrutalDialog>
-  )
+  );
 }
 
 export {
@@ -319,4 +328,4 @@ export {
   BrutalDialogTitle,
   BrutalDialogDescription,
   BrutalAlertDialog,
-}
+};

@@ -1,15 +1,15 @@
 "use client";
 
+import { Check, Copy, Globe, Link2, Lock } from "lucide-react";
 import * as React from "react";
-import { Copy, Check, Link2, Lock, Globe } from "lucide-react";
 import {
+  BrutalButton,
   BrutalDialog,
   BrutalDialogContent,
-  BrutalDialogHeader,
-  BrutalDialogTitle,
   BrutalDialogDescription,
   BrutalDialogFooter,
-  BrutalButton,
+  BrutalDialogHeader,
+  BrutalDialogTitle,
   BrutalInput,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -191,7 +191,7 @@ export function ShareDialog({
                     "transition-all duration-100",
                     localSettings.access === "view"
                       ? "bg-brutal-blue text-white shadow-[4px_4px_0_0_#000]"
-                      : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+                      : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]",
                   )}
                 >
                   <Globe className="h-4 w-4" />
@@ -207,7 +207,7 @@ export function ShareDialog({
                     "transition-all duration-100",
                     localSettings.access === "edit"
                       ? "bg-brutal-green text-black shadow-[4px_4px_0_0_#000]"
-                      : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+                      : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]",
                   )}
                 >
                   <Lock className="h-4 w-4" />

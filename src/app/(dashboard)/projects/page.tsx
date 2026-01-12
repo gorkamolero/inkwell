@@ -1,13 +1,13 @@
-import { Suspense } from "react";
+import { count, desc, eq } from "drizzle-orm";
+import { BookOpen, FolderOpen, Plus } from "lucide-react";
 import Link from "next/link";
-import { Plus, FolderOpen, BookOpen } from "lucide-react";
-import { auth } from "@/lib/auth";
-import { db, projects, documents } from "@/lib/db";
-import { eq, desc, count } from "drizzle-orm";
+import { Suspense } from "react";
 import {
   ProjectCard,
   ProjectCardSkeleton,
 } from "@/components/dashboard/ProjectCard";
+import { auth } from "@/lib/auth";
+import { db, documents, projects } from "@/lib/db";
 
 export const metadata = {
   title: "Projects",

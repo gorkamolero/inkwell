@@ -1,4 +1,4 @@
-import { CloudOff, Lock, DollarSign } from "lucide-react";
+import { CloudOff, DollarSign, Lock } from "lucide-react";
 import { BrutalCard } from "@/components/ui";
 
 const painPoints = [
@@ -64,7 +64,9 @@ export function PainPoints() {
               </h3>
 
               {/* Description */}
-              <p className="text-gray-700 leading-relaxed">{point.description}</p>
+              <p className="text-gray-700 leading-relaxed">
+                {point.description}
+              </p>
             </BrutalCard>
           ))}
         </div>

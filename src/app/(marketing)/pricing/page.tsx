@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
+import Link from "next/link";
 import { PLANS } from "@/lib/stripe";
 
 export const metadata = {
   title: "Pricing",
-  description: "Simple, transparent pricing. Start free, upgrade when you need more.",
+  description:
+    "Simple, transparent pricing. Start free, upgrade when you need more.",
 };
 
 export default function PricingPage() {
@@ -111,9 +112,7 @@ function PricingCard({
       </div>
 
       <div className="mb-6">
-        <span className="text-4xl font-black text-black">
-          ${price}
-        </span>
+        <span className="text-4xl font-black text-black">${price}</span>
         <span className="text-gray-700">/month</span>
       </div>
 

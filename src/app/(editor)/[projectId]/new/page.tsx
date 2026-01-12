@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, use } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useState } from "react";
 
 interface NewDocumentPageProps {
   params: Promise<{ projectId: string }>;
@@ -47,7 +47,9 @@ export default function NewDocumentPage({ params }: NewDocumentPageProps) {
       const { document } = await response.json();
       router.push(`/${projectId}/${document.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create document");
+      setError(
+        err instanceof Error ? err.message : "Failed to create document",
+      );
       setCreating(false);
     }
   }

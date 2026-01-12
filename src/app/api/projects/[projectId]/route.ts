@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
-  withProject,
-  validateBody,
   ApiError,
   generateSlug,
   type ProjectContext,
+  validateBody,
+  withProject,
 } from "@/lib/api-utils";
-import { db, projects, documents, projectCollaborators } from "@/lib/db";
+import { db, documents, projectCollaborators, projects } from "@/lib/db";
 
 // ============================================================================
 // Schemas
@@ -36,8 +36,8 @@ const updateProjectSchema = z.object({
 // ============================================================================
 
 async function getProjectHandler(
-  request: NextRequest,
-  { project, role, isOwner }: ProjectContext
+  _request: NextRequest,
+  { project, role, isOwner }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -90,7 +90,7 @@ async function getProjectHandler(
   // Calculate total word count
   const totalWordCount = projectDocuments.reduce(
     (sum, doc) => sum + (doc.wordCount ?? 0),
-    0
+    0,
   );
 
   return NextResponse.json({
@@ -126,7 +126,7 @@ export const GET = withProject(getProjectHandler);
 
 async function updateProjectHandler(
   request: NextRequest,
-  { project, isOwner }: ProjectContext
+  { project, isOwner }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -186,8 +186,8 @@ export const PATCH = withProject(updateProjectHandler, { requireOwner: true });
 // ============================================================================
 
 async function deleteProjectHandler(
-  request: NextRequest,
-  { project, isOwner }: ProjectContext
+  _request: NextRequest,
+  { project, isOwner }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");

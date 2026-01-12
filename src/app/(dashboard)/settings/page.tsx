@@ -1,17 +1,17 @@
-import { Suspense } from "react";
-import { auth } from "@/lib/auth";
-import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { SettingsForm } from "@/components/layout/settings-form";
-import { BillingSection } from "@/components/layout/billing-section";
 import {
-  User,
-  CreditCard,
   AlertTriangle,
+  CheckCircle,
+  CreditCard,
   Github,
   Mail,
-  CheckCircle,
+  User,
 } from "lucide-react";
+import { Suspense } from "react";
+import { BillingSection } from "@/components/layout/billing-section";
+import { SettingsForm } from "@/components/layout/settings-form";
+import { auth } from "@/lib/auth";
+import { db, users } from "@/lib/db";
 import type { UserWithSubscription } from "@/types";
 
 export const metadata = {
@@ -93,7 +93,9 @@ export default async function SettingsPage() {
         <section className="border-3 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="mb-6 flex items-center gap-2">
             <Mail className="h-6 w-6" />
-            <h2 className="text-xl font-black text-black">Connected Accounts</h2>
+            <h2 className="text-xl font-black text-black">
+              Connected Accounts
+            </h2>
           </div>
 
           <div className="space-y-4">
@@ -123,7 +125,6 @@ export default async function SettingsPage() {
                 </button>
               )}
             </div>
-
           </div>
         </section>
 

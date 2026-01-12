@@ -5,11 +5,20 @@
  * and later claimed by authenticated users.
  */
 
-import { cookies } from "next/headers";
 import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
-import { db, writingSessions, type WritingSession, type NewWritingSession } from "./db";
-import { getDefaultConfig, type FormatConfig, type ContentType } from "./format-schema";
+import { cookies } from "next/headers";
+import {
+  db,
+  type NewWritingSession,
+  type WritingSession,
+  writingSessions,
+} from "./db";
+import {
+  type ContentType,
+  type FormatConfig,
+  getDefaultConfig,
+} from "./format-schema";
 
 // Re-export types for convenience
 export type { ContentType, FormatConfig };
@@ -92,7 +101,9 @@ export async function createSession(options?: {
   return session;
 }
 
-export async function getSessionById(id: string): Promise<WritingSession | null> {
+export async function getSessionById(
+  id: string,
+): Promise<WritingSession | null> {
   const database = requireDb();
   const session = await database.query.writingSessions.findFirst({
     where: eq(writingSessions.id, id),
@@ -100,7 +111,9 @@ export async function getSessionById(id: string): Promise<WritingSession | null>
   return session ?? null;
 }
 
-export async function getSessionByShareSlug(slug: string): Promise<WritingSession | null> {
+export async function getSessionByShareSlug(
+  slug: string,
+): Promise<WritingSession | null> {
   const database = requireDb();
   const session = await database.query.writingSessions.findFirst({
     where: eq(writingSessions.shareSlug, slug),
@@ -140,7 +153,7 @@ export async function updateSession(
     githubRepo?: string | null;
     githubPath?: string | null;
     lastGithubSha?: string | null;
-  }
+  },
 ): Promise<WritingSession | null> {
   const database = requireDb();
 
@@ -155,7 +168,9 @@ export async function updateSession(
     ...(data.passwordHash !== undefined && { passwordHash: data.passwordHash }),
     ...(data.githubRepo !== undefined && { githubRepo: data.githubRepo }),
     ...(data.githubPath !== undefined && { githubPath: data.githubPath }),
-    ...(data.lastGithubSha !== undefined && { lastGithubSha: data.lastGithubSha }),
+    ...(data.lastGithubSha !== undefined && {
+      lastGithubSha: data.lastGithubSha,
+    }),
   };
 
   const [updated] = await database
@@ -173,7 +188,7 @@ export async function updateSession(
  */
 export async function claimSession(
   sessionId: string,
-  userId: string
+  userId: string,
 ): Promise<WritingSession | null> {
   const database = requireDb();
 
@@ -201,7 +216,9 @@ export async function claimSession(
  * Generates and sets a share slug for a session.
  * Returns the updated session with the share slug.
  */
-export async function createShareLink(sessionId: string): Promise<WritingSession | null> {
+export async function createShareLink(
+  sessionId: string,
+): Promise<WritingSession | null> {
   const database = requireDb();
 
   const session = await getSessionById(sessionId);
@@ -233,7 +250,7 @@ async function generateUniqueShareSlug(maxAttempts = 5): Promise<string> {
  */
 export async function deleteSession(
   sessionId: string,
-  userId?: string
+  userId?: string,
 ): Promise<boolean> {
   const database = requireDb();
 
@@ -244,11 +261,15 @@ export async function deleteSession(
     throw new Error("Not authorized to delete this session");
   }
 
-  await database.delete(writingSessions).where(eq(writingSessions.id, sessionId));
+  await database
+    .delete(writingSessions)
+    .where(eq(writingSessions.id, sessionId));
   return true;
 }
 
-export async function getUserSessions(userId: string): Promise<WritingSession[]> {
+export async function getUserSessions(
+  userId: string,
+): Promise<WritingSession[]> {
   const database = requireDb();
   return database.query.writingSessions.findMany({
     where: eq(writingSessions.ownerId, userId),
@@ -260,7 +281,9 @@ export async function getUserSessions(userId: string): Promise<WritingSession[]>
  * Extends the expiration time of an ephemeral session.
  * Owned sessions do not expire and are returned unchanged.
  */
-export async function extendSessionExpiry(sessionId: string): Promise<WritingSession | null> {
+export async function extendSessionExpiry(
+  sessionId: string,
+): Promise<WritingSession | null> {
   const database = requireDb();
 
   const session = await getSessionById(sessionId);
@@ -294,7 +317,7 @@ export interface SessionAccessContext {
 export function canAccessSession(
   session: WritingSession,
   context: SessionAccessContext,
-  requireWrite: boolean = false
+  requireWrite: boolean = false,
 ): boolean {
   const { userId, cookieSessionId } = context;
 
@@ -327,7 +350,7 @@ export function canAccessSession(
  */
 export function canDeleteSession(
   session: WritingSession,
-  context: SessionAccessContext
+  context: SessionAccessContext,
 ): boolean {
   const { userId, cookieSessionId } = context;
 
@@ -366,7 +389,7 @@ export async function updateSessionGitHub(
     githubRepo?: string;
     githubPath?: string;
     lastGithubSha?: string;
-  }
+  },
 ): Promise<WritingSession | null> {
   return updateSession(sessionId, {
     githubRepo: data.githubRepo ?? null,

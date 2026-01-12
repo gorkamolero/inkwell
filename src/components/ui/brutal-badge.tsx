@@ -1,7 +1,7 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const brutalBadgeVariants = cva(
   [
@@ -48,25 +48,30 @@ const brutalBadgeVariants = cva(
       size: "md",
       interactive: false,
     },
-  }
-)
+  },
+);
 
 export interface BrutalBadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof brutalBadgeVariants> {}
 
 const BrutalBadge = React.forwardRef<HTMLSpanElement, BrutalBadgeProps>(
-  function BrutalBadge({ className, variant, size, interactive, ...props }, ref) {
+  function BrutalBadge(
+    { className, variant, size, interactive, ...props },
+    ref,
+  ) {
     return (
       <span
-        className={cn(brutalBadgeVariants({ variant, size, interactive, className }))}
+        className={cn(
+          brutalBadgeVariants({ variant, size, interactive, className }),
+        )}
         ref={ref}
         {...props}
       />
-    )
-  }
-)
-BrutalBadge.displayName = "BrutalBadge"
+    );
+  },
+);
+BrutalBadge.displayName = "BrutalBadge";
 
 const BrutalBadgeGroup = React.forwardRef<
   HTMLDivElement,
@@ -78,8 +83,8 @@ const BrutalBadgeGroup = React.forwardRef<
       className={cn("flex flex-wrap gap-2", className)}
       {...props}
     />
-  )
-})
-BrutalBadgeGroup.displayName = "BrutalBadgeGroup"
+  );
+});
+BrutalBadgeGroup.displayName = "BrutalBadgeGroup";
 
-export { BrutalBadge, BrutalBadgeGroup, brutalBadgeVariants }
+export { BrutalBadge, BrutalBadgeGroup, brutalBadgeVariants };

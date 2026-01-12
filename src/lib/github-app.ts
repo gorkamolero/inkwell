@@ -1,7 +1,7 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
-import * as fs from "fs";
-import * as path from "path";
 
 // Read private key from file
 function getPrivateKey(): string {
@@ -31,7 +31,9 @@ export function getAppOctokit(): Octokit {
 }
 
 // Get installation ID for a user
-export async function getInstallationId(username: string): Promise<number | null> {
+export async function getInstallationId(
+  username: string,
+): Promise<number | null> {
   const octokit = getAppOctokit();
 
   try {
@@ -39,12 +41,18 @@ export async function getInstallationId(username: string): Promise<number | null
     const { data: installations } = await octokit.apps.listInstallations();
 
     console.log(`[github-app] Looking for installation for user: ${username}`);
-    console.log(`[github-app] Found ${installations.length} installations:`,
-      installations.map(i => i.account?.login));
+    console.log(
+      `[github-app] Found ${installations.length} installations:`,
+      installations.map((i) => i.account?.login),
+    );
 
     for (const installation of installations) {
-      if (installation.account?.login?.toLowerCase() === username.toLowerCase()) {
-        console.log(`[github-app] Found matching installation: ${installation.id}`);
+      if (
+        installation.account?.login?.toLowerCase() === username.toLowerCase()
+      ) {
+        console.log(
+          `[github-app] Found matching installation: ${installation.id}`,
+        );
         return installation.id;
       }
     }
@@ -58,7 +66,9 @@ export async function getInstallationId(username: string): Promise<number | null
 }
 
 // Create an Octokit instance with an installation token
-export async function getInstallationOctokit(installationId: number): Promise<Octokit> {
+export async function getInstallationOctokit(
+  installationId: number,
+): Promise<Octokit> {
   const appId = process.env.GITHUB_APP_ID;
   if (!appId) {
     throw new Error("GITHUB_APP_ID not set");
@@ -75,7 +85,9 @@ export async function getInstallationOctokit(installationId: number): Promise<Oc
 }
 
 // Get an Octokit instance for a specific user (finds their installation)
-export async function getOctokitForUser(username: string): Promise<Octokit | null> {
+export async function getOctokitForUser(
+  username: string,
+): Promise<Octokit | null> {
   const installationId = await getInstallationId(username);
   if (!installationId) {
     return null;
@@ -106,7 +118,7 @@ export async function createRepository(
   accessToken: string,
   repoName: string,
   isPrivate: boolean,
-  description?: string
+  description?: string,
 ): Promise<{ owner: string; repo: string; defaultBranch: string } | null> {
   const octokit = new Octokit({ auth: accessToken });
 
@@ -147,7 +159,7 @@ export async function getFileSha(
   owner: string,
   repo: string,
   path: string,
-  branch: string
+  branch: string,
 ): Promise<string | null> {
   const octokit = new Octokit({ auth: accessToken });
 
@@ -179,13 +191,19 @@ export async function commitFile(
   path: string,
   content: string,
   message: string,
-  branch: string = "main"
+  branch: string = "main",
 ): Promise<CommitFileResult | null> {
   const octokit = new Octokit({ auth: accessToken });
 
   try {
     // Check if file exists to get SHA for update
-    const existingSha = await getFileSha(accessToken, owner, repo, path, branch);
+    const existingSha = await getFileSha(
+      accessToken,
+      owner,
+      repo,
+      path,
+      branch,
+    );
 
     const { data } = await octokit.repos.createOrUpdateFileContents({
       owner,
@@ -217,7 +235,7 @@ export async function commitMultipleFiles(
   repo: string,
   files: Array<{ path: string; content: string }>,
   message: string,
-  branch: string = "main"
+  branch: string = "main",
 ): Promise<CommitFileResult | null> {
   const octokit = new Octokit({ auth: accessToken });
 
@@ -250,7 +268,7 @@ export async function commitMultipleFiles(
           encoding: "base64",
         });
         return { path: file.path, sha: blob.sha };
-      })
+      }),
     );
 
     // Create new tree with the blobs
@@ -283,7 +301,9 @@ export async function commitMultipleFiles(
       sha: newCommit.sha,
     });
 
-    console.log(`[github-app] Committed ${files.length} files to ${owner}/${repo}`);
+    console.log(
+      `[github-app] Committed ${files.length} files to ${owner}/${repo}`,
+    );
     return {
       sha: newCommit.sha,
       commitUrl: newCommit.html_url!,

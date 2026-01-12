@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { AlertCircle, Check, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Check, AlertCircle } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface SyncButtonProps {
@@ -12,7 +12,10 @@ interface SyncButtonProps {
 export function SyncButton({ projectSlug }: SyncButtonProps) {
   const router = useRouter();
   const [syncing, setSyncing] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   async function handleSync() {
     setSyncing(true);
@@ -48,7 +51,7 @@ export function SyncButton({ projectSlug }: SyncButtonProps) {
           "flex items-center gap-2 border-3 border-black px-4 py-2 font-bold transition-all",
           syncing
             ? "cursor-not-allowed bg-gray-100 text-gray-500"
-            : "bg-white text-black hover:bg-gray-100"
+            : "bg-white text-black hover:bg-gray-100",
         )}
       >
         <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
@@ -59,7 +62,7 @@ export function SyncButton({ projectSlug }: SyncButtonProps) {
         <span
           className={cn(
             "flex items-center gap-1 text-sm font-medium",
-            result.success ? "text-green-600" : "text-red-600"
+            result.success ? "text-green-600" : "text-red-600",
           )}
         >
           {result.success ? (

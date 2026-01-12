@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { withAuth, ApiError, type AuthContext } from "@/lib/api-utils";
-import { createBillingPortalSession } from "@/lib/stripe";
+import { type NextRequest, NextResponse } from "next/server";
+import { ApiError, type AuthContext, withAuth } from "@/lib/api-utils";
 import { db, subscriptions } from "@/lib/db";
+import { createBillingPortalSession } from "@/lib/stripe";
 
 // ============================================================================
 // POST /api/billing/portal - Create Stripe billing portal session
 // ============================================================================
 
 async function createPortalHandler(
-  request: NextRequest,
-  { userId }: AuthContext
+  _request: NextRequest,
+  { userId }: AuthContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -23,7 +23,7 @@ async function createPortalHandler(
 
   if (!subscription?.stripeCustomerId) {
     throw ApiError.badRequest(
-      "No billing account found. Please subscribe to a plan first."
+      "No billing account found. Please subscribe to a plan first.",
     );
   }
 

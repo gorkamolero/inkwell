@@ -1,10 +1,10 @@
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import "@auth/core/jwt";
 
 import { db } from "./db";
-import { users, accounts, sessions } from "./db/schema";
+import { accounts, sessions, users } from "./db/schema";
 
 const PROTECTED_PATHS = ["/projects", "/settings", "/dashboard"];
 
@@ -61,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const isLoggedIn = !!auth?.user;
       const isProtectedRoute = PROTECTED_PATHS.some(
         (path) =>
-          nextUrl.pathname === path || nextUrl.pathname.startsWith(`${path}/`)
+          nextUrl.pathname === path || nextUrl.pathname.startsWith(`${path}/`),
       );
 
       if (isProtectedRoute) {

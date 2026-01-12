@@ -1,8 +1,8 @@
 "use client";
 
 import { Github } from "lucide-react";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 interface AuthFormProps {
   mode: "login" | "signup";
@@ -28,14 +28,20 @@ export function AuthForm({ mode }: AuthFormProps): React.ReactNode {
         {mode === "login" ? (
           <>
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-bold text-black hover:underline">
+            <Link
+              href="/signup"
+              className="font-bold text-black hover:underline"
+            >
               Sign up
             </Link>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-bold text-black hover:underline">
+            <Link
+              href="/login"
+              className="font-bold text-black hover:underline"
+            >
               Sign in
             </Link>
           </>

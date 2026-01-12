@@ -1,7 +1,7 @@
 "use client";
 
+import { Clock, FileText, Globe, Lock } from "lucide-react";
 import Link from "next/link";
-import { FileText, Clock, Lock, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProjectCardProps {
@@ -51,7 +51,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         "hover:translate-x-[-2px] hover:translate-y-[-2px]",
         "hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]",
         "active:translate-x-[2px] active:translate-y-[2px]",
-        "active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+        "active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
       )}
     >
       {/* Colored Top Border */}

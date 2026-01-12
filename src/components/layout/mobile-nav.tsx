@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface MobileNavProps {
@@ -49,7 +49,7 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
           "hover:translate-x-[-1px] hover:translate-y-[-1px]",
           "hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
           "active:translate-x-[1px] active:translate-y-[1px]",
-          "active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          "active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
         )}
         aria-expanded={isOpen}
         aria-controls="mobile-menu"
@@ -79,7 +79,7 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
           "border-l-4 border-black bg-white",
           "shadow-[-8px_0_0_0_rgba(0,0,0,0.1)]",
           "transform transition-transform duration-200 ease-out",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          isOpen ? "translate-x-0" : "translate-x-full",
         )}
         role="dialog"
         aria-modal="true"

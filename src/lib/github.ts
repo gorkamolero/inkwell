@@ -98,14 +98,14 @@ function extractErrorDetails(error: OctokitError): {
 function createErrorFromStatus(
   status: number,
   message: string,
-  retryAfter: number | undefined
+  retryAfter: number | undefined,
 ): GitHubError {
   switch (status) {
     case 401:
       return new GitHubError(
         "Authentication failed. Please reconnect your GitHub account.",
         "UNAUTHORIZED",
-        status
+        status,
       );
     case 403:
       if (message.toLowerCase().includes("rate limit")) {
@@ -113,38 +113,38 @@ function createErrorFromStatus(
           "GitHub API rate limit exceeded. Please try again later.",
           "RATE_LIMITED",
           status,
-          retryAfter
+          retryAfter,
         );
       }
       return new GitHubError(
         "Access forbidden. You may not have permission to perform this action.",
         "FORBIDDEN",
-        status
+        status,
       );
     case 404:
       return new GitHubError(
         "Resource not found. The repository or file may have been deleted.",
         "NOT_FOUND",
-        status
+        status,
       );
     case 409:
       return new GitHubError(
         "Conflict detected. The file may have been modified by someone else.",
         "CONFLICT",
-        status
+        status,
       );
     case 422:
       return new GitHubError(
         "Validation failed. Please check your input.",
         "VALIDATION_ERROR",
-        status
+        status,
       );
     default:
       if (status >= 500) {
         return new GitHubError(
           "GitHub server error. Please try again later.",
           "SERVER_ERROR",
-          status
+          status,
         );
       }
       return new GitHubError(message, "UNKNOWN", status);
@@ -160,7 +160,7 @@ export class GitHubError extends Error {
     message: string,
     code: GitHubErrorCode,
     status?: number,
-    retryAfter?: number
+    retryAfter?: number,
   ) {
     super(message);
     this.name = "GitHubError";
@@ -180,7 +180,7 @@ export class GitHubError extends Error {
       if (isNetworkError) {
         return new GitHubError(
           "Network error. Please check your connection.",
-          "NETWORK_ERROR"
+          "NETWORK_ERROR",
         );
       }
     }
@@ -215,7 +215,7 @@ const NON_RETRYABLE_ERRORS = new Set<GitHubErrorCode>([
 async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = DEFAULT_MAX_RETRIES,
-  baseDelay = DEFAULT_BASE_DELAY
+  baseDelay = DEFAULT_BASE_DELAY,
 ): Promise<T> {
   let lastError: GitHubError | undefined;
 
@@ -232,7 +232,7 @@ async function withRetry<T>(
       const delay =
         lastError.code === "RATE_LIMITED" && lastError.retryAfter
           ? Math.min(lastError.retryAfter, MAX_RETRY_DELAY)
-          : baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+          : baseDelay * 2 ** attempt + Math.random() * 1000;
 
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -291,7 +291,7 @@ export async function listUserRepos(accessToken: string): Promise<RepoInfo[]> {
           fullName: repo.full_name,
           private: repo.private,
           defaultBranch: repo.default_branch,
-        }))
+        })),
       );
 
       if (data.length < perPage) break;
@@ -309,7 +309,7 @@ export async function listUserRepos(accessToken: string): Promise<RepoInfo[]> {
 export async function createRepo(
   accessToken: string,
   name: string,
-  isPrivate: boolean
+  isPrivate: boolean,
 ): Promise<RepoInfo> {
   const octokit = getGitHubClient(accessToken);
 
@@ -342,7 +342,7 @@ export async function listDocuments(
   accessToken: string,
   owner: string,
   repo: string,
-  branch: string
+  branch: string,
 ): Promise<DocumentInfo[]> {
   const octokit = getGitHubClient(accessToken);
 
@@ -367,7 +367,7 @@ export async function listDocuments(
           item.type === "blob" &&
           item.path !== undefined &&
           item.path.endsWith(".md") &&
-          item.sha !== undefined
+          item.sha !== undefined,
       )
       .map((item) => ({
         path: item.path,
@@ -385,7 +385,7 @@ export async function listDocumentsInPath(
   owner: string,
   repo: string,
   path: string,
-  branch: string
+  branch: string,
 ): Promise<DocumentInfo[]> {
   const octokit = getGitHubClient(accessToken);
 
@@ -436,7 +436,7 @@ export async function getDocument(
   owner: string,
   repo: string,
   path: string,
-  branch: string
+  branch: string,
 ): Promise<DocumentContent> {
   const octokit = getGitHubClient(accessToken);
 
@@ -449,10 +449,7 @@ export async function getDocument(
     });
 
     if (Array.isArray(data) || data.type !== "file") {
-      throw new GitHubError(
-        `Path "${path}" is not a file`,
-        "VALIDATION_ERROR"
-      );
+      throw new GitHubError(`Path "${path}" is not a file`, "VALIDATION_ERROR");
     }
 
     // Content is base64 encoded
@@ -477,7 +474,7 @@ export async function saveDocument(
   content: string,
   sha: string | null,
   message: string,
-  branch: string
+  branch: string,
 ): Promise<string> {
   const octokit = getGitHubClient(accessToken);
 
@@ -505,7 +502,7 @@ export async function deleteDocument(
   repo: string,
   path: string,
   sha: string,
-  branch: string
+  branch: string,
 ): Promise<void> {
   const octokit = getGitHubClient(accessToken);
 
@@ -533,7 +530,7 @@ export async function getCommitHistory(
   owner: string,
   repo: string,
   path: string,
-  branch: string
+  branch: string,
 ): Promise<CommitInfo[]> {
   const octokit = getGitHubClient(accessToken);
 
@@ -563,7 +560,7 @@ export async function getFileAtCommit(
   owner: string,
   repo: string,
   path: string,
-  commitSha: string
+  commitSha: string,
 ): Promise<DocumentContent> {
   const octokit = getGitHubClient(accessToken);
 
@@ -588,7 +585,7 @@ export async function getFileAtCommit(
     if (!file || !file.sha) {
       throw new GitHubError(
         `File "${path}" not found at commit ${commitSha}`,
-        "NOT_FOUND"
+        "NOT_FOUND",
       );
     }
 
@@ -640,7 +637,7 @@ function isExcludedDirectory(dir: string): boolean {
 }
 
 function groupFilesByTopDirectory(
-  files: Array<{ path?: string }>
+  files: Array<{ path?: string }>,
 ): Map<string, string[]> {
   const candidates = new Map<string, string[]>();
 
@@ -678,7 +675,7 @@ export async function detectRepoStructure(
   accessToken: string,
   owner: string,
   repo: string,
-  branch: string
+  branch: string,
 ): Promise<RepoStructure> {
   const octokit = getGitHubClient(accessToken);
 
@@ -698,8 +695,7 @@ export async function detectRepoStructure(
     });
 
     const mdFiles = tree.tree.filter(
-      (item) =>
-        item.type === "blob" && item.path?.endsWith(".md") && item.path
+      (item) => item.type === "blob" && item.path?.endsWith(".md") && item.path,
     );
 
     const rootMdFiles = mdFiles.filter((item) => {
@@ -709,7 +705,7 @@ export async function detectRepoStructure(
 
     const chaptersFiles = mdFiles.filter(
       (item) =>
-        item.path?.startsWith("chapters/") && !item.path.includes("/", 9)
+        item.path?.startsWith("chapters/") && !item.path.includes("/", 9),
     );
 
     const bookCandidates = groupFilesByTopDirectory(mdFiles);
@@ -749,7 +745,7 @@ function findChaptersPath(files: string[], topDir: string): string {
   ];
 
   for (const pattern of patterns) {
-    if (files.some((f) => f.startsWith(pattern + "/"))) {
+    if (files.some((f) => f.startsWith(`${pattern}/`))) {
       return pattern;
     }
   }
@@ -790,7 +786,7 @@ function formatBookName(dirName: string): string {
  */
 export function parseGitHubUrl(url: string): GitHubRepo | null {
   const match = url.match(
-    /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?$/
+    /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?$/,
   );
   if (!match) return null;
 
@@ -808,7 +804,7 @@ export function parseGitHubUrl(url: string): GitHubRepo | null {
 export async function getRepoContents(
   octokit: Octokit,
   { owner, repo, branch }: GitHubRepo,
-  path: string = ""
+  path: string = "",
 ): Promise<
   | {
       type: string;
@@ -851,7 +847,7 @@ export async function getRepoContents(
 export async function getFileContent(
   octokit: Octokit,
   { owner, repo, branch }: GitHubRepo,
-  path: string
+  path: string,
 ): Promise<{ content: string; sha: string; path: string }> {
   const { data } = await octokit.repos.getContent({
     owner,
@@ -890,7 +886,7 @@ export async function createOrUpdateFile(
     content: string;
     message: string;
     sha?: string;
-  }
+  },
 ) {
   const { data } = await octokit.repos.createOrUpdateFileContents({
     owner,
@@ -910,7 +906,7 @@ export async function createOrUpdateFile(
  */
 export async function listBranches(
   octokit: Octokit,
-  { owner, repo }: Pick<GitHubRepo, "owner" | "repo">
+  { owner, repo }: Pick<GitHubRepo, "owner" | "repo">,
 ) {
   const { data } = await octokit.repos.listBranches({
     owner,
@@ -933,7 +929,7 @@ export async function createBranch(
   }: {
     branchName: string;
     sourceBranch: string;
-  }
+  },
 ) {
   const { data: ref } = await octokit.git.getRef({
     owner,
@@ -967,7 +963,7 @@ export async function createPullRequest(
     body: string;
     head: string;
     base: string;
-  }
+  },
 ) {
   const { data } = await octokit.pulls.create({
     owner,

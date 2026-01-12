@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { db, projects, documents } from "@/lib/db";
-import { getInstallationId, getInstallationOctokit } from "@/lib/github-app";
+import { type NextRequest, NextResponse } from "next/server";
 import { generateId } from "@/lib/api-utils";
+import { auth } from "@/lib/auth";
+import { db, documents, projects } from "@/lib/db";
+import { getInstallationId, getInstallationOctokit } from "@/lib/github-app";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ interface RouteParams {
   params: Promise<{ projectId: string }>;
 }
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(_request: NextRequest, { params }: RouteParams) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -21,7 +21,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const { projectId } = await params;
 
   if (!db) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Database not configured" },
+      { status: 500 },
+    );
   }
 
   // Get project
@@ -39,7 +42,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   if (!project.githubRepo) {
-    return NextResponse.json({ error: "Project not connected to GitHub" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Project not connected to GitHub" },
+      { status: 400 },
+    );
   }
 
   const [owner, repoName] = project.githubRepo.split("/");
@@ -48,13 +54,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Get GitHub App installation
     const installationId = await getInstallationId(owner);
     if (!installationId) {
-      return NextResponse.json({ error: "GitHub App not installed" }, { status: 403 });
+      return NextResponse.json(
+        { error: "GitHub App not installed" },
+        { status: 403 },
+      );
     }
 
     const octokit = await getInstallationOctokit(installationId);
 
     // Get repo info and use stored branch or fall back to default
-    const { data: repoData } = await octokit.repos.get({ owner, repo: repoName });
+    const { data: repoData } = await octokit.repos.get({
+      owner,
+      repo: repoName,
+    });
     const branch = project.githubBranch || repoData.default_branch;
 
     // Get tree
@@ -78,12 +90,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
       // If chaptersPath is set, only include files in that path
       if (chaptersPath) {
-        return item.path.startsWith(chaptersPath + "/");
+        return item.path.startsWith(`${chaptersPath}/`);
       }
 
       // Otherwise include all .md files except common project files
       const fileName = item.path.toLowerCase();
-      const excludePatterns = ["readme", "license", "contributing", "changelog", "claude"];
+      const excludePatterns = [
+        "readme",
+        "license",
+        "contributing",
+        "changelog",
+        "claude",
+      ];
       return !excludePatterns.some((p) => fileName.includes(p));
     });
 
@@ -121,13 +139,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       synced: newDocs.length,
       total: existingDocs.length + newDocs.length,
-      message: newDocs.length > 0
-        ? `Synced ${newDocs.length} new document(s)`
-        : "Already up to date",
+      message:
+        newDocs.length > 0
+          ? `Synced ${newDocs.length} new document(s)`
+          : "Already up to date",
     });
   } catch (error) {
     console.error("Sync error:", error);
-    return NextResponse.json({ error: "Failed to sync from GitHub" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to sync from GitHub" },
+      { status: 500 },
+    );
   }
 }
 

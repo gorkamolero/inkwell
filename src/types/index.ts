@@ -2,18 +2,18 @@ import type { SerializedEditorState } from "lexical";
 
 // Re-export database types
 export type {
-  User,
-  NewUser,
-  Project,
-  NewProject,
+  CollaboratorRole,
   Document,
   NewDocument,
-  ProjectCollaborator,
+  NewProject,
   NewProjectCollaborator,
-  Subscription,
   NewSubscription,
-  CollaboratorRole,
+  NewUser,
+  Project,
+  ProjectCollaborator,
+  Subscription,
   SubscriptionStatus,
+  User,
 } from "@/lib/db/schema";
 
 // Editor types
@@ -89,8 +89,7 @@ export const PROJECT_ROLE_PERMISSIONS = {
   viewer: ["read"],
 } as const;
 
-export type Permission =
-  (typeof PROJECT_ROLE_PERMISSIONS)[ProjectRole][number];
+export type Permission = (typeof PROJECT_ROLE_PERMISSIONS)[ProjectRole][number];
 
 // Document export formats
 export type ExportFormat = "markdown" | "html" | "pdf" | "docx" | "epub";

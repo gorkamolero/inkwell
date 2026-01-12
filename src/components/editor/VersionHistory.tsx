@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { X, RotateCcw, Loader2, GitCommit, User, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Clock, GitCommit, Loader2, RotateCcw, User, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { BrutalButton } from "@/components/ui/brutal-button";
-import type { CommitInfo } from "@/lib/github";
 import { formatRelativeTime } from "@/lib/editor-utils";
+import type { CommitInfo } from "@/lib/github";
+import { cn } from "@/lib/utils";
 
 interface VersionHistoryProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ export function VersionHistory({
 
     try {
       const response = await fetch(
-        `/api/documents/${projectId}/${encodeURIComponent(documentPath)}/history`
+        `/api/documents/${projectId}/${encodeURIComponent(documentPath)}/history`,
       );
 
       if (!response.ok) {
@@ -61,8 +61,8 @@ export function VersionHistory({
       try {
         const response = await fetch(
           `/api/documents/${projectId}/${encodeURIComponent(
-            documentPath
-          )}/version/${commitSha}`
+            documentPath,
+          )}/version/${commitSha}`,
         );
 
         if (!response.ok) {
@@ -72,14 +72,12 @@ export function VersionHistory({
         const data = await response.json();
         setPreviewContent(data.content);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load version"
-        );
+        setError(err instanceof Error ? err.message : "Failed to load version");
       } finally {
         setPreviewLoading(false);
       }
     },
-    [projectId, documentPath]
+    [projectId, documentPath],
   );
 
   // Handle commit selection
@@ -138,7 +136,7 @@ export function VersionHistory({
           "fixed bottom-0 right-0 top-0 z-50 w-full max-w-xl",
           "border-l-4 border-black bg-white",
           "flex flex-col",
-          "animate-in slide-in-from-right duration-300"
+          "animate-in slide-in-from-right duration-300",
         )}
       >
         {/* Header */}
@@ -161,7 +159,7 @@ export function VersionHistory({
           <div
             className={cn(
               "w-full overflow-y-auto border-r-2 border-gray-200",
-              selectedCommit && "w-1/2"
+              selectedCommit && "w-1/2",
             )}
           >
             {loading && (
@@ -202,7 +200,7 @@ export function VersionHistory({
                       "w-full px-4 py-4 text-left transition-colors",
                       selectedCommit?.sha === commit.sha
                         ? "bg-brutal-yellow"
-                        : "hover:bg-gray-50"
+                        : "hover:bg-gray-50",
                     )}
                   >
                     <div className="mb-1 flex items-start justify-between gap-2">

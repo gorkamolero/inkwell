@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getInstallationId, getInstallationOctokit } from "@/lib/github-app";
 
@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
   const repo = searchParams.get("repo");
 
   if (!repo) {
-    return NextResponse.json({ error: "Missing repo parameter" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing repo parameter" },
+      { status: 400 },
+    );
   }
 
   const [owner, repoName] = repo.split("/");
@@ -33,13 +36,19 @@ export async function GET(request: NextRequest) {
   try {
     const installationId = await getInstallationId(owner);
     if (!installationId) {
-      return NextResponse.json({ error: "GitHub App not installed" }, { status: 403 });
+      return NextResponse.json(
+        { error: "GitHub App not installed" },
+        { status: 403 },
+      );
     }
 
     const octokit = await getInstallationOctokit(installationId);
 
     // Get default branch
-    const { data: repoData } = await octokit.repos.get({ owner, repo: repoName });
+    const { data: repoData } = await octokit.repos.get({
+      owner,
+      repo: repoName,
+    });
     const branch = repoData.default_branch;
 
     // Get tree
@@ -89,6 +98,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ tree: rootNodes });
   } catch (error) {
     console.error("Error fetching tree:", error);
-    return NextResponse.json({ error: "Failed to fetch tree" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch tree" },
+      { status: 500 },
+    );
   }
 }

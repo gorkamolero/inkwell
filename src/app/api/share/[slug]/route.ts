@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { ApiError } from "@/lib/api-utils";
-import { getSessionByShareSlug, isSessionExpired, isPasswordProtected } from "@/lib/session";
+import {
+  getSessionByShareSlug,
+  isPasswordProtected,
+  isSessionExpired,
+} from "@/lib/session";
 
 // ============================================================================
 // Types
@@ -36,7 +40,7 @@ export interface GetSharedSessionResponse {
 
 export async function GET(
   _request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { slug } = await params;

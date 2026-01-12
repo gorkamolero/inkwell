@@ -15,13 +15,8 @@ export type Presence = {
 
 const roomContext = createRoomContext<Presence>(client);
 
-export const {
-  RoomProvider,
-  useRoom,
-  useOthers,
-  useMyPresence,
-  useSelf,
-} = roomContext;
+export const { RoomProvider, useRoom, useOthers, useMyPresence, useSelf } =
+  roomContext;
 
 /** Neobrutalist-friendly color palette for user cursors and selections. */
 const USER_COLORS = [

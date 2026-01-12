@@ -5,7 +5,7 @@
  */
 
 export {
+  type GitHubRepo,
   SaveToGitHubDialog,
   type SaveToGitHubDialogProps,
-  type GitHubRepo,
 } from "./SaveToGitHubDialog";

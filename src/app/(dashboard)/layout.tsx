@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { auth } from "@/lib/auth";
 import { getUserTier } from "@/lib/subscription";
 
 export default async function DashboardLayout({

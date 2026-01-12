@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { projects, documents } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
-import { saveDocument } from "@/lib/github";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   ApiError,
   requireDatabase,
   requireGitHubAccessToken,
 } from "@/lib/api-utils";
+import { auth } from "@/lib/auth";
+import { documents, projects } from "@/lib/db";
+import { saveDocument } from "@/lib/github";
 
 interface RouteParams {
   params: Promise<{
@@ -22,7 +22,7 @@ interface RouteParams {
 
 export async function POST(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { projectId, docPath } = await params;
@@ -51,7 +51,7 @@ export async function POST(
     const document = await database.query.documents.findFirst({
       where: and(
         eq(documents.projectId, projectId),
-        eq(documents.path, documentPath)
+        eq(documents.path, documentPath),
       ),
     });
 
@@ -70,7 +70,7 @@ export async function POST(
       document.draftContent,
       document.lastCommitSha || null,
       message || `Update ${documentPath}`,
-      branch
+      branch,
     );
 
     await database
@@ -82,7 +82,10 @@ export async function POST(
         updatedAt: new Date(),
       })
       .where(
-        and(eq(documents.projectId, projectId), eq(documents.path, documentPath))
+        and(
+          eq(documents.projectId, projectId),
+          eq(documents.path, documentPath),
+        ),
       );
 
     return NextResponse.json({ sha: newSha, success: true });

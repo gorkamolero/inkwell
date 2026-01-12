@@ -1,34 +1,33 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ContentEditable } from "@lexical/react/LexicalContentEditable";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import type { EditorState, SerializedEditorState } from "lexical";
-
-import { EditorToolbar } from "./editor-toolbar";
-import { EditorHeader } from "./EditorHeader";
-import { VersionHistory } from "./VersionHistory";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BrutalButton } from "@/components/ui/brutal-button";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { createEditorConfig } from "@/lib/editor-config";
 import {
-  markdownToLexical,
-  lexicalToMarkdown,
   countWords,
   generateCommitMessage,
+  lexicalToMarkdown,
+  markdownToLexical,
 } from "@/lib/editor-utils";
-import { createEditorConfig } from "@/lib/editor-config";
 import { cn } from "@/lib/utils";
+import { EditorHeader } from "./EditorHeader";
+import { EditorToolbar } from "./editor-toolbar";
+import { VersionHistory } from "./VersionHistory";
 
 interface DocumentEditorProps {
   projectId: string;
@@ -61,12 +60,10 @@ export function DocumentEditor({
       } catch {
         return null;
       }
-    }
+    },
   );
   const [currentSha, setCurrentSha] = useState(initialSha);
-  const [wordCount, setWordCount] = useState(() =>
-    countWords(initialContent)
-  );
+  const [wordCount, setWordCount] = useState(() => countWords(initialContent));
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef(initialContent);
@@ -96,7 +93,7 @@ export function DocumentEditor({
             sha: currentSha,
             message: generateCommitMessage(documentPath),
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -106,13 +103,13 @@ export function DocumentEditor({
 
       setHasUncommittedChanges(true); // Mark as having uncommitted changes
     },
-    [projectId, documentPath, currentSha]
+    [projectId, documentPath, currentSha],
   );
 
   // Commit to GitHub
   const commitDocument = useCallback(async () => {
     if (!canCommit || isCommitting) return;
-    
+
     setIsCommitting(true);
     try {
       const response = await fetch(
@@ -123,7 +120,7 @@ export function DocumentEditor({
           body: JSON.stringify({
             message: generateCommitMessage(documentPath),
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -143,13 +140,12 @@ export function DocumentEditor({
   }, [projectId, documentPath, canCommit, isCommitting]);
 
   // Auto-save hook
-  const { status, save, lastSavedAt, markChanged } =
-    useAutoSave({
-      data: contentRef.current,
-      onSave: saveDocument,
-      debounceMs: 2000,
-      enabled: !isMobile, // Disable auto-save on mobile
-    });
+  const { status, save, lastSavedAt, markChanged } = useAutoSave({
+    data: contentRef.current,
+    onSave: saveDocument,
+    debounceMs: 2000,
+    enabled: !isMobile, // Disable auto-save on mobile
+  });
 
   // Handle editor changes
   const handleEditorChange = useCallback(
@@ -167,7 +163,7 @@ export function DocumentEditor({
       // Mark as changed for auto-save
       markChanged();
     },
-    [markChanged]
+    [markChanged],
   );
 
   // Manual save (Cmd/Ctrl+S)
@@ -203,7 +199,7 @@ export function DocumentEditor({
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sha: currentSha }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -219,7 +215,7 @@ export function DocumentEditor({
 
   // Restore from version history
   const handleRestore = useCallback(
-    (commitSha: string, content: string) => {
+    (_commitSha: string, content: string) => {
       contentRef.current = content;
 
       // Update editor with restored content
@@ -232,7 +228,7 @@ export function DocumentEditor({
         console.error("Failed to restore version:", error);
       }
     },
-    [markChanged]
+    [markChanged],
   );
 
   const baseConfig = createEditorConfig({ includeTableNodes: true });
@@ -312,7 +308,7 @@ export function DocumentEditor({
                     className={cn(
                       "prose prose-lg max-w-none",
                       "outline-none min-h-[500px] focus:outline-none",
-                      "font-serif"
+                      "font-serif",
                     )}
                   />
                 }
@@ -347,7 +343,7 @@ export function DocumentEditor({
 }
 
 function SavePlugin({ onSave }: { onSave: () => void }): null {
-  const [editor] = useLexicalComposerContext();
+  const [_editor] = useLexicalComposerContext();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -359,7 +355,7 @@ function SavePlugin({ onSave }: { onSave: () => void }): null {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [editor, onSave]);
+  }, [onSave]);
 
   return null;
 }

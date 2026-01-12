@@ -1,7 +1,7 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const brutalInputVariants = cva(
   [
@@ -25,10 +25,7 @@ const brutalInputVariants = cva(
         lg: "h-12 px-4 text-base",
       },
       error: {
-        true: [
-          "border-brutal-red",
-          "focus:shadow-[4px_4px_0_0_#FF3333]",
-        ],
+        true: ["border-brutal-red", "focus:shadow-[4px_4px_0_0_#FF3333]"],
         false: [],
       },
     },
@@ -36,39 +33,49 @@ const brutalInputVariants = cva(
       size: "md",
       error: false,
     },
-  }
-)
+  },
+);
 
 export interface BrutalInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
     VariantProps<typeof brutalInputVariants> {
-  label?: string
-  helperText?: string
-  errorMessage?: string
+  label?: string;
+  helperText?: string;
+  errorMessage?: string;
 }
 
 function getAriaDescribedBy(
   inputId: string,
   hasError: boolean,
-  helperText?: string
+  helperText?: string,
 ): string | undefined {
   if (hasError) {
-    return `${inputId}-error`
+    return `${inputId}-error`;
   }
   if (helperText) {
-    return `${inputId}-helper`
+    return `${inputId}-helper`;
   }
-  return undefined
+  return undefined;
 }
 
 const BrutalInput = React.forwardRef<HTMLInputElement, BrutalInputProps>(
   function BrutalInput(
-    { className, type, size, error, label, helperText, errorMessage, id, ...props },
-    ref
+    {
+      className,
+      type,
+      size,
+      error,
+      label,
+      helperText,
+      errorMessage,
+      id,
+      ...props
+    },
+    ref,
   ) {
-    const generatedId = React.useId()
-    const inputId = id ?? generatedId
-    const hasError = error || !!errorMessage
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
+    const hasError = error || !!errorMessage;
 
     return (
       <div className="w-full">
@@ -83,7 +90,9 @@ const BrutalInput = React.forwardRef<HTMLInputElement, BrutalInputProps>(
         <input
           type={type}
           id={inputId}
-          className={cn(brutalInputVariants({ size, error: hasError, className }))}
+          className={cn(
+            brutalInputVariants({ size, error: hasError, className }),
+          )}
           ref={ref}
           aria-invalid={hasError}
           aria-describedby={getAriaDescribedBy(inputId, hasError, helperText)}
@@ -106,10 +115,10 @@ const BrutalInput = React.forwardRef<HTMLInputElement, BrutalInputProps>(
           </p>
         )}
       </div>
-    )
-  }
-)
-BrutalInput.displayName = "BrutalInput"
+    );
+  },
+);
+BrutalInput.displayName = "BrutalInput";
 
 const brutalTextareaVariants = cva(
   [
@@ -129,74 +138,77 @@ const brutalTextareaVariants = cva(
   {
     variants: {
       error: {
-        true: [
-          "border-brutal-red",
-          "focus:shadow-[4px_4px_0_0_#FF3333]",
-        ],
+        true: ["border-brutal-red", "focus:shadow-[4px_4px_0_0_#FF3333]"],
         false: [],
       },
     },
     defaultVariants: {
       error: false,
     },
-  }
-)
+  },
+);
 
 export interface BrutalTextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement>,
     VariantProps<typeof brutalTextareaVariants> {
-  label?: string
-  helperText?: string
-  errorMessage?: string
+  label?: string;
+  helperText?: string;
+  errorMessage?: string;
 }
 
-const BrutalTextarea = React.forwardRef<HTMLTextAreaElement, BrutalTextareaProps>(
-  function BrutalTextarea(
-    { className, error, label, helperText, errorMessage, id, ...props },
-    ref
-  ) {
-    const generatedId = React.useId()
-    const textareaId = id ?? generatedId
-    const hasError = error || !!errorMessage
+const BrutalTextarea = React.forwardRef<
+  HTMLTextAreaElement,
+  BrutalTextareaProps
+>(function BrutalTextarea(
+  { className, error, label, helperText, errorMessage, id, ...props },
+  ref,
+) {
+  const generatedId = React.useId();
+  const textareaId = id ?? generatedId;
+  const hasError = error || !!errorMessage;
 
-    return (
-      <div className="w-full">
-        {label && (
-          <label
-            htmlFor={textareaId}
-            className="block mb-2 text-xs font-bold uppercase tracking-wider text-black dark:text-white"
-          >
-            {label}
-          </label>
-        )}
-        <textarea
-          id={textareaId}
-          className={cn(brutalTextareaVariants({ error: hasError, className }))}
-          ref={ref}
-          aria-invalid={hasError}
-          aria-describedby={getAriaDescribedBy(textareaId, hasError, helperText)}
-          {...props}
-        />
-        {errorMessage && (
-          <p
-            id={`${textareaId}-error`}
-            className="mt-2 text-sm font-medium text-brutal-red"
-          >
-            {errorMessage}
-          </p>
-        )}
-        {helperText && !errorMessage && (
-          <p
-            id={`${textareaId}-helper`}
-            className="mt-2 text-sm text-muted-foreground"
-          >
-            {helperText}
-          </p>
-        )}
-      </div>
-    )
-  }
-)
-BrutalTextarea.displayName = "BrutalTextarea"
+  return (
+    <div className="w-full">
+      {label && (
+        <label
+          htmlFor={textareaId}
+          className="block mb-2 text-xs font-bold uppercase tracking-wider text-black dark:text-white"
+        >
+          {label}
+        </label>
+      )}
+      <textarea
+        id={textareaId}
+        className={cn(brutalTextareaVariants({ error: hasError, className }))}
+        ref={ref}
+        aria-invalid={hasError}
+        aria-describedby={getAriaDescribedBy(textareaId, hasError, helperText)}
+        {...props}
+      />
+      {errorMessage && (
+        <p
+          id={`${textareaId}-error`}
+          className="mt-2 text-sm font-medium text-brutal-red"
+        >
+          {errorMessage}
+        </p>
+      )}
+      {helperText && !errorMessage && (
+        <p
+          id={`${textareaId}-helper`}
+          className="mt-2 text-sm text-muted-foreground"
+        >
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+});
+BrutalTextarea.displayName = "BrutalTextarea";
 
-export { BrutalInput, BrutalTextarea, brutalInputVariants, brutalTextareaVariants }
+export {
+  BrutalInput,
+  BrutalTextarea,
+  brutalInputVariants,
+  brutalTextareaVariants,
+};

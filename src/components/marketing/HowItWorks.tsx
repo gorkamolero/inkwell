@@ -75,7 +75,9 @@ export function HowItWorks() {
                       <h3 className="mb-2 text-xl font-black text-black sm:text-2xl">
                         {step.title}
                       </h3>
-                      <p className="max-w-sm text-black/80">{step.description}</p>
+                      <p className="max-w-sm text-black/80">
+                        {step.description}
+                      </p>
                     </div>
                   </div>
 

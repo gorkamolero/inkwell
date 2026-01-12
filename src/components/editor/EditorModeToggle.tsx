@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { Pencil, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +50,7 @@ export function EditorModeToggle({
         "bg-white",
         "shadow-[4px_4px_0_0_#000]",
         disabled && "opacity-50 cursor-not-allowed",
-        className
+        className,
       )}
       role="tablist"
       aria-label="Editor mode"
@@ -70,7 +69,7 @@ export function EditorModeToggle({
           "focus:outline-none focus:ring-2 focus:ring-brutal-yellow focus:ring-inset",
           mode === "write"
             ? "bg-brutal-yellow text-black"
-            : "bg-white text-black hover:bg-gray-100"
+            : "bg-white text-black hover:bg-gray-100",
         )}
       >
         <Pencil className="h-4 w-4" strokeWidth={2.5} />
@@ -93,7 +92,7 @@ export function EditorModeToggle({
           "focus:outline-none focus:ring-2 focus:ring-brutal-yellow focus:ring-inset",
           mode === "format"
             ? "bg-brutal-blue text-white"
-            : "bg-white text-black hover:bg-gray-100"
+            : "bg-white text-black hover:bg-gray-100",
         )}
       >
         <Settings2 className="h-4 w-4" strokeWidth={2.5} />

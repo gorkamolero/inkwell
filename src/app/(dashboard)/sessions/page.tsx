@@ -1,6 +1,6 @@
-import { Suspense } from "react";
+import { Clock, ExternalLink, FileEdit, Github, Plus } from "lucide-react";
 import Link from "next/link";
-import { Plus, FileEdit, ExternalLink, Clock, Github } from "lucide-react";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getUserSessions } from "@/lib/session";
 
@@ -73,13 +73,14 @@ function SessionCard({
     updatedAt: Date;
   };
 }) {
-  const typeLabel = {
-    book: "Book",
-    article: "Article",
-    thread: "Thread",
-    newsletter: "Newsletter",
-    docs: "Docs",
-  }[session.type || "book"] || "Book";
+  const typeLabel =
+    {
+      book: "Book",
+      article: "Article",
+      thread: "Thread",
+      newsletter: "Newsletter",
+      docs: "Docs",
+    }[session.type || "book"] || "Book";
 
   const updatedDate = new Date(session.updatedAt).toLocaleDateString("en-US", {
     month: "short",

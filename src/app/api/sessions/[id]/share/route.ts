@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, validateBody } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import {
+  canAccessSession,
+  createShareLink,
   getSessionById,
   getSessionIdFromCookie,
-  createShareLink,
-  canAccessSession,
 } from "@/lib/session";
-import { headers } from "next/headers";
 
 // ============================================================================
 // Types
@@ -47,7 +47,7 @@ async function buildShareUrl(shareSlug: string): Promise<string> {
 
 export async function POST(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: RouteParams,
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
@@ -73,7 +73,9 @@ export async function POST(
     const context = { userId: authSession?.user?.id, cookieSessionId };
 
     if (!canAccessSession(session, context, true)) {
-      throw ApiError.forbidden("You don't have permission to share this session");
+      throw ApiError.forbidden(
+        "You don't have permission to share this session",
+      );
     }
 
     const updated = await createShareLink(id);

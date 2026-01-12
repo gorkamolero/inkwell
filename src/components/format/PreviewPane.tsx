@@ -1,7 +1,7 @@
 "use client";
 
+import { Download, Maximize2, RefreshCw, ZoomIn, ZoomOut } from "lucide-react";
 import * as React from "react";
-import { Download, RefreshCw, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { BrutalButton, BrutalCard } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { FormatConfig } from "./FormatPanel";
@@ -116,7 +116,7 @@ export function PreviewPane({
       className={cn(
         "flex flex-col h-full bg-gray-100",
         isFullscreen && "bg-gray-900",
-        className
+        className,
       )}
     >
       {/* Toolbar */}
@@ -125,7 +125,7 @@ export function PreviewPane({
           "flex items-center justify-between",
           "px-4 py-2",
           "border-b-3 border-black",
-          "bg-white"
+          "bg-white",
         )}
       >
         <div className="flex items-center gap-2">
@@ -234,14 +234,12 @@ export function PreviewPane({
               className={cn(
                 "w-32 h-40 mb-4",
                 "border-3 border-dashed border-gray-300",
-                "flex items-center justify-center"
+                "flex items-center justify-center",
               )}
             >
               <span className="text-4xl text-gray-300">PDF</span>
             </div>
-            <p className="text-gray-500 mb-4">
-              No preview generated yet
-            </p>
+            <p className="text-gray-500 mb-4">No preview generated yet</p>
             <BrutalButton variant="primary" onClick={onRegenerate}>
               Generate Preview
             </BrutalButton>
@@ -256,7 +254,7 @@ export function PreviewPane({
           "px-4 py-2",
           "border-t-3 border-black",
           "bg-white",
-          "text-xs text-gray-500"
+          "text-xs text-gray-500",
         )}
       >
         <span>Session: {sessionId}</span>

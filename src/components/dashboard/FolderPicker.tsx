@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronRight, ChevronDown, Folder, FolderOpen, Loader2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  FolderOpen,
+  Loader2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface TreeNode {
@@ -30,7 +36,9 @@ export function FolderPicker({ repo, value, onChange }: FolderPickerProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/github/tree?repo=${encodeURIComponent(repo)}`);
+        const response = await fetch(
+          `/api/github/tree?repo=${encodeURIComponent(repo)}`,
+        );
         if (!response.ok) throw new Error("Failed to load folder structure");
         const data = await response.json();
         setTree(data.tree);
@@ -62,7 +70,7 @@ export function FolderPicker({ repo, value, onChange }: FolderPickerProps) {
 
     const isExpanded = expanded.has(node.path);
     const isSelected = value === node.path;
-    const hasChildren = node.children && node.children.some((c) => c.type === "tree");
+    const hasChildren = node.children?.some((c) => c.type === "tree");
 
     return (
       <div key={node.path}>
@@ -71,7 +79,7 @@ export function FolderPicker({ repo, value, onChange }: FolderPickerProps) {
           onClick={() => onChange(node.path)}
           className={cn(
             "flex w-full items-center gap-1 px-2 py-1.5 text-left text-sm font-medium transition-colors hover:bg-gray-100",
-            isSelected && "bg-brutal-yellow/30 border-l-3 border-brutal-yellow"
+            isSelected && "bg-brutal-yellow/30 border-l-3 border-brutal-yellow",
           )}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
         >
@@ -139,7 +147,7 @@ export function FolderPicker({ repo, value, onChange }: FolderPickerProps) {
         onClick={() => onChange("")}
         className={cn(
           "flex w-full items-center gap-1 px-2 py-1.5 text-left text-sm font-medium transition-colors hover:bg-gray-100",
-          value === "" && "bg-brutal-yellow/30 border-l-3 border-brutal-yellow"
+          value === "" && "bg-brutal-yellow/30 border-l-3 border-brutal-yellow",
         )}
       >
         <span className="w-5" />
@@ -152,7 +160,9 @@ export function FolderPicker({ repo, value, onChange }: FolderPickerProps) {
         .map((node) => renderNode(node, 0))}
 
       {folders.length === 0 && (
-        <p className="p-4 text-sm text-gray-500">No folders found in repository</p>
+        <p className="p-4 text-sm text-gray-500">
+          No folders found in repository
+        </p>
       )}
     </div>
   );

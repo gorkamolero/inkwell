@@ -1,8 +1,8 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Loader2 } from "lucide-react"
+import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const brutalButtonVariants = cva(
   [
@@ -89,20 +89,29 @@ const brutalButtonVariants = cva(
       variant: "default",
       size: "md",
     },
-  }
-)
+  },
+);
 
 export interface BrutalButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof brutalButtonVariants> {
-  loading?: boolean
-  loadingText?: string
+  loading?: boolean;
+  loadingText?: string;
 }
 
 const BrutalButton = React.forwardRef<HTMLButtonElement, BrutalButtonProps>(
   function BrutalButton(
-    { className, variant, size, loading, loadingText, children, disabled, ...props },
-    ref
+    {
+      className,
+      variant,
+      size,
+      loading,
+      loadingText,
+      children,
+      disabled,
+      ...props
+    },
+    ref,
   ) {
     return (
       <button
@@ -125,9 +134,9 @@ const BrutalButton = React.forwardRef<HTMLButtonElement, BrutalButtonProps>(
           children
         )}
       </button>
-    )
-  }
-)
-BrutalButton.displayName = "BrutalButton"
+    );
+  },
+);
+BrutalButton.displayName = "BrutalButton";
 
-export { BrutalButton, brutalButtonVariants }
+export { BrutalButton, brutalButtonVariants };

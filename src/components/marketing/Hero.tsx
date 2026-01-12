@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { BrutalButton } from "@/components/ui";
 
 export function Hero() {
@@ -47,13 +47,21 @@ export function Hero() {
           {/* CTAs */}
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
             <Link href="#demo">
-              <BrutalButton variant="primary" size="xl" className="min-w-[200px]">
+              <BrutalButton
+                variant="primary"
+                size="xl"
+                className="min-w-[200px]"
+              >
                 Try It Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </BrutalButton>
             </Link>
             <Link href="#pricing">
-              <BrutalButton variant="outline" size="xl" className="min-w-[200px]">
+              <BrutalButton
+                variant="outline"
+                size="xl"
+                className="min-w-[200px]"
+              >
                 See Pricing
               </BrutalButton>
             </Link>

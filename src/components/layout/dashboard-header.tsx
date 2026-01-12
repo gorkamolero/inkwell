@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { Bell, Search } from "lucide-react";
+import Image from "next/image";
 import type { User } from "next-auth";
 
 interface DashboardHeaderProps {

@@ -1,5 +1,5 @@
+import { ArrowLeft, FileQuestion, Home } from "lucide-react";
 import Link from "next/link";
-import { FileQuestion, Home, ArrowLeft } from "lucide-react";
 import { GoBackButton } from "@/components/layout/go-back-button";
 
 export default function NotFound() {

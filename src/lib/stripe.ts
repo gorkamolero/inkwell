@@ -24,7 +24,7 @@ export const stripe = {
     constructEvent: (
       payload: string | Buffer,
       header: string | Buffer | string[],
-      secret: string
+      secret: string,
     ) => {
       return getStripe().webhooks.constructEvent(payload, header, secret);
     },
@@ -33,7 +33,7 @@ export const stripe = {
     retrieve: (
       id: string,
       params?: Stripe.SubscriptionRetrieveParams,
-      options?: Stripe.RequestOptions
+      options?: Stripe.RequestOptions,
     ) => {
       return getStripe().subscriptions.retrieve(id, params, options);
     },

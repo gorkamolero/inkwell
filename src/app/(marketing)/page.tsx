@@ -1,6 +1,6 @@
 import { HotpressHero } from "@/components/landing/HotpressHero";
-import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { Features } from "@/components/marketing/Features";
+import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { Pricing } from "@/components/marketing/Pricing";
 
 export default function HomePage() {
