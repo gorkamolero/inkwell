@@ -101,39 +101,6 @@ export function MobileNav({ isAuthenticated }: MobileNavProps) {
 
         {/* Navigation links */}
         <nav className="p-4" aria-label="Mobile navigation">
-          <ul className="space-y-2">
-            <li>
-              <Link
-                href="/pricing"
-                onClick={closeMenu}
-                className="flex items-center border-3 border-transparent px-4 py-3 font-bold text-black transition-all hover:border-black hover:bg-gray-50"
-              >
-                Pricing
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/docs"
-                onClick={closeMenu}
-                className="flex items-center border-3 border-transparent px-4 py-3 font-bold text-black transition-all hover:border-black hover:bg-gray-50"
-              >
-                Docs
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/blog"
-                onClick={closeMenu}
-                className="flex items-center border-3 border-transparent px-4 py-3 font-bold text-black transition-all hover:border-black hover:bg-gray-50"
-              >
-                Blog
-              </Link>
-            </li>
-          </ul>
-
-          {/* Divider */}
-          <div className="my-4 border-t-2 border-gray-200" />
-
           {/* Auth links */}
           <ul className="space-y-2">
             {isAuthenticated ? (

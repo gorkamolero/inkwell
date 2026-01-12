@@ -22,29 +22,6 @@ export async function Header() {
             Hotpress
           </Link>
 
-          <nav
-            className="hidden items-center gap-8 md:flex"
-            aria-label="Main navigation"
-          >
-            <Link
-              href="/pricing"
-              className="font-bold text-black hover:text-brutal-blue"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/docs"
-              className="font-bold text-black hover:text-brutal-blue"
-            >
-              Docs
-            </Link>
-            <Link
-              href="/blog"
-              className="font-bold text-black hover:text-brutal-blue"
-            >
-              Blog
-            </Link>
-          </nav>
 
           <div className="flex items-center gap-4">
             {session?.user ? (
