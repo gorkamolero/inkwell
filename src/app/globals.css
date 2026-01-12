@@ -520,10 +520,16 @@ select:focus-visible {
 }
 
 .lb-composer,
-.lb-thread {
-  border: 3px solid black !important;
-  box-shadow: 4px 4px 0 0 black !important;
+.lb-thread,
+.lb-lexical-floating-composer {
+  border: 2px solid black !important;
+  box-shadow: 3px 3px 0 0 black !important;
   border-radius: 0 !important;
+  background: white !important;
+}
+
+.lb-lexical-floating-composer {
+  padding: 8px !important;
 }
 
 .lb-button {
@@ -542,13 +548,22 @@ select:focus-visible {
 }
 
 /* Liveblocks FloatingToolbar - neobrutalist */
-.lb-lexical-floating-toolbar,
-.lb-lexical-floating-toolbar > div {
+.lb-lexical-floating-toolbar {
   background-color: white !important;
   border: 3px solid black !important;
   box-shadow: 4px 4px 0 0 black !important;
   border-radius: 0 !important;
-  padding: 4px !important;
+  padding: 4px 6px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 2px !important;
+}
+
+.lb-lexical-floating-toolbar > div {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
   gap: 2px !important;
 }
 
@@ -559,6 +574,9 @@ select:focus-visible {
   font-family: var(--font-geist-sans), system-ui, sans-serif !important;
   transition: all 0.1s ease !important;
   padding: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .lb-lexical-floating-toolbar button:hover {
@@ -575,7 +593,8 @@ select:focus-visible {
 .lb-lexical-toolbar-separator {
   background-color: #d4d4d4 !important;
   width: 2px !important;
-  margin: 4px 6px !important;
+  height: 20px !important;
+  margin: 0 6px !important;
 }
 
 /* Liveblocks Toolbar (static) - neobrutalist */
