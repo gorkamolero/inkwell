@@ -14,6 +14,7 @@ import {
   REDO_COMMAND,
   UNDO_COMMAND,
 } from "lexical";
+import { OPEN_FLOATING_COMPOSER_COMMAND } from "@liveblocks/react-lexical";
 import {
   Bold,
   Code,
@@ -23,6 +24,7 @@ import {
   Italic,
   List,
   ListOrdered,
+  MessageSquarePlus,
   Quote,
   Redo,
   Strikethrough,
@@ -82,8 +84,12 @@ export function EditorToolbar() {
     editor.dispatchCommand(REDO_COMMAND, undefined);
   }, [editor]);
 
+  const openCommentComposer = useCallback(() => {
+    editor.dispatchCommand(OPEN_FLOATING_COMPOSER_COMMAND, undefined);
+  }, [editor]);
+
   return (
-    <div className="sticky top-0 z-10 mb-6 flex flex-wrap items-center gap-1 border-4 border-black bg-white p-2">
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b-3 border-black bg-white px-4 py-2">
       <ToolbarButton onClick={undo} title="Undo (Ctrl+Z)">
         <Undo className="h-4 w-4" />
       </ToolbarButton>
@@ -140,6 +146,12 @@ export function EditorToolbar() {
       </ToolbarButton>
       <ToolbarButton onClick={formatQuote} title="Quote">
         <Quote className="h-4 w-4" />
+      </ToolbarButton>
+
+      <ToolbarDivider />
+
+      <ToolbarButton onClick={openCommentComposer} title="Add Comment (select text first)">
+        <MessageSquarePlus className="h-4 w-4" />
       </ToolbarButton>
     </div>
   );

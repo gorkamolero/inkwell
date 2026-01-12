@@ -1,5 +1,4 @@
 import { Liveblocks } from "@liveblocks/node";
-import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
 /**
@@ -27,20 +26,16 @@ function getLiveblocks(): Liveblocks {
 }
 
 export async function POST(request: Request) {
-  // Get the session ID from the request body
+  // Get the room from request body (may be undefined for AI/notifications)
   const body = await request.json();
   const { room } = body;
-
-  if (!room) {
-    return NextResponse.json({ error: "Room ID is required" }, { status: 400 });
-  }
 
   // Get authenticated user if available
   const session = await auth();
 
   // Generate user ID and info
   let userId: string;
-  let userInfo: { name: string; color: string; picture?: string };
+  let userInfo: { name: string; color: string; picture?: string; isAuthenticated: boolean };
 
   if (session?.user) {
     // Authenticated user
@@ -49,25 +44,37 @@ export async function POST(request: Request) {
       name: session.user.name || session.user.login || "User",
       color: generateUserColor(userId),
       picture: session.user.image || undefined,
+      isAuthenticated: true,
     };
   } else {
     // Anonymous user - generate a consistent ID based on request
-    // This will be stored in a cookie on the client side for consistency
     userId = `anon-${generateAnonymousId()}`;
     userInfo = {
       name: generateAnonymousName(),
       color: generateUserColor(userId),
+      isAuthenticated: false,
     };
   }
 
-  // Create a Liveblocks session for the user
   const liveblocks = getLiveblocks();
+
+  // If no room specified (AI/notifications), use identifyUser
+  // If room specified, use prepareSession with room access
+  if (!room) {
+    // ID token auth - for AI copilots, notifications, etc.
+    const { status, body: responseBody } = await liveblocks.identifyUser(
+      userId,
+      { userInfo }
+    );
+    return new Response(responseBody, { status });
+  }
+
+  // Access token auth - for specific room access
   const liveblocksSession = liveblocks.prepareSession(userId, {
     userInfo,
   });
 
   // Grant full access to the requested room
-  // Room format: "session-{sessionId}" as per HOTPRESS_ARCHITECTURE.md
   liveblocksSession.allow(room, liveblocksSession.FULL_ACCESS);
 
   // Authorize and return the session
