@@ -4,7 +4,6 @@ import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { TRANSFORMERS } from "@lexical/markdown";
-import { CollaborationPlugin } from "@lexical/react/LexicalCollaborationPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -15,20 +14,17 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import type { Provider } from "@lexical/yjs";
 import { ClientSideSuspense } from "@liveblocks/react";
-import { LiveblocksYjsProvider } from "@liveblocks/yjs";
 import {
-  $createParagraphNode,
-  $createTextNode,
-  $getRoot,
-  type LexicalEditor,
-} from "lexical";
+  LiveblocksPlugin,
+  liveblocksConfig,
+  useIsEditorReady,
+} from "@liveblocks/react-lexical";
+import { $getRoot } from "lexical";
 import { FileText, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import * as Y from "yjs";
 import { BrutalBadge } from "@/components/ui";
-import { RoomProvider, useOthers, useRoom, useSelf } from "@/lib/liveblocks";
+import { RoomProvider, useOthers, useSelf } from "@/lib/liveblocks";
 import { EditorToolbar } from "./editor-toolbar";
 
 // Editor theme - neobrutalist style
@@ -58,13 +54,14 @@ const editorTheme = {
       listitem: "list-none",
     },
   },
-  quote: "border-l-4 border-black pl-4 italic my-4 text-gray-700",
-  code: "font-mono bg-gray-900 text-gray-100 p-4 border-4 border-black my-4 overflow-x-auto",
-  link: "text-brutal-blue underline hover:text-blue-800",
+  quote:
+    "border-l-4 border-black pl-4 italic text-gray-700 my-4 bg-gray-50 py-2",
+  code: "font-mono bg-gray-900 text-gray-100 p-4 block overflow-x-auto my-4 border-3 border-black",
+  link: "text-brutal-blue underline underline-offset-2 hover:text-brutal-blue/80",
 };
 
 // ============================================================================
-// Presence Avatars (inline)
+// Presence Avatars
 // ============================================================================
 
 function LivePresenceAvatars() {
@@ -115,18 +112,17 @@ function LivePresenceAvatars() {
 // Word Count Plugin
 // ============================================================================
 
-function WordCountPlugin({
-  onWordCountChange,
-}: {
+interface WordCountPluginProps {
   onWordCountChange: (count: number) => void;
-}) {
+}
+
+function WordCountPlugin({ onWordCountChange }: WordCountPluginProps) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
     const removeListener = editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
-        const root = $getRoot();
-        const textContent = root.getTextContent();
+        const textContent = $getRoot().getTextContent();
         const words = textContent
           .trim()
           .split(/\s+/)
@@ -144,60 +140,49 @@ function WordCountPlugin({
 }
 
 // ============================================================================
+// Editor Ready Status
+// ============================================================================
+
+function EditorReadyIndicator() {
+  const isReady = useIsEditorReady();
+
+  if (isReady) {
+    return (
+      <BrutalBadge variant="success" size="sm">
+        Live
+      </BrutalBadge>
+    );
+  }
+
+  return (
+    <BrutalBadge variant="default" size="sm" className="gap-1.5">
+      <Loader2 className="h-3 w-3 animate-spin" />
+      Connecting...
+    </BrutalBadge>
+  );
+}
+
+// ============================================================================
 // Collaborative Editor Inner
 // ============================================================================
 
 interface CollaborativeEditorInnerProps {
-  sessionId: string;
   sessionTitle: string | null;
 }
 
 function CollaborativeEditorInner({
-  sessionId,
   sessionTitle,
 }: CollaborativeEditorInnerProps) {
-  const room = useRoom();
-  const self = useSelf();
   const [wordCount, setWordCount] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState<
-    "connecting" | "connected" | "disconnected"
-  >("connecting");
 
   const handleWordCountChange = useCallback((count: number) => {
     setWordCount(count);
   }, []);
 
-  // Initial editor state for new documents
-  function initialEditorState(_editor: LexicalEditor): void {
-    const root = $getRoot();
-    if (root.getChildrenSize() === 0) {
-      const paragraph = $createParagraphNode();
-      paragraph.append($createTextNode("Start writing together..."));
-      root.append(paragraph);
-    }
-  }
-
-  // Provider factory for CollaborationPlugin
-  const providerFactory = useCallback(
-    (id: string, yjsDocMap: Map<string, Y.Doc>): Provider => {
-      const doc = new Y.Doc();
-      yjsDocMap.set(id, doc);
-
-      const provider = new LiveblocksYjsProvider(room, doc);
-
-      provider.on("sync", (synced: boolean) => {
-        setConnectionStatus(synced ? "connected" : "connecting");
-      });
-
-      return provider as unknown as Provider;
-    },
-    [room],
-  );
-
-  const editorConfig = {
+  // Create editor config with Liveblocks
+  const editorConfig = liveblocksConfig({
     namespace: "CollaborativeEditor",
     theme: editorTheme,
-    editorState: null, // CollaborationPlugin handles state
     nodes: [
       HeadingNode,
       QuoteNode,
@@ -211,11 +196,14 @@ function CollaborativeEditorInner({
     onError: (error: Error) => {
       console.error("Lexical error:", error);
     },
-  };
+  });
 
   return (
     <div className="border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
       <LexicalComposer initialConfig={editorConfig}>
+        {/* Liveblocks Plugin - handles all collaboration */}
+        <LiveblocksPlugin />
+
         {/* Header with presence */}
         <div className="flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2">
           <div className="flex items-center gap-3">
@@ -225,17 +213,7 @@ function CollaborativeEditorInner({
             <LivePresenceAvatars />
           </div>
           <div className="flex items-center gap-2">
-            {connectionStatus === "connecting" && (
-              <BrutalBadge variant="default" size="sm" className="gap-1.5">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Connecting...
-              </BrutalBadge>
-            )}
-            {connectionStatus === "connected" && (
-              <BrutalBadge variant="success" size="sm">
-                Live
-              </BrutalBadge>
-            )}
+            <EditorReadyIndicator />
           </div>
         </div>
 
@@ -261,34 +239,24 @@ function CollaborativeEditorInner({
             />
           </div>
 
-          {/* Collaboration Plugin - handles Yjs sync and cursors */}
-          <CollaborationPlugin
-            id={sessionId}
-            providerFactory={providerFactory}
-            initialEditorState={initialEditorState}
-            shouldBootstrap={true}
-            cursorColor={String(self?.info?.color || "#000")}
-            username={String(self?.info?.name || "Anonymous")}
-          />
-
           <HistoryPlugin />
           <ListPlugin />
           <LinkPlugin />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <WordCountPlugin onWordCountChange={handleWordCountChange} />
         </div>
-      </LexicalComposer>
 
-      {/* Status bar */}
-      <div className="flex items-center justify-between border-t-3 border-black bg-gray-50 px-4 py-3">
-        <span className="flex items-center gap-1.5 text-sm text-gray-600">
-          <FileText className="h-4 w-4" />
-          {wordCount} {wordCount === 1 ? "word" : "words"}
-        </span>
-        <BrutalBadge variant="default" size="sm">
-          Collaborative
-        </BrutalBadge>
-      </div>
+        {/* Status bar */}
+        <div className="flex items-center justify-between border-t-3 border-black bg-gray-50 px-4 py-3">
+          <span className="flex items-center gap-1.5 text-sm text-gray-600">
+            <FileText className="h-4 w-4" />
+            {wordCount} {wordCount === 1 ? "word" : "words"}
+          </span>
+          <BrutalBadge variant="default" size="sm">
+            Collaborative
+          </BrutalBadge>
+        </div>
+      </LexicalComposer>
     </div>
   );
 }
@@ -300,14 +268,33 @@ function CollaborativeEditorInner({
 function EditorSkeleton() {
   return (
     <div className="border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-      <div className="animate-pulse p-6">
-        <div className="mb-4 h-8 w-1/3 bg-gray-200" />
-        <div className="mb-2 h-4 w-full bg-gray-200" />
-        <div className="mb-2 h-4 w-2/3 bg-gray-200" />
-        <div className="h-4 w-3/4 bg-gray-200" />
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2">
+        <div className="h-6 w-32 animate-pulse bg-gray-200" />
+        <div className="h-6 w-20 animate-pulse bg-gray-200" />
       </div>
-      <div className="border-t-3 border-black bg-gray-50 px-4 py-3">
-        <div className="h-4 w-24 animate-pulse bg-gray-200" />
+
+      {/* Toolbar skeleton */}
+      <div className="flex gap-2 border-b-3 border-black bg-white px-4 py-2">
+        <div className="h-8 w-8 animate-pulse bg-gray-100 border-2 border-gray-200" />
+        <div className="h-8 w-8 animate-pulse bg-gray-100 border-2 border-gray-200" />
+        <div className="h-8 w-8 animate-pulse bg-gray-100 border-2 border-gray-200" />
+      </div>
+
+      {/* Content skeleton */}
+      <div className="p-8">
+        <div className="space-y-4">
+          <div className="h-4 w-3/4 animate-pulse bg-gray-200" />
+          <div className="h-4 w-full animate-pulse bg-gray-200" />
+          <div className="h-4 w-5/6 animate-pulse bg-gray-200" />
+          <div className="h-4 w-2/3 animate-pulse bg-gray-200" />
+        </div>
+      </div>
+
+      {/* Footer skeleton */}
+      <div className="flex items-center justify-between border-t-3 border-black bg-gray-50 px-4 py-3">
+        <div className="h-4 w-20 animate-pulse bg-gray-200" />
+        <div className="h-5 w-24 animate-pulse bg-gray-200" />
       </div>
     </div>
   );
@@ -317,7 +304,7 @@ function EditorSkeleton() {
 // Main Export
 // ============================================================================
 
-interface CollaborativeEditorProps {
+export interface CollaborativeEditorProps {
   roomId: string;
   sessionTitle?: string | null;
 }
@@ -336,10 +323,7 @@ export function CollaborativeEditor({
       }}
     >
       <ClientSideSuspense fallback={<EditorSkeleton />}>
-        <CollaborativeEditorInner
-          sessionId={roomId}
-          sessionTitle={sessionTitle ?? null}
-        />
+        <CollaborativeEditorInner sessionTitle={sessionTitle ?? null} />
       </ClientSideSuspense>
     </RoomProvider>
   );

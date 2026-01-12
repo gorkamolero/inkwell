@@ -3,9 +3,13 @@
 import { createClient } from "@liveblocks/client";
 import { createRoomContext } from "@liveblocks/react";
 
-const client = createClient({
-  authEndpoint: "/api/liveblocks-auth",
-});
+// Use public key from environment (NEXT_PUBLIC_ prefix makes it available client-side)
+const publicKey = process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY;
+
+// Create client with public key (simpler) or auth endpoint (for user info)
+const client = publicKey
+  ? createClient({ publicApiKey: publicKey })
+  : createClient({ authEndpoint: "/api/liveblocks-auth" });
 
 export type Presence = {
   cursor: { x: number; y: number } | null;

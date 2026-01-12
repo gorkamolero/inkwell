@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import "@liveblocks/react-ui/styles.css";
 import { Providers } from "@/components/providers";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
