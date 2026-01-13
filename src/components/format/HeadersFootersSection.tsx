@@ -3,6 +3,7 @@
 import { PanelTop, PanelBottom } from "lucide-react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
+import { BrutalSwitch } from "@/components/ui";
 import { FormatSection, useFormatContext } from "./FormatPanel";
 
 /**
@@ -65,58 +66,6 @@ const HEADER_FONTS = [
 const FONT_SIZES = ["8pt", "9pt", "10pt", "11pt", "12pt"];
 
 // =============================================================================
-// Subcomponents
-// =============================================================================
-
-interface ToggleSwitchProps {
-  label: string;
-  description?: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-function ToggleSwitch({
-  label,
-  description,
-  checked,
-  onChange,
-}: ToggleSwitchProps) {
-  return (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative w-12 h-7 flex-shrink-0",
-          "border-3 border-black",
-          "transition-colors duration-100",
-          checked ? "bg-brutal-green" : "bg-gray-200",
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-0.5 w-5 h-5",
-            "bg-white border-2 border-black",
-            "transition-transform duration-100",
-            checked ? "translate-x-5" : "translate-x-0.5",
-          )}
-        />
-      </button>
-      <div>
-        <span className="block text-sm font-bold">{label}</span>
-        {description && (
-          <span className="block text-xs text-gray-500 mt-0.5">
-            {description}
-          </span>
-        )}
-      </div>
-    </label>
-  );
-}
-
-// =============================================================================
 // Component
 // =============================================================================
 
@@ -167,11 +116,11 @@ export function HeadersFootersSection({
           Headers
         </div>
 
-        <ToggleSwitch
+        <BrutalSwitch
           label="Enable Headers"
           description="Show running headers on pages"
           checked={(headers.enabled as boolean) ?? true}
-          onChange={(v) => handleHeaderChange("enabled", v)}
+          onCheckedChange={(v) => handleHeaderChange("enabled", v)}
         />
 
         {(headers.enabled as boolean) !== false && (
@@ -187,7 +136,7 @@ export function HeadersFootersSection({
                   onChange={(e) => handleHeaderChange("left", e.target.value)}
                   className={cn(
                     "w-full h-10 px-3",
-                    "border-3 border-black",
+                    "border-brutal",
                     "bg-white text-black",
                     "font-medium text-sm",
                     "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -210,7 +159,7 @@ export function HeadersFootersSection({
                   onChange={(e) => handleHeaderChange("right", e.target.value)}
                   className={cn(
                     "w-full h-10 px-3",
-                    "border-3 border-black",
+                    "border-brutal",
                     "bg-white text-black",
                     "font-medium text-sm",
                     "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -237,7 +186,7 @@ export function HeadersFootersSection({
                   onChange={(e) => handleHeaderChange("font", e.target.value)}
                   className={cn(
                     "w-full h-10 px-3",
-                    "border-3 border-black",
+                    "border-brutal",
                     "bg-white text-black",
                     "font-medium text-sm",
                     "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -261,7 +210,7 @@ export function HeadersFootersSection({
                   onChange={(e) => handleHeaderChange("size", e.target.value)}
                   className={cn(
                     "w-full h-10 px-3",
-                    "border-3 border-black",
+                    "border-brutal",
                     "bg-white text-black",
                     "font-medium text-sm",
                     "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -290,7 +239,7 @@ export function HeadersFootersSection({
                     onClick={() => handleHeaderChange("transform", value)}
                     className={cn(
                       "flex-1 px-3 py-2",
-                      "border-3 border-black",
+                      "border-brutal",
                       "font-bold text-xs",
                       "transition-all duration-100",
                       (headers.transform as string) === value
@@ -304,11 +253,11 @@ export function HeadersFootersSection({
               </div>
             </div>
 
-            <ToggleSwitch
+            <BrutalSwitch
               label="Hide on Chapter Start"
               description="Don't show header on chapter opening pages"
               checked={(headers.hideOnChapterStart as boolean) ?? true}
-              onChange={(v) => handleHeaderChange("hideOnChapterStart", v)}
+              onCheckedChange={(v) => handleHeaderChange("hideOnChapterStart", v)}
             />
           </div>
         )}
@@ -321,11 +270,11 @@ export function HeadersFootersSection({
           Footers
         </div>
 
-        <ToggleSwitch
+        <BrutalSwitch
           label="Enable Footers"
           description="Show page numbers in footer"
           checked={(footers.enabled as boolean) ?? true}
-          onChange={(v) => handleFooterChange("enabled", v)}
+          onCheckedChange={(v) => handleFooterChange("enabled", v)}
         />
 
         {(footers.enabled as boolean) !== false && (
@@ -343,7 +292,7 @@ export function HeadersFootersSection({
                     onClick={() => handlePageNumberChange("position", value)}
                     className={cn(
                       "flex-1 px-4 py-2",
-                      "border-3 border-black",
+                      "border-brutal",
                       "font-bold text-sm",
                       "transition-all duration-100",
                       ((footers.pageNumber as Record<string, unknown>)?.position as string || "center") === value
@@ -367,7 +316,7 @@ export function HeadersFootersSection({
                 onChange={(e) => handlePageNumberChange("format", e.target.value)}
                 className={cn(
                   "w-full h-10 px-3",
-                  "border-3 border-black",
+                  "border-brutal",
                   "bg-white text-black",
                   "font-medium",
                   "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -386,7 +335,7 @@ export function HeadersFootersSection({
       </div>
 
       {/* Preview */}
-      <div className="mt-4 p-4 border-3 border-black bg-gray-50">
+      <div className="mt-4 p-4 border-brutal bg-gray-50">
         <p className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500">
           Preview
         </p>
