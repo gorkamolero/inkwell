@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, ExternalLink, FileText, Settings, X } from "lucide-react";
+import { Check, Copy, ExternalLink, FileText, Palette, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
@@ -16,6 +16,7 @@ import {
   PageLayoutSection,
   PreviewPane,
   SceneBreaksSection,
+  TemplateGalleryModal,
   ThemeSection,
   TypographySection,
   type FormatConfig,
@@ -46,6 +47,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showFormat, setShowFormat] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Format config state
   const [formatConfig, setFormatConfig] = useState<FormatConfig>(
@@ -137,11 +139,19 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
             </button>
             <button
               type="button"
+              onClick={() => setShowTemplates(true)}
+              className="flex items-center gap-1.5 md:gap-2 border-3 border-black bg-brutal-yellow px-2 md:px-3 py-1.5 text-sm md:text-base font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+            >
+              <Palette className="h-4 w-4" />
+              <span className="hidden sm:inline">Templates</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setShowFormat(true)}
               className="flex items-center gap-1.5 md:gap-2 border-3 border-black bg-white px-2 md:px-3 py-1.5 text-sm md:text-base font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Format</span>
+              <span className="hidden sm:inline">Customize</span>
             </button>
             <button
               type="button"
@@ -261,6 +271,17 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
           </div>
         </div>
       )}
+
+      {/* Template Gallery Modal */}
+      <TemplateGalleryModal
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        currentConfig={formatConfig as SchemaFormatConfig}
+        onApply={(newConfig) => {
+          setFormatConfig(newConfig as FormatConfig);
+        }}
+        onCustomize={() => setShowFormat(true)}
+      />
     </div>
   );
 }
