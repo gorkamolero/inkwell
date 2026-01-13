@@ -11,7 +11,7 @@ import type { FormatPreset } from "@/lib/format-presets";
  * drop caps, and styling applied to sample content.
  */
 
-interface TemplatePreviewCardProps {
+export interface TemplatePreviewCardProps {
   preset: FormatPreset;
   isActive?: boolean;
   onClick: () => void;

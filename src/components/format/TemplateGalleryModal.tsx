@@ -19,7 +19,7 @@ import { TemplatePreviewCard } from "./TemplatePreviewCard";
  * Categories as tabs, search, and click-to-apply functionality.
  */
 
-interface TemplateGalleryModalProps {
+export interface TemplateGalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentConfig: FormatConfig;
