@@ -257,7 +257,7 @@ function FrontMatterItemCard({
 
   return (
     <div className={cn(
-      "border-3 border-black",
+      "border-brutal",
       "bg-white",
       "transition-shadow duration-100",
       expanded && "shadow-[4px_4px_0_0_#000]",
@@ -425,7 +425,7 @@ export function FrontMatterSection({
           className={cn(
             "w-full flex items-center justify-center gap-2",
             "px-4 py-2",
-            "border-3 border-black",
+            "border-brutal",
             "font-bold text-sm",
             "bg-brutal-green text-black",
             "shadow-[4px_4px_0_0_#000]",
@@ -444,7 +444,7 @@ export function FrontMatterSection({
               className="fixed inset-0 z-10"
               onClick={() => setShowAddMenu(false)}
             />
-            <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-white border-3 border-black shadow-[4px_4px_0_0_#000] max-h-64 overflow-y-auto">
+            <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-white border-brutal shadow-[4px_4px_0_0_#000] max-h-64 overflow-y-auto">
               {availableTypes.map(({ value, label, description }) => (
                 <button
                   type="button"
@@ -463,7 +463,7 @@ export function FrontMatterSection({
 
       {/* Preview */}
       {frontMatter.length > 0 && (
-        <div className="mt-4 p-3 border-3 border-black bg-gray-50">
+        <div className="mt-4 p-3 border-brutal bg-gray-50">
           <p className="text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">
             Page Order
           </p>

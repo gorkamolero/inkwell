@@ -148,7 +148,7 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
               <select
                 value={(pdf.colorProfile as string) || "CMYK"}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => updatePdf("colorProfile", e.target.value)}
-                className="w-full border-3 border-black bg-white px-3 py-2 font-bold shadow-[4px_4px_0_0_#000] focus:outline-none focus:ring-0"
+                className="w-full border-brutal bg-white px-3 py-2 font-bold shadow-[4px_4px_0_0_#000] focus:outline-none focus:ring-0"
               >
                 <option value="CMYK">CMYK (Print)</option>
                 <option value="RGB">RGB (Screen)</option>
@@ -194,7 +194,7 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
               <select
                 value={String((epub.tocDepth as number) || 2)}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => updateEpub("tocDepth", parseInt(e.target.value, 10))}
-                className="w-full border-3 border-black bg-white px-3 py-2 font-bold shadow-[4px_4px_0_0_#000] focus:outline-none focus:ring-0"
+                className="w-full border-brutal bg-white px-3 py-2 font-bold shadow-[4px_4px_0_0_#000] focus:outline-none focus:ring-0"
               >
                 <option value="1">1 - Chapters only</option>
                 <option value="2">2 - Include sections</option>

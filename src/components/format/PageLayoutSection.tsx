@@ -160,7 +160,7 @@ export function PageLayoutSection({
               onClick={() => handleSizeChange(preset.value)}
               className={cn(
                 "px-3 py-2",
-                "border-3 border-black",
+                "border-brutal",
                 "font-bold text-sm",
                 "transition-all duration-100",
                 selectedPreset === preset.value
@@ -207,7 +207,7 @@ export function PageLayoutSection({
               onClick={() => handleMarginPresetChange(preset.value)}
               className={cn(
                 "flex-1 px-3 py-2",
-                "border-3 border-black",
+                "border-brutal",
                 "font-bold text-xs",
                 "transition-all duration-100",
                 marginPreset === preset.value
@@ -251,13 +251,13 @@ export function PageLayoutSection({
       </div>
 
       {/* Visual Preview */}
-      <div className="mt-4 p-4 border-3 border-black bg-gray-50">
+      <div className="mt-4 p-4 border-brutal bg-gray-50">
         <p className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500">
           Preview (not to scale)
         </p>
         <div className="flex justify-center">
           <div
-            className="relative bg-white border-3 border-black"
+            className="relative bg-white border-brutal"
             style={{
               width: "120px",
               height: "180px",

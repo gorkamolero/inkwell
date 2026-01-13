@@ -87,7 +87,7 @@ export function SceneBreaksSection({
               onClick={() => handleChange("ornament", value)}
               className={cn(
                 "px-3 py-3",
-                "border-3 border-black",
+                "border-brutal",
                 "text-left",
                 "transition-all duration-100",
                 selectedOrnament === value
@@ -144,7 +144,7 @@ export function SceneBreaksSection({
               onClick={() => handleChange("spacing", value)}
               className={cn(
                 "flex-1 px-3 py-2",
-                "border-3 border-black",
+                "border-brutal",
                 "font-bold text-xs",
                 "transition-all duration-100",
                 selectedSpacing === value
@@ -162,7 +162,7 @@ export function SceneBreaksSection({
       </div>
 
       {/* Preview */}
-      <div className="mt-4 p-4 border-3 border-black bg-gray-50">
+      <div className="mt-4 p-4 border-brutal bg-gray-50">
         <p className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500">
           Preview
         </p>

@@ -85,7 +85,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
       <div
         className={cn(
           "min-h-10 px-2 py-1",
-          "border-3 border-black",
+          "border-brutal",
           "bg-white",
           "flex flex-wrap items-center gap-1.5",
           "focus-within:shadow-[4px_4px_0_0_#000]",
@@ -233,7 +233,7 @@ export function MetadataSection({
             onChange={(e) => handleChange("language", e.target.value)}
             className={cn(
               "w-full h-10 px-3",
-              "border-3 border-black",
+              "border-brutal",
               "bg-white text-black",
               "font-medium",
               "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -265,7 +265,7 @@ export function MetadataSection({
       </div>
 
       {/* Preview */}
-      <div className="mt-4 p-4 border-3 border-black bg-gray-50">
+      <div className="mt-4 p-4 border-brutal bg-gray-50">
         <p className="text-xs font-bold uppercase tracking-wider mb-3 text-gray-500">
           Title Page Preview
         </p>

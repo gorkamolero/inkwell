@@ -2,6 +2,7 @@
 
 import { Quote, FileText, AlertCircle } from "lucide-react";
 import type * as React from "react";
+import { BrutalSwitch } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { FormatSection, useFormatContext } from "./FormatPanel";
 
@@ -49,58 +50,6 @@ const VERSE_ALIGNMENTS = [
   { value: "left", label: "Left" },
   { value: "center", label: "Center" },
 ];
-
-// =============================================================================
-// Subcomponents
-// =============================================================================
-
-interface ToggleSwitchProps {
-  label: string;
-  description?: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-function ToggleSwitch({
-  label,
-  description,
-  checked,
-  onChange,
-}: ToggleSwitchProps) {
-  return (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative w-12 h-7 flex-shrink-0",
-          "border-3 border-black",
-          "transition-colors duration-100",
-          checked ? "bg-brutal-green" : "bg-gray-200",
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-0.5 w-5 h-5",
-            "bg-white border-2 border-black",
-            "transition-transform duration-100",
-            checked ? "translate-x-5" : "translate-x-0.5",
-          )}
-        />
-      </button>
-      <div>
-        <span className="block text-sm font-bold">{label}</span>
-        {description && (
-          <span className="block text-xs text-gray-500 mt-0.5">
-            {description}
-          </span>
-        )}
-      </div>
-    </label>
-  );
-}
 
 // =============================================================================
 // Component
@@ -181,7 +130,7 @@ export function ElementsSection({
                   onClick={() => handleBlockquoteChange("style", value)}
                   className={cn(
                     "flex-1 px-3 py-2",
-                    "border-3 border-black",
+                    "border-brutal",
                     "font-bold text-xs",
                     "transition-all duration-100",
                     ((blockquote.style as string) || "italic") === value
@@ -205,7 +154,7 @@ export function ElementsSection({
               onChange={(e) => handleBlockquoteChange("indent", e.target.value)}
               className={cn(
                 "w-full h-10 px-3",
-                "border-3 border-black",
+                "border-brutal",
                 "bg-white text-black",
                 "font-medium text-sm",
                 "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -257,7 +206,7 @@ export function ElementsSection({
                   onClick={() => handleVerseChange("style", value)}
                   className={cn(
                     "flex-1 px-3 py-2",
-                    "border-3 border-black",
+                    "border-brutal",
                     "font-bold text-xs",
                     "transition-all duration-100",
                     ((verse.style as string) || "italic") === value
@@ -284,7 +233,7 @@ export function ElementsSection({
                   onClick={() => handleVerseChange("align", value)}
                   className={cn(
                     "flex-1 px-3 py-2",
-                    "border-3 border-black",
+                    "border-brutal",
                     "font-bold text-xs",
                     "transition-all duration-100",
                     ((verse.align as string) || "left") === value
@@ -323,15 +272,15 @@ export function ElementsSection({
           Callout Boxes
         </div>
 
-        <ToggleSwitch
+        <BrutalSwitch
           label="Enable Callouts"
           description="Styled boxes for notes, warnings, tips"
           checked={(callout.enabled as boolean) ?? true}
-          onChange={(v) => handleCalloutChange("enabled", v)}
+          onCheckedChange={(v) => handleCalloutChange("enabled", v)}
         />
 
         {(callout.enabled as boolean) !== false && (
-          <div className="p-3 border-3 border-black bg-gray-100">
+          <div className="p-3 border-brutal bg-gray-100">
             <div className="text-xs font-bold uppercase mb-1">Note</div>
             <div className="text-sm">
               This is how callout boxes will appear in your document.
@@ -355,7 +304,7 @@ export function ElementsSection({
               onClick={() => handleFootnotesChange("style", value)}
               className={cn(
                 "w-full px-4 py-3 text-left",
-                "border-3 border-black",
+                "border-brutal",
                 "transition-all duration-100",
                 ((footnotes.style as string) || "bottom") === value
                   ? "bg-brutal-yellow text-black shadow-[4px_4px_0_0_#000]"

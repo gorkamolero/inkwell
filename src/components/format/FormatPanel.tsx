@@ -2,7 +2,7 @@
 
 import { ChevronRight, Download, Upload } from "lucide-react";
 import * as React from "react";
-import { BrutalButton, BrutalCard } from "@/components/ui";
+import { BrutalButton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 /**
@@ -239,7 +239,7 @@ export function FormatSection({
   const [expanded, setExpanded] = React.useState(defaultExpanded);
 
   return (
-    <div className="border-b-3 border-black last:border-b-0">
+    <div className="border-b border-gray-200 last:border-b-0">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -342,24 +342,21 @@ export function FormatPanel({
   return (
     <FormatContext.Provider value={contextValue}>
       <div className={cn("flex flex-col h-full", className)}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b-3 border-black bg-white">
-          <h2 className="text-lg font-black">Format Settings</h2>
-          {hasChanges && (
-            <span className="px-2 py-1 text-xs font-bold bg-brutal-yellow border-2 border-black">
-              Unsaved
-            </span>
-          )}
-        </div>
+        {/* Unsaved indicator */}
+        {hasChanges && (
+          <div className="px-4 py-2 bg-brutal-yellow border-b-2 border-black">
+            <span className="text-xs font-bold">Unsaved changes</span>
+          </div>
+        )}
 
         {/* Sections */}
-        <BrutalCard className="flex-1 overflow-y-auto" padding="none">
+        <div className="flex-1 overflow-y-auto bg-white">
           {children || (
             <div className="p-4 text-center text-gray-500">
               <p>No format sections configured</p>
             </div>
           )}
-        </BrutalCard>
+        </div>
 
         {/* Actions */}
         <div className="flex flex-col gap-2 px-4 py-3 border-t-3 border-black bg-white">

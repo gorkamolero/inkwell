@@ -244,6 +244,65 @@ function EditorReadyIndicator() {
 }
 
 // ============================================================================
+// Editor Content Area (with loading state)
+// ============================================================================
+
+interface EditorContentAreaProps {
+  onWordCountChange: (count: number) => void;
+}
+
+function EditorContentArea({ onWordCountChange }: EditorContentAreaProps) {
+  const isReady = useIsEditorReady();
+
+  // Show skeleton until editor is ready (content synced)
+  if (!isReady) {
+    return (
+      <div className="p-4 sm:p-6 md:p-8">
+        <div className="min-h-[400px] space-y-4">
+          <div className="h-8 w-2/3 animate-pulse bg-gray-200" />
+          <div className="h-4 w-full animate-pulse bg-gray-100" />
+          <div className="h-4 w-5/6 animate-pulse bg-gray-100" />
+          <div className="h-4 w-4/5 animate-pulse bg-gray-100" />
+          <div className="h-4 w-full animate-pulse bg-gray-100" />
+          <div className="h-4 w-3/4 animate-pulse bg-gray-100" />
+          <div className="mt-6 h-4 w-full animate-pulse bg-gray-100" />
+          <div className="h-4 w-5/6 animate-pulse bg-gray-100" />
+          <div className="h-4 w-full animate-pulse bg-gray-100" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="p-4 sm:p-6 md:p-8">
+        <RichTextPlugin
+          contentEditable={
+            <ContentEditable
+              className="prose prose-lg min-h-[400px] max-w-none outline-none focus:outline-none"
+              aria-label="Collaborative Editor"
+            />
+          }
+          placeholder={
+            <div className="pointer-events-none absolute left-4 top-4 text-gray-400 sm:left-6 sm:top-6 md:left-8 md:top-8">
+              Start writing together...
+            </div>
+          }
+          ErrorBoundary={LexicalErrorBoundary}
+        />
+      </div>
+
+      <HistoryPlugin />
+      <ListPlugin />
+      <LinkPlugin />
+      <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+      <WordCountPlugin onWordCountChange={onWordCountChange} />
+    </>
+  );
+}
+
+
+// ============================================================================
 // History Panel
 // ============================================================================
 
@@ -657,28 +716,7 @@ function CollaborativeEditorInner({
 
           {/* Editor content */}
           <div className="relative">
-            <div className="p-4 sm:p-6 md:p-8">
-              <RichTextPlugin
-                contentEditable={
-                  <ContentEditable
-                    className="prose prose-lg min-h-[400px] max-w-none outline-none focus:outline-none"
-                    aria-label="Collaborative Editor"
-                  />
-                }
-                placeholder={
-                  <div className="pointer-events-none absolute left-4 top-4 text-gray-400 sm:left-6 sm:top-6 md:left-8 md:top-8">
-                    Start writing together...
-                  </div>
-                }
-                ErrorBoundary={LexicalErrorBoundary}
-              />
-            </div>
-
-            <HistoryPlugin />
-            <ListPlugin />
-            <LinkPlugin />
-            <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-            <WordCountPlugin onWordCountChange={setWordCount} />
+            <EditorContentArea onWordCountChange={setWordCount} />
           </div>
 
           {/* Status bar */}
