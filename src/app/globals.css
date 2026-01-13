@@ -739,3 +739,8 @@ select:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background-color: #1f2937;
 }
+
+/* Liveblocks badge z-index fix - prevent overlap with modals/panels */
+#liveblocks-badge {
+  z-index: 40 !important;
+}
