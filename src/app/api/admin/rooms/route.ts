@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, defaultAccesses } = CreateRoomSchema.parse(body);
+    const { id } = CreateRoomSchema.parse(body);
 
     const liveblocks = getLiveblocks();
 
