@@ -98,18 +98,21 @@ export function ChapterSection({
 }: ChapterSectionProps) {
   const { config, updateConfig } = useFormatContext();
   const chapters = config.chapters || {};
+  const numbering = chapters.numbering || {};
+  const dropCaps = config.dropCaps || {};
 
-  // TODO: Add chapter title font/size settings
-  // TODO: Add chapter start page setting (right/left/any)
-  // TODO: Add scene break ornament selection
-  // TODO: Add chapter ornament/flourish selection
-
-  const handleChange = (key: string, value: string | number | boolean) => {
+  const handleNumberingChange = (key: string, value: string | boolean) => {
     updateConfig({
       chapters: {
         ...chapters,
-        [key]: value,
+        numbering: { ...numbering, [key]: value },
       },
+    });
+  };
+
+  const handleDropCapsChange = (key: string, value: number | boolean) => {
+    updateConfig({
+      dropCaps: { ...dropCaps, [key]: value },
     });
   };
 
@@ -124,18 +127,18 @@ export function ChapterSection({
         <ToggleSwitch
           label="Chapter Numbering"
           description="Add numbers before chapter titles"
-          checked={chapters.numberingEnabled ?? true}
-          onChange={(v) => handleChange("numberingEnabled", v)}
+          checked={numbering.enabled ?? true}
+          onChange={(v) => handleNumberingChange("enabled", v)}
         />
 
-        {chapters.numberingEnabled !== false && (
+        {numbering.enabled !== false && (
           <div className="ml-15 space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider">
               Format
             </label>
             <select
-              value={chapters.numberingFormat || "Chapter {n}"}
-              onChange={(e) => handleChange("numberingFormat", e.target.value)}
+              value={numbering.format || "Chapter {n}"}
+              onChange={(e) => handleNumberingChange("format", e.target.value)}
               className={cn(
                 "w-full h-10 px-3",
                 "border-3 border-black",
@@ -160,11 +163,11 @@ export function ChapterSection({
         <ToggleSwitch
           label="Drop Caps"
           description="Large decorative first letter of each chapter"
-          checked={chapters.dropCapsEnabled ?? false}
-          onChange={(v) => handleChange("dropCapsEnabled", v)}
+          checked={dropCaps.enabled ?? false}
+          onChange={(v) => handleDropCapsChange("enabled", v)}
         />
 
-        {chapters.dropCapsEnabled && (
+        {dropCaps.enabled && (
           <div className="ml-15 space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider">
               Drop Cap Height
@@ -174,13 +177,13 @@ export function ChapterSection({
                 <button
                   type="button"
                   key={lines}
-                  onClick={() => handleChange("dropCapsLines", lines)}
+                  onClick={() => handleDropCapsChange("lines", lines)}
                   className={cn(
                     "w-10 h-10",
                     "border-3 border-black",
                     "font-bold",
                     "transition-all duration-100",
-                    chapters.dropCapsLines === lines
+                    dropCaps.lines === lines
                       ? "bg-brutal-blue text-white shadow-[4px_4px_0_0_#000]"
                       : "bg-white text-black shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]",
                   )}
@@ -202,19 +205,19 @@ export function ChapterSection({
           Preview
         </p>
         <div className="font-serif">
-          {chapters.numberingEnabled !== false && (
+          {numbering.enabled !== false && (
             <p className="text-sm text-gray-600 uppercase tracking-widest mb-1">
-              {(chapters.numberingFormat || "Chapter {n}").replace("{n}", "1")}
+              {(numbering.format || "Chapter {n}").replace("{n}", "1")}
             </p>
           )}
           <h3 className="text-xl font-bold mb-2">The Beginning</h3>
           <p className="text-sm leading-relaxed">
-            {chapters.dropCapsEnabled ? (
+            {dropCaps.enabled ? (
               <>
                 <span
                   className="float-left text-4xl font-bold mr-2 leading-none"
                   style={{
-                    fontSize: `${(chapters.dropCapsLines || 3) * 1.2}em`,
+                    fontSize: `${(dropCaps.lines || 3) * 1.2}em`,
                   }}
                 >
                   T

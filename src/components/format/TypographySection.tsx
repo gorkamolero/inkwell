@@ -31,16 +31,34 @@ export interface TypographySectionProps {
 // =============================================================================
 
 const DEFAULT_FONTS = [
+  // Serif
   "Cormorant Garamond",
-  "Cinzel",
+  "Crimson Text",
+  "EB Garamond",
+  "Georgia",
+  "Libre Baskerville",
   "Lora",
   "Merriweather",
   "Playfair Display",
   "Source Serif Pro",
-  "Libre Baskerville",
-  "EB Garamond",
-  "Crimson Text",
-  "Georgia",
+  // Sans
+  "Atkinson Hyperlegible",
+  "Exo 2",
+  "Inter",
+  "OpenDyslexic",
+  "Oswald",
+  "Roboto",
+  "Roboto Condensed",
+  "Source Sans Pro",
+  // Display/Decorative
+  "Cinzel",
+  "Cinzel Decorative",
+  "Orbitron",
+  // Script
+  "Alex Brush",
+  "Great Vibes",
+  "Pinyon Script",
+  "Tangerine",
 ];
 
 const FONT_SIZES = ["9pt", "10pt", "11pt", "12pt", "13pt", "14pt"];
@@ -138,17 +156,23 @@ export function TypographySection({
 }: TypographySectionProps) {
   const { config, updateConfig } = useFormatContext();
   const typography = config.typography || {};
+  const body = typography.body || {};
+  const headings = typography.headings || {};
 
-  // TODO: Add font preview/sample text
-  // TODO: Add custom font upload support
-  // TODO: Add Google Fonts integration
-  // TODO: Add paragraph indent settings
-
-  const handleChange = (key: string, value: string | number) => {
+  const handleBodyChange = (key: string, value: string | number) => {
     updateConfig({
       typography: {
         ...typography,
-        [key]: value,
+        body: { ...body, [key]: value },
+      },
+    });
+  };
+
+  const handleHeadingsChange = (key: string, value: string | number) => {
+    updateConfig({
+      typography: {
+        ...typography,
+        headings: { ...headings, [key]: value },
       },
     });
   };
@@ -162,15 +186,15 @@ export function TypographySection({
       <div className="grid grid-cols-2 gap-4">
         <FontSelect
           label="Body Font"
-          value={typography.bodyFont || "Cormorant Garamond"}
-          onChange={(v) => handleChange("bodyFont", v)}
+          value={body.font || "Cormorant Garamond"}
+          onChange={(v) => handleBodyChange("font", v)}
           fonts={availableFonts}
         />
 
         <FontSelect
           label="Heading Font"
-          value={typography.headingFont || "Cinzel"}
-          onChange={(v) => handleChange("headingFont", v)}
+          value={headings.font || "Cinzel"}
+          onChange={(v) => handleHeadingsChange("font", v)}
           fonts={availableFonts}
         />
       </div>
@@ -178,8 +202,8 @@ export function TypographySection({
       <div className="grid grid-cols-2 gap-4">
         <SizeSelect
           label="Body Size"
-          value={typography.bodySize || "11pt"}
-          onChange={(v) => handleChange("bodySize", v)}
+          value={body.size || "11pt"}
+          onChange={(v) => handleBodyChange("size", v)}
           options={FONT_SIZES}
         />
 
@@ -188,9 +212,9 @@ export function TypographySection({
             Line Height
           </label>
           <select
-            value={typography.lineHeight || 1.5}
+            value={body.lineHeight || 1.5}
             onChange={(e) =>
-              handleChange("lineHeight", parseFloat(e.target.value))
+              handleBodyChange("lineHeight", parseFloat(e.target.value))
             }
             className={cn(
               "w-full h-10 px-3",
@@ -217,14 +241,14 @@ export function TypographySection({
         </p>
         <div
           style={{
-            fontFamily: typography.bodyFont || "Cormorant Garamond",
-            fontSize: typography.bodySize || "11pt",
-            lineHeight: typography.lineHeight || 1.5,
+            fontFamily: body.font || "Cormorant Garamond",
+            fontSize: body.size || "11pt",
+            lineHeight: body.lineHeight || 1.5,
           }}
         >
           <h3
             style={{
-              fontFamily: typography.headingFont || "Cinzel",
+              fontFamily: headings.font || "Cinzel",
               fontSize: "1.5em",
               fontWeight: "bold",
               marginBottom: "0.5em",
