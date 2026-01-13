@@ -46,5 +46,8 @@ export {
   brutalTextareaVariants,
 } from "./brutal-input";
 
+// Switch
+export { BrutalSwitch, type BrutalSwitchProps } from "./brutal-switch";
+
 // Toast
 export { ToastProvider, useToast } from "./toast";

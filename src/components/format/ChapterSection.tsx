@@ -2,6 +2,7 @@
 
 import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrutalSwitch } from "@/components/ui";
 import { FormatSection, useFormatContext } from "./FormatPanel";
 
 /**
@@ -38,58 +39,6 @@ const NUMBERING_FORMATS = [
 const DROP_CAP_LINES = [2, 3, 4, 5];
 
 // =============================================================================
-// Subcomponents
-// =============================================================================
-
-interface ToggleSwitchProps {
-  label: string;
-  description?: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-function ToggleSwitch({
-  label,
-  description,
-  checked,
-  onChange,
-}: ToggleSwitchProps) {
-  return (
-    <label className="flex items-start gap-3 cursor-pointer group">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative w-12 h-7 flex-shrink-0",
-          "border-3 border-black",
-          "transition-colors duration-100",
-          checked ? "bg-brutal-green" : "bg-gray-200",
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-0.5 w-5 h-5",
-            "bg-white border-2 border-black",
-            "transition-transform duration-100",
-            checked ? "translate-x-5" : "translate-x-0.5",
-          )}
-        />
-      </button>
-      <div>
-        <span className="block text-sm font-bold">{label}</span>
-        {description && (
-          <span className="block text-xs text-gray-500 mt-0.5">
-            {description}
-          </span>
-        )}
-      </div>
-    </label>
-  );
-}
-
-// =============================================================================
 // Component
 // =============================================================================
 
@@ -124,11 +73,11 @@ export function ChapterSection({
     >
       {/* Chapter Numbering */}
       <div className="space-y-3">
-        <ToggleSwitch
+        <BrutalSwitch
           label="Chapter Numbering"
           description="Add numbers before chapter titles"
           checked={numbering.enabled ?? true}
-          onChange={(v) => handleNumberingChange("enabled", v)}
+          onCheckedChange={(v) => handleNumberingChange("enabled", v)}
         />
 
         {numbering.enabled !== false && (
@@ -141,7 +90,7 @@ export function ChapterSection({
               onChange={(e) => handleNumberingChange("format", e.target.value)}
               className={cn(
                 "w-full h-10 px-3",
-                "border-3 border-black",
+                "border-brutal border-black",
                 "bg-white text-black",
                 "font-medium",
                 "focus:outline-none focus:shadow-[4px_4px_0_0_#000]",
@@ -160,11 +109,11 @@ export function ChapterSection({
 
       {/* Drop Caps */}
       <div className="space-y-3 pt-4 border-t-2 border-gray-200">
-        <ToggleSwitch
+        <BrutalSwitch
           label="Drop Caps"
           description="Large decorative first letter of each chapter"
           checked={dropCaps.enabled ?? false}
-          onChange={(v) => handleDropCapsChange("enabled", v)}
+          onCheckedChange={(v) => handleDropCapsChange("enabled", v)}
         />
 
         {dropCaps.enabled && (
@@ -180,7 +129,7 @@ export function ChapterSection({
                   onClick={() => handleDropCapsChange("lines", lines)}
                   className={cn(
                     "w-10 h-10",
-                    "border-3 border-black",
+                    "border-brutal border-black",
                     "font-bold",
                     "transition-all duration-100",
                     dropCaps.lines === lines
@@ -200,7 +149,7 @@ export function ChapterSection({
       </div>
 
       {/* Preview */}
-      <div className="mt-4 p-4 border-3 border-black bg-gray-50">
+      <div className="mt-4 p-4 border-brutal border-black bg-gray-50">
         <p className="text-xs font-bold uppercase tracking-wider mb-2 text-gray-500">
           Preview
         </p>

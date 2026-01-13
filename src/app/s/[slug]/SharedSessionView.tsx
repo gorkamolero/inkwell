@@ -17,7 +17,6 @@ import {
   PreviewPane,
   SceneBreaksSection,
   TemplateGalleryModal,
-  ThemeSection,
   TypographySection,
   type FormatConfig,
 } from "@/components/format";
@@ -206,9 +205,6 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
                 saving={saving}
                 hasChanges={hasChanges}
               >
-                {/* Theme Section (First - Quick Apply) */}
-                <ThemeSection defaultExpanded />
-
                 {/* Metadata Section */}
                 <MetadataSection />
 

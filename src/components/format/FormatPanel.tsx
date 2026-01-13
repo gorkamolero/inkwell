@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Download, Upload } from "lucide-react";
 import * as React from "react";
 import { BrutalButton, BrutalCard } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -19,8 +19,40 @@ import { cn } from "@/lib/utils";
 // =============================================================================
 
 export interface FormatConfig {
+  /** Theme settings */
+  theme?: {
+    preset?: string | null;
+  };
+  /** Metadata settings */
+  meta?: {
+    title?: string;
+    subtitle?: string;
+    author?: string;
+    series?: {
+      name?: string;
+      number?: number;
+    };
+    language?: string;
+    isbn?: string;
+    tags?: string[];
+  };
   /** Typography settings */
   typography?: {
+    body?: {
+      font?: string;
+      size?: string;
+      lineHeight?: number;
+    };
+    headings?: {
+      font?: string;
+      size?: string;
+    };
+    paragraph?: {
+      indent?: string;
+      spacing?: string;
+      firstParagraphIndent?: boolean;
+    };
+    // Legacy flat properties for backwards compatibility
     bodyFont?: string;
     headingFont?: string;
     bodySize?: string;
@@ -28,10 +60,64 @@ export interface FormatConfig {
   };
   /** Chapter settings */
   chapters?: {
+    numbering?: {
+      enabled?: boolean;
+      format?: string;
+    };
+    title?: {
+      font?: string;
+      size?: string;
+      align?: string;
+      transform?: string;
+    };
+    subtitle?: {
+      enabled?: boolean;
+      font?: string;
+      style?: string;
+    };
+    startOn?: string;
+    ornament?: {
+      enabled?: boolean;
+      image?: string;
+      spacing?: string;
+    };
+    // Legacy flat properties
     numberingEnabled?: boolean;
     numberingFormat?: string;
     dropCapsEnabled?: boolean;
     dropCapsLines?: number;
+  };
+  /** Drop caps settings */
+  dropCaps?: {
+    enabled?: boolean;
+    lines?: number;
+    font?: string;
+    style?: string;
+  };
+  /** Scene breaks settings */
+  sceneBreaks?: {
+    ornament?: string;
+    customImage?: string | null;
+    spacing?: string;
+  };
+  /** Headers settings */
+  headers?: {
+    enabled?: boolean;
+    left?: string;
+    right?: string;
+    font?: string;
+    size?: string;
+    transform?: string;
+    hideOnChapterStart?: boolean;
+  };
+  /** Footers settings */
+  footers?: {
+    enabled?: boolean;
+    pageNumber?: {
+      position?: string;
+      format?: string;
+    };
+    ornament?: string | null;
   };
   /** Page layout settings */
   page?: {
@@ -43,6 +129,50 @@ export interface FormatConfig {
       bottom?: string;
       outer?: string;
       gutter?: string;
+    };
+  };
+  /** Front matter items */
+  frontMatter?: Array<{
+    type: string;
+    [key: string]: unknown;
+  }>;
+  /** Back matter items */
+  backMatter?: Array<{
+    type: string;
+    [key: string]: unknown;
+  }>;
+  /** Special elements */
+  elements?: {
+    blockquote?: {
+      font?: string;
+      style?: string;
+      indent?: string;
+    };
+    verse?: {
+      font?: string;
+      style?: string;
+      align?: string;
+    };
+    callout?: {
+      enabled?: boolean;
+      border?: string;
+      background?: string;
+    };
+    footnotes?: {
+      style?: string;
+      numbering?: string;
+    };
+  };
+  /** Output settings */
+  output?: {
+    formats?: string[];
+    pdf?: {
+      colorProfile?: string;
+      bleed?: string;
+    };
+    epub?: {
+      coverImage?: string;
+      tocDepth?: number;
     };
   };
 }
@@ -153,10 +283,7 @@ export function FormatPanel({
   children,
   className,
 }: FormatPanelProps) {
-  // TODO: Implement theme/preset selection
-  // TODO: Add import/export for hotpress.yaml
-  // TODO: Add live preview updates
-  // TODO: Add undo/redo for config changes
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const updateConfig = React.useCallback(
     (partial: Partial<FormatConfig>) => {
@@ -168,6 +295,48 @@ export function FormatPanel({
   const contextValue = React.useMemo(
     () => ({ config, updateConfig }),
     [config, updateConfig],
+  );
+
+  // Export config as JSON file
+  const handleExport = React.useCallback(() => {
+    const json = JSON.stringify(config, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "hotpress-format.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [config]);
+
+  // Import config from JSON file
+  const handleImport = React.useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const imported = JSON.parse(content) as FormatConfig;
+          onConfigChange(imported);
+        } catch (error) {
+          console.error("Failed to import format config:", error);
+          alert("Invalid format file. Please select a valid hotpress-format.json file.");
+        }
+      };
+      reader.readAsText(file);
+      // Reset input so same file can be selected again
+      event.target.value = "";
+    },
+    [onConfigChange],
   );
 
   return (
@@ -193,25 +362,54 @@ export function FormatPanel({
         </BrutalCard>
 
         {/* Actions */}
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-t-3 border-black bg-white">
-          <BrutalButton
-            variant="ghost"
-            size="sm"
-            onClick={onReset}
-            disabled={saving || !hasChanges}
-          >
-            Reset
-          </BrutalButton>
-          <BrutalButton
-            variant="primary"
-            size="sm"
-            onClick={onSave}
-            loading={saving}
-            loadingText="Saving..."
-            disabled={!hasChanges}
-          >
-            Save Changes
-          </BrutalButton>
+        <div className="flex flex-col gap-2 px-4 py-3 border-t-3 border-black bg-white">
+          {/* Import/Export Row */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleImport}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-gray-600 hover:text-black hover:bg-gray-100 rounded transition-colors"
+            >
+              <Upload className="h-3 w-3" />
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-gray-600 hover:text-black hover:bg-gray-100 rounded transition-colors"
+            >
+              <Download className="h-3 w-3" />
+              Export
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+          {/* Save/Reset Row */}
+          <div className="flex items-center justify-between gap-3">
+            <BrutalButton
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              disabled={saving || !hasChanges}
+            >
+              Reset
+            </BrutalButton>
+            <BrutalButton
+              variant="primary"
+              size="sm"
+              onClick={onSave}
+              loading={saving}
+              loadingText="Saving..."
+              disabled={!hasChanges}
+            >
+              Save Changes
+            </BrutalButton>
+          </div>
         </div>
       </div>
     </FormatContext.Provider>
