@@ -64,6 +64,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           nextUrl.pathname === path || nextUrl.pathname.startsWith(`${path}/`),
       );
 
+      // Redirect logged-in users away from auth pages
+      if (
+        isLoggedIn &&
+        (nextUrl.pathname === "/login" || nextUrl.pathname === "/signup")
+      ) {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
+
       if (isProtectedRoute) {
         return isLoggedIn;
       }

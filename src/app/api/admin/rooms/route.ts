@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const room = await liveblocks.createRoom(id, {
-      defaultAccesses: (defaultAccesses as ("room:write" | "room:read")[]) || ["room:write"],
+      defaultAccesses: ["room:write"] as const,
     });
 
     return NextResponse.json({ success: true, room });
