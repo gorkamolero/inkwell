@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
+import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { mockApi, mockGitHubApi } from "../utils/api-helpers";
 import { createEditorHelper } from "../utils/editor-helpers";
 import { TEST_USERS, TEST_PROJECTS, TEST_DOCUMENTS } from "../fixtures/test-data";
 
 test.describe("GitHub Sync", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("shows GitHub connection status on project", async ({ page }) => {
@@ -143,7 +143,7 @@ test.describe("GitHub Sync", () => {
 
 test.describe("Commit to GitHub", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("can commit document changes to GitHub", async ({ page }) => {
@@ -263,7 +263,7 @@ test.describe("Commit to GitHub", () => {
 
 test.describe("Non-GitHub Projects", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("does not show GitHub options for non-connected project", async ({

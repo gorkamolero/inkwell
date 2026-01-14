@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
-  mockAuthSession,
+  setupAuthBeforeNavigation,
   mockUnauthenticated,
   mockSignIn,
 } from "../utils/auth-helpers";
@@ -48,7 +48,7 @@ test.describe("Login Page", () => {
   });
 
   test("redirects authenticated users to projects", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
 
     // Try to go to login page
     await page.goto("/login");
@@ -79,7 +79,7 @@ test.describe("Signup Page", () => {
   });
 
   test("redirects authenticated users to projects", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
 
     await page.goto("/signup");
 
@@ -99,7 +99,7 @@ test.describe("OAuth Callback", () => {
     });
 
     // After callback, session should be set
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
 
     // Simulate callback URL (would normally come from GitHub)
     await page.goto("/api/auth/callback/github?code=mock-code&state=mock-state");

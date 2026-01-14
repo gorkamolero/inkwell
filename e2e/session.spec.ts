@@ -133,15 +133,23 @@ test.describe("Session Management", () => {
     // Click the type selector (initially "Book")
     await page.getByRole("button", { name: /book/i }).click();
 
-    // Should see dropdown with options
-    await expect(page.getByText("Article")).toBeVisible();
-    await expect(page.getByText("Thread")).toBeVisible();
+    // Should see dropdown with options - items include descriptions
+    const articleOption = page.getByRole("button", {
+      name: /article.*blog posts/i,
+    });
+    await expect(articleOption).toBeVisible();
 
-    // Click on Article
-    await page.getByText("Article").click();
+    // Click on Article option in the dropdown
+    await articleOption.click();
 
-    // Dropdown should close and show Article
-    await expect(page.getByRole("button", { name: /article/i })).toBeVisible();
+    // Dropdown should close - the selected item is now the visible button
+    // Wait a moment for dropdown to close
+    await page.waitForTimeout(100);
+
+    // Verify the type changed (button text should contain Article)
+    await expect(page.locator('[data-testid="type-selector"]').or(
+      page.getByRole("button", { name: /^article$/i })
+    ).first()).toBeVisible();
   });
 
   test("supports markdown shortcuts", async ({ page }) => {

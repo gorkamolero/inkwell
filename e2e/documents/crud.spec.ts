@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
+import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { mockApi } from "../utils/api-helpers";
 import { createEditorHelper } from "../utils/editor-helpers";
 import { TEST_USERS, TEST_PROJECTS, TEST_DOCUMENTS } from "../fixtures/test-data";
 
 test.describe("Documents List", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("displays documents in project", async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe("Documents List", () => {
 
 test.describe("Create Document", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("can create new document", async ({ page }) => {
@@ -164,7 +164,7 @@ test.describe("Create Document", () => {
 
 test.describe("Edit Document", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("loads document content in editor", async ({ page }) => {
@@ -305,7 +305,7 @@ test.describe("Edit Document", () => {
 
 test.describe("Delete Document", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("can delete document with confirmation", async ({ page }) => {

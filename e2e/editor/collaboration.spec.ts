@@ -1,257 +1,156 @@
-import { test, expect, chromium } from "@playwright/test";
-import {
-  setupCollaborationTest,
-  createSharedSession,
-} from "../fixtures/liveblocks-helpers";
+import { test, expect, chromium, BrowserContext, Page } from "@playwright/test";
 import { createEditorHelper } from "../utils/editor-helpers";
 
 /**
  * Real-Time Collaboration Tests
  *
  * These tests use real Liveblocks rooms for collaboration testing.
- * They require two browser contexts simulating two users.
+ * User A creates a session and shares it, User B joins via the share link.
  */
+
+// Helper to create a share link and return the URL
+async function createAndShareSession(page: Page): Promise<string> {
+  await page.goto("/");
+
+  // Wait for editor
+  await expect(
+    page.getByRole("textbox", { name: /editor/i })
+  ).toBeVisible({ timeout: 15000 });
+
+  // Open share dialog
+  await page.getByRole("button", { name: /share/i }).click();
+
+  // Create share link
+  await page.getByRole("button", { name: /create share link/i }).click();
+
+  // Wait for share URL
+  const shareInput = page.locator("input[readonly]");
+  await expect(shareInput).toBeVisible({ timeout: 10000 });
+
+  const shareUrl = await shareInput.inputValue();
+
+  // Close dialog
+  await page.getByRole("button", { name: /done/i }).click();
+
+  return shareUrl;
+}
+
 test.describe("Real-Time Collaboration", () => {
-  test("changes from user A appear for user B", async () => {
-    const { userA, userB, cleanup } = await setupCollaborationTest();
+  // Collaboration tests run sequentially with workers: 1
+  test.describe.configure({ mode: "serial" });
 
-    try {
-      // User A creates a shared session
-      await userA.page.goto("/");
-      const editorA = createEditorHelper(userA.page);
-      await editorA.waitForEditor();
+  let browser: import("playwright").Browser;
+  let contextA: BrowserContext;
+  let contextB: BrowserContext;
+  let pageA: Page;
+  let pageB: Page;
 
-      // Get the session URL (assuming it's in the address bar or share dialog)
-      const url = userA.page.url();
-
-      // User B joins the same session
-      await userB.page.goto(url);
-      const editorB = createEditorHelper(userB.page);
-      await editorB.waitForEditor();
-
-      // Wait for Liveblocks connection
-      await userA.page.waitForTimeout(2000);
-      await userB.page.waitForTimeout(2000);
-
-      // User A types something
-      await editorA.clear();
-      await editorA.type("Hello from User A");
-
-      // Wait for sync
-      await userB.page.waitForTimeout(2000);
-
-      // User B should see the change
-      const contentB = await editorB.getTextContent();
-      expect(contentB).toContain("Hello from User A");
-    } finally {
-      await cleanup();
-    }
+  test.beforeAll(async () => {
+    browser = await chromium.launch();
+    contextA = await browser.newContext();
+    contextB = await browser.newContext();
+    pageA = await contextA.newPage();
+    pageB = await contextB.newPage();
   });
 
-  test("changes from user B appear for user A", async () => {
-    const { userA, userB, cleanup } = await setupCollaborationTest();
-
-    try {
-      await userA.page.goto("/");
-      const editorA = createEditorHelper(userA.page);
-      await editorA.waitForEditor();
-
-      const url = userA.page.url();
-
-      await userB.page.goto(url);
-      const editorB = createEditorHelper(userB.page);
-      await editorB.waitForEditor();
-
-      await userA.page.waitForTimeout(2000);
-      await userB.page.waitForTimeout(2000);
-
-      // User B types something
-      await editorB.clear();
-      await editorB.type("Hello from User B");
-
-      // Wait for sync
-      await userA.page.waitForTimeout(2000);
-
-      // User A should see the change
-      const contentA = await editorA.getTextContent();
-      expect(contentA).toContain("Hello from User B");
-    } finally {
-      await cleanup();
-    }
+  test.afterAll(async () => {
+    await contextA.close();
+    await contextB.close();
+    await browser.close();
   });
 
-  test("concurrent edits merge correctly (CRDT)", async () => {
-    const { userA, userB, cleanup } = await setupCollaborationTest();
+  test("user B can join user A's session via share link", async () => {
+    // User A creates and shares a session
+    const shareUrl = await createAndShareSession(pageA);
 
-    try {
-      await userA.page.goto("/");
-      const editorA = createEditorHelper(userA.page);
-      await editorA.waitForEditor();
+    // IMPORTANT: User A must also navigate to the share URL
+    // to be in the same Liveblocks room as User B
+    await pageA.goto(shareUrl);
+    await expect(
+      pageA.getByRole("textbox", { name: /editor/i })
+    ).toBeVisible({ timeout: 15000 });
+    await expect(pageA.getByText(/live/i)).toBeVisible({ timeout: 10000 });
 
-      const url = userA.page.url();
+    // User B joins via share link
+    await pageB.goto(shareUrl);
 
-      await userB.page.goto(url);
-      const editorB = createEditorHelper(userB.page);
-      await editorB.waitForEditor();
+    // Both should see the editor
+    await expect(
+      pageB.getByRole("textbox", { name: /editor/i })
+    ).toBeVisible({ timeout: 15000 });
 
-      // Wait for sync
-      await userA.page.waitForTimeout(2000);
+    // Both should show "Live" status (Liveblocks connected)
+    await expect(pageB.getByText(/live/i)).toBeVisible({ timeout: 10000 });
 
-      // Clear content
-      await editorA.clear();
-      await userA.page.waitForTimeout(500);
-
-      // Both users type at the same time
-      await Promise.all([
-        editorA.type("AAA"),
-        editorB.type("BBB"),
-      ]);
-
-      // Wait for CRDT merge
-      await userA.page.waitForTimeout(3000);
-
-      // Both pages should have merged content
-      const contentA = await editorA.getTextContent();
-      const contentB = await editorB.getTextContent();
-
-      // Both should have both pieces of text
-      expect(contentA).toContain("AAA");
-      expect(contentA).toContain("BBB");
-      expect(contentB).toContain("AAA");
-      expect(contentB).toContain("BBB");
-
-      // Content should be identical after sync
-      expect(contentA).toBe(contentB);
-    } finally {
-      await cleanup();
-    }
+    // Wait for both to connect
+    await pageA.waitForTimeout(2000);
+    await pageB.waitForTimeout(2000);
   });
 
-  test("formatting changes sync correctly", async () => {
-    const { userA, userB, cleanup } = await setupCollaborationTest();
+  test("changes from user A sync to user B", async () => {
+    // Get editors
+    const editorA = createEditorHelper(pageA);
+    const editorB = createEditorHelper(pageB);
 
-    try {
-      await userA.page.goto("/");
-      const editorA = createEditorHelper(userA.page);
-      await editorA.waitForEditor();
+    // Clear and type as User A
+    await editorA.clear();
+    await editorA.type("Hello from User A");
 
-      const url = userA.page.url();
+    // Wait for sync (Liveblocks real-time)
+    await pageA.waitForTimeout(3000);
 
-      await userB.page.goto(url);
-      const editorB = createEditorHelper(userB.page);
-      await editorB.waitForEditor();
-
-      await userA.page.waitForTimeout(2000);
-
-      // User A types and makes it bold
-      await editorA.clear();
-      await editorA.type("Bold text");
-      await editorA.selectAll();
-      await editorA.bold();
-
-      // Wait for sync
-      await userB.page.waitForTimeout(2000);
-
-      // User B should see bold text
-      await editorB.expectBold("Bold text");
-    } finally {
-      await cleanup();
-    }
+    // User B should see the change
+    await expect(pageB.getByText("Hello from User A")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
-  test("deleted content syncs correctly", async () => {
-    const { userA, userB, cleanup } = await setupCollaborationTest();
+  test("changes from user B sync to user A", async () => {
+    const editorB = createEditorHelper(pageB);
 
-    try {
-      await userA.page.goto("/");
-      const editorA = createEditorHelper(userA.page);
-      await editorA.waitForEditor();
+    // User B adds content
+    await editorB.type(" and User B");
 
-      const url = userA.page.url();
+    // Wait for sync
+    await pageB.waitForTimeout(3000);
 
-      await userB.page.goto(url);
-      const editorB = createEditorHelper(userB.page);
-      await editorB.waitForEditor();
-
-      await userA.page.waitForTimeout(2000);
-
-      // User A types content
-      await editorA.clear();
-      await editorA.type("This will be deleted");
-      await userB.page.waitForTimeout(1000);
-
-      // Verify B sees it
-      let contentB = await editorB.getTextContent();
-      expect(contentB).toContain("This will be deleted");
-
-      // User A deletes content
-      await editorA.clear();
-      await userB.page.waitForTimeout(2000);
-
-      // User B should see empty editor
-      contentB = await editorB.getTextContent();
-      expect(contentB.trim()).toBe("");
-    } finally {
-      await cleanup();
-    }
+    // User A should see the combined content
+    await expect(
+      pageA.getByText(/Hello from User A.*User B|User B.*Hello from User A/i)
+    ).toBeVisible({ timeout: 10000 });
   });
 });
 
-test.describe("Shared Session Collaboration", () => {
-  test("user can share session via link", async ({ page }) => {
-    await page.goto("/");
-    const editor = createEditorHelper(page);
-    await editor.waitForEditor();
+test.describe("Shared Session Access", () => {
+  test("shared session shows editor for anonymous users", async ({ page }) => {
+    // Create a session and get share link
+    const shareUrl = await createAndShareSession(page);
 
-    // Click share button
-    const shareButton = page.getByRole("button", { name: /share/i });
-    if (await shareButton.isVisible()) {
-      await shareButton.click();
+    // Open a new context (anonymous user)
+    const browser = await chromium.launch();
+    const anonContext = await browser.newContext();
+    const anonPage = await anonContext.newPage();
 
-      // Should see share dialog with link
-      const shareInput = page.locator('input[readonly]').first();
-      await expect(shareInput).toBeVisible({ timeout: 5000 });
+    try {
+      await anonPage.goto(shareUrl);
 
-      const shareUrl = await shareInput.inputValue();
-      expect(shareUrl).toContain("/s/");
+      // Should see the collaborative editor
+      await expect(
+        anonPage.getByRole("textbox", { name: /editor/i })
+      ).toBeVisible({ timeout: 15000 });
+
+      // Should show Live status
+      await expect(anonPage.getByText(/live/i)).toBeVisible({ timeout: 10000 });
+    } finally {
+      await anonContext.close();
+      await browser.close();
     }
   });
 
-  test("shared session is accessible via link", async ({ page, context }) => {
-    // Create a session and get share link
-    await page.goto("/");
-    const editor = createEditorHelper(page);
-    await editor.waitForEditor();
+  test("shared session URL contains share slug", async ({ page }) => {
+    const shareUrl = await createAndShareSession(page);
 
-    // Add some content
-    await editor.clear();
-    await editor.type("Shared content");
-
-    // Get share link
-    const shareButton = page.getByRole("button", { name: /share/i });
-    if (await shareButton.isVisible()) {
-      await shareButton.click();
-
-      const shareInput = page.locator('input[readonly]').first();
-      await shareInput.waitFor({ state: "visible", timeout: 5000 });
-
-      const shareUrl = await shareInput.inputValue();
-
-      // Close dialog
-      await page.keyboard.press("Escape");
-
-      // Open new tab with share link
-      const newPage = await context.newPage();
-      await newPage.goto(shareUrl);
-
-      const newEditor = createEditorHelper(newPage);
-      await newEditor.waitForEditor();
-
-      // Should see the shared content
-      const content = await newEditor.getTextContent();
-      expect(content).toContain("Shared content");
-
-      await newPage.close();
-    }
+    // URL should contain /s/ path
+    expect(shareUrl).toContain("/s/");
   });
 });

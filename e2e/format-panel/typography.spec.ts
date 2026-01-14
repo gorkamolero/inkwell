@@ -1,92 +1,61 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
-import { TEST_USERS } from "../fixtures/test-data";
+import { setupFormatPanelTest, openFormatSection } from "../fixtures/format-panel-helpers";
 
 /**
  * Format Panel - Typography Section Tests
  *
  * Tests for typography configuration:
  * - Body font, size, line height
- * - Heading font, size
- * - Paragraph indent, spacing
+ * - Heading font
  */
 test.describe("Format Panel - Typography", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
-    await page.goto("/");
-
-    await expect(
-      page.getByRole("textbox", { name: /editor/i })
-    ).toBeVisible({ timeout: 15000 });
-
-    const formatButton = page.getByRole("button", { name: /format|settings|configure/i });
-    if (await formatButton.isVisible({ timeout: 2000 })) {
-      await formatButton.click();
-    }
+    await setupFormatPanelTest(page);
+    await openFormatSection(page, "typography");
   });
 
   test("can change body font", async ({ page }) => {
-    const bodyFontSelect = page.getByLabel(/body font|body typeface/i);
-    if (await bodyFontSelect.isVisible()) {
-      await bodyFontSelect.selectOption("Garamond");
-      await expect(bodyFontSelect).toHaveValue("Garamond");
-    }
-  });
+    // Find the combobox that follows "Body Font" text
+    const select = page.locator("div:has(> :text('Body Font')) > select, div:has(> :text('Body Font')) + select").first();
 
-  test("can change body font size", async ({ page }) => {
-    const bodySizeInput = page.getByLabel(/body.*size|font.*size/i).first();
-    if (await bodySizeInput.isVisible()) {
-      await bodySizeInput.fill("12pt");
-      await expect(bodySizeInput).toHaveValue("12pt");
-    }
-  });
+    // Alternative: use the combobox role with text context
+    const bodyFontCombo = page.getByRole("combobox").first();
 
-  test("can adjust line height", async ({ page }) => {
-    const lineHeightInput = page.getByLabel(/line.*height|leading/i);
-    if (await lineHeightInput.isVisible()) {
-      await lineHeightInput.fill("1.6");
-      await expect(lineHeightInput).toHaveValue("1.6");
-    }
+    await expect(bodyFontCombo).toBeVisible();
+    await bodyFontCombo.selectOption("Georgia");
+    await expect(bodyFontCombo).toHaveValue("Georgia");
   });
 
   test("can change heading font", async ({ page }) => {
-    const headingFontSelect = page.getByLabel(/heading.*font|heading.*typeface/i);
-    if (await headingFontSelect.isVisible()) {
-      await headingFontSelect.selectOption("Playfair Display");
-      await expect(headingFontSelect).toHaveValue("Playfair Display");
-    }
+    // Heading font is the second combobox
+    const headingFontCombo = page.getByRole("combobox").nth(1);
+
+    await expect(headingFontCombo).toBeVisible();
+    await headingFontCombo.selectOption("Playfair Display");
+    await expect(headingFontCombo).toHaveValue("Playfair Display");
   });
 
-  test("can change heading size", async ({ page }) => {
-    const headingSizeInput = page.getByLabel(/heading.*size/i);
-    if (await headingSizeInput.isVisible()) {
-      await headingSizeInput.fill("18pt");
-      await expect(headingSizeInput).toHaveValue("18pt");
-    }
+  test("can change body size", async ({ page }) => {
+    // Body size is the third combobox
+    const bodySizeCombo = page.getByRole("combobox").nth(2);
+
+    await expect(bodySizeCombo).toBeVisible();
+    await bodySizeCombo.selectOption("12pt");
+    await expect(bodySizeCombo).toHaveValue("12pt");
   });
 
-  test("can set paragraph indent", async ({ page }) => {
-    const indentInput = page.getByLabel(/indent|indentation/i);
-    if (await indentInput.isVisible()) {
-      await indentInput.fill("1.5em");
-      await expect(indentInput).toHaveValue("1.5em");
-    }
+  test("can adjust line height", async ({ page }) => {
+    // Line height is the fourth combobox
+    const lineHeightCombo = page.getByRole("combobox").nth(3);
+
+    await expect(lineHeightCombo).toBeVisible();
+    await lineHeightCombo.selectOption({ label: "Loose (1.6)" });
+    await expect(lineHeightCombo).toHaveValue("1.6");
   });
 
-  test("can set paragraph spacing", async ({ page }) => {
-    const spacingInput = page.getByLabel(/paragraph.*spacing|space.*after/i);
-    if (await spacingInput.isVisible()) {
-      await spacingInput.fill("0.5em");
-      await expect(spacingInput).toHaveValue("0.5em");
-    }
-  });
-
-  test("can toggle first paragraph indent", async ({ page }) => {
-    const firstIndentToggle = page.getByLabel(/first.*paragraph.*indent/i);
-    if (await firstIndentToggle.isVisible()) {
-      const wasChecked = await firstIndentToggle.isChecked();
-      await firstIndentToggle.click();
-      await expect(firstIndentToggle).toBeChecked({ checked: !wasChecked });
-    }
+  test("typography preview shows sample text", async ({ page }) => {
+    // Preview should show the sample text
+    const preview = page.getByText("The quick brown fox");
+    await expect(preview).toBeVisible();
   });
 });
