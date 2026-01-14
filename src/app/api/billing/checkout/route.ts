@@ -28,12 +28,7 @@ async function createCheckoutHandler(
   request: NextRequest,
   { userId, userEmail }: AuthContext,
 ) {
-  console.log("=== CHECKOUT HANDLER CALLED ===");
-  const rawBody = await request.json();
-  console.log("Raw request body:", JSON.stringify(rawBody));
-  const body = checkoutSchema.parse(rawBody);
-  console.log("Validated body:", JSON.stringify(body));
-
+  const body = checkoutSchema.parse(await request.json());
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   try {

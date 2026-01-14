@@ -18,6 +18,7 @@ import {
 import { lexicalToMarkdown } from "@/lib/editor-utils";
 import { getDefaultConfig, type FormatConfig } from "@/lib/format-schema";
 import { BookDocument, parseMarkdown, registerFonts } from "@/lib/pdf";
+import { getExportAccess } from "@/lib/subscription";
 import type { SerializedEditorState } from "lexical";
 
 // ============================================================================
@@ -107,8 +108,13 @@ export async function POST(
       const editorState = JSON.parse(session.content) as SerializedEditorState;
       markdown = lexicalToMarkdown(editorState);
     } catch (error) {
-      console.error("Failed to parse editor content:", error);
-      throw ApiError.badRequest("Invalid editor content format");
+      // If JSON parsing fails, check if it's already markdown
+      if (session.content.trim().startsWith("#")) {
+        markdown = session.content;
+      } else {
+        console.error("Failed to parse editor content:", error);
+        throw ApiError.badRequest("Invalid editor content format");
+      }
     }
 
     // Parse markdown to structured document
@@ -127,13 +133,21 @@ export async function POST(
       formatConfig.meta.title = session.title;
     }
 
+    // Check export access for Hotpress colophon
+    const exportAccess = await getExportAccess(context.userId || null, id);
+    const showHotpressColophon = !exportAccess.hasCleanExports;
+
     // Register fonts before rendering
     registerFonts();
 
     // Generate PDF
     const startTime = Date.now();
     const pdfBuffer = await renderToBuffer(
-      <BookDocument content={parsedDoc} config={formatConfig} />,
+      <BookDocument
+        content={parsedDoc}
+        config={formatConfig}
+        showHotpressColophon={showHotpressColophon}
+      />,
     );
     const generationTime = Date.now() - startTime;
 
@@ -201,8 +215,13 @@ export async function GET(
       const editorState = JSON.parse(session.content) as SerializedEditorState;
       markdown = lexicalToMarkdown(editorState);
     } catch (error) {
-      console.error("Failed to parse editor content:", error);
-      throw ApiError.badRequest("Invalid editor content format");
+      // If JSON parsing fails, check if it's already markdown
+      if (session.content.trim().startsWith("#")) {
+        markdown = session.content;
+      } else {
+        console.error("Failed to parse editor content:", error);
+        throw ApiError.badRequest("Invalid editor content format");
+      }
     }
 
     // Parse markdown to structured document
@@ -221,12 +240,20 @@ export async function GET(
       formatConfig.meta.title = session.title;
     }
 
+    // Check export access for Hotpress colophon
+    const exportAccess = await getExportAccess(context.userId || null, id);
+    const showHotpressColophon = !exportAccess.hasCleanExports;
+
     // Register fonts before rendering
     registerFonts();
 
     // Generate PDF
     const pdfBuffer = await renderToBuffer(
-      <BookDocument content={parsedDoc} config={formatConfig} />,
+      <BookDocument
+        content={parsedDoc}
+        config={formatConfig}
+        showHotpressColophon={showHotpressColophon}
+      />,
     );
 
     // Return as PDF file
