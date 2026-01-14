@@ -413,16 +413,68 @@ function EndnotesPage({ config, footnotes }: EndnotesPageProps) {
   );
 }
 
+/**
+ * Hotpress Colophon - Footer for free tier exports
+ */
+interface HotpressColophonProps {
+  config: FormatConfig;
+}
+
+function HotpressColophon({ config }: HotpressColophonProps) {
+  const styles = createBackMatterStyles(config);
+
+  const colophonStyles = StyleSheet.create({
+    colophonPage: {
+      ...styles.page,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    colophonText: {
+      fontSize: styles.page.fontSize! * 0.85,
+      color: "#666666",
+      textAlign: "center",
+      lineHeight: 1.4,
+    },
+    link: {
+      color: "#666666",
+      textDecoration: "none",
+    },
+  });
+
+  return (
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={colophonStyles.colophonPage}
+    >
+      <View>
+        <Text style={colophonStyles.colophonText}>
+          Made with{" "}
+          <Link src="https://hotpress.com" style={colophonStyles.link}>
+            Hotpress
+          </Link>
+        </Text>
+        <Text style={colophonStyles.colophonText}>
+          hotpress.com
+        </Text>
+      </View>
+    </Page>
+  );
+}
+
 // =============================================================================
 // Main Export
 // =============================================================================
 
+interface BackMatterPropsWithColophon extends BackMatterProps {
+  showHotpressColophon?: boolean;
+}
+
 /**
  * Renders all back matter pages based on configuration
  */
-export function BackMatter({ items, config, footnotes }: BackMatterProps) {
+export function BackMatter({ items, config, footnotes, showHotpressColophon }: BackMatterPropsWithColophon) {
   const hasContent = (items && items.length > 0) || (footnotes && footnotes.length > 0);
-  if (!hasContent) return null;
+  if (!hasContent && !showHotpressColophon) return null;
 
   return (
     <>
@@ -449,6 +501,11 @@ export function BackMatter({ items, config, footnotes }: BackMatterProps) {
       {footnotes && footnotes.length > 0 && (
         <EndnotesPage config={config} footnotes={footnotes} />
       )}
+
+      {/* Render Hotpress colophon for free tier exports */}
+      {showHotpressColophon && (
+        <HotpressColophon config={config} />
+      )}
     </>
   );
 }
@@ -461,4 +518,5 @@ export {
   AppendixPage,
   EpiloguePage,
   EndnotesPage,
+  HotpressColophon,
 };

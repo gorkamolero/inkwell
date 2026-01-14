@@ -1,24 +1,19 @@
-import { count, eq } from "drizzle-orm";
-import {
-  db,
-  documents,
-  projectCollaborators,
-  projects,
-  subscriptions,
-} from "@/lib/db";
+import { and, eq } from "drizzle-orm";
+import { db, purchasedBooks, subscriptions } from "@/lib/db";
 import { getTierFromPriceId, PRICING, type Tier } from "@/lib/stripe";
 
 // ============================================================================
 // Tier Determination
 // ============================================================================
 
+export type UserTier = "free" | "pro";
+
 /**
  * Get the subscription tier for a user
- * Returns 'free' | 'pro' | 'team' based on their active subscription
+ * Returns 'free' | 'pro' based on their active subscription
+ * Note: 'creator' is per-book, not a user tier
  */
-export async function getUserTier(
-  userId: string,
-): Promise<"free" | "pro" | "team"> {
+export async function getUserTier(userId: string): Promise<UserTier> {
   if (!db) {
     return "free";
   }
@@ -45,7 +40,7 @@ export async function getUserTier(
   }
 
   const tier = getTierFromPriceId(subscription.stripePriceId);
-  return tier.toLowerCase() as "free" | "pro" | "team";
+  return tier === "PRO" ? "pro" : "free";
 }
 
 /**
@@ -57,202 +52,171 @@ export async function getUserPricingTier(userId: string): Promise<Tier> {
 }
 
 // ============================================================================
-// Limit Checking Functions
+// Export Access (the core of the new pricing model)
 // ============================================================================
 
-/**
- * Check if a user can create a new project
- */
-export async function canCreateProject(userId: string): Promise<boolean> {
-  if (!db) {
-    return false;
-  }
-
-  const tier = await getUserPricingTier(userId);
-  const limits = PRICING[tier];
-
-  // Unlimited projects
-  if (limits.projects === Infinity) {
-    return true;
-  }
-
-  // Count existing projects
-  const result = await db
-    .select({ count: count() })
-    .from(projects)
-    .where(eq(projects.userId, userId));
-
-  const projectCount = result[0]?.count ?? 0;
-  return projectCount < limits.projects;
+export interface ExportAccess {
+  hasCleanExports: boolean; // No "Made with Hotpress" footer
+  hasPrintReady: boolean; // CMYK, bleed marks, trim marks
+  hasPremiumTemplates: boolean;
+  hasGithubSync: boolean;
+  reason: "pro" | "purchased" | "free";
 }
 
 /**
- * Check if a document can be added to a project
+ * Check if a user has clean export access for a specific session (book)
+ *
+ * Access is granted if:
+ * 1. User has Pro subscription (all sessions)
+ * 2. User purchased this specific session (Creator tier)
+ *
+ * Otherwise, exports include "Made with Hotpress" footer
  */
-export async function canAddDocument(projectId: string): Promise<boolean> {
-  if (!db) {
-    return false;
-  }
-
-  // Get the project owner's userId
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-  });
-
-  if (!project) {
-    return false;
-  }
-
-  const tier = await getUserPricingTier(project.userId);
-  const limits = PRICING[tier];
-
-  // Unlimited documents
-  if (limits.docsPerProject === Infinity) {
-    return true;
-  }
-
-  // Count existing documents in this project
-  const result = await db
-    .select({ count: count() })
-    .from(documents)
-    .where(eq(documents.projectId, projectId));
-
-  const docCount = result[0]?.count ?? 0;
-  return docCount < limits.docsPerProject;
-}
-
-/**
- * Check if a collaborator can be added to a project
- */
-export async function canAddCollaborator(projectId: string): Promise<boolean> {
-  if (!db) {
-    return false;
-  }
-
-  // Get the project owner's userId
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-  });
-
-  if (!project) {
-    return false;
-  }
-
-  const tier = await getUserPricingTier(project.userId);
-  const limits = PRICING[tier];
-
-  // Unlimited collaborators
-  if (limits.collaborators === Infinity) {
-    return true;
-  }
-
-  // Free tier: no collaborators allowed
-  if (limits.collaborators === 0) {
-    return false;
-  }
-
-  // Count existing collaborators on this project
-  const result = await db
-    .select({ count: count() })
-    .from(projectCollaborators)
-    .where(eq(projectCollaborators.projectId, projectId));
-
-  const collaboratorCount = result[0]?.count ?? 0;
-  return collaboratorCount < limits.collaborators;
-}
-
-// ============================================================================
-// Usage Statistics
-// ============================================================================
-
-/**
- * Get usage statistics for a user
- */
-export async function getUserUsage(userId: string) {
-  if (!db) {
+export async function getExportAccess(
+  userId: string | null,
+  sessionId: string,
+): Promise<ExportAccess> {
+  // Unauthenticated users get free tier
+  if (!userId || !db) {
     return {
-      projects: { used: 0, limit: PRICING.FREE.projects },
-      docsPerProject: { limit: PRICING.FREE.docsPerProject },
-      collaborators: { limit: PRICING.FREE.collaborators },
+      hasCleanExports: false,
+      hasPrintReady: false,
+      hasPremiumTemplates: false,
+      hasGithubSync: false,
+      reason: "free",
     };
   }
 
-  const tier = await getUserPricingTier(userId);
-  const limits = PRICING[tier];
+  // Check if user has Pro subscription
+  const userTier = await getUserTier(userId);
+  if (userTier === "pro") {
+    return {
+      hasCleanExports: true,
+      hasPrintReady: true,
+      hasPremiumTemplates: true,
+      hasGithubSync: true,
+      reason: "pro",
+    };
+  }
 
-  // Count projects
-  const projectResult = await db
-    .select({ count: count() })
-    .from(projects)
-    .where(eq(projects.userId, userId));
+  // Check if user purchased this specific book
+  const purchase = await db.query.purchasedBooks.findFirst({
+    where: and(
+      eq(purchasedBooks.userId, userId),
+      eq(purchasedBooks.sessionId, sessionId),
+    ),
+  });
 
-  const projectCount = projectResult[0]?.count ?? 0;
+  if (purchase) {
+    return {
+      hasCleanExports: true,
+      hasPrintReady: true,
+      hasPremiumTemplates: true,
+      hasGithubSync: false, // GitHub sync is Pro-only
+      reason: "purchased",
+    };
+  }
 
+  // Free tier
   return {
-    tier: tier.toLowerCase() as "free" | "pro" | "team",
-    projects: {
-      used: projectCount,
-      limit: limits.projects,
-      canCreate: projectCount < limits.projects || limits.projects === Infinity,
-    },
-    docsPerProject: {
-      limit: limits.docsPerProject,
-    },
-    collaborators: {
-      limit: limits.collaborators,
-    },
+    hasCleanExports: false,
+    hasPrintReady: false,
+    hasPremiumTemplates: false,
+    hasGithubSync: false,
+    reason: "free",
   };
 }
 
 /**
- * Get usage for a specific project (documents and collaborators)
+ * Check if a user has purchased a specific book
  */
-export async function getProjectUsage(projectId: string) {
-  if (!db) {
-    return null;
-  }
+export async function hasBookPurchase(
+  userId: string,
+  sessionId: string,
+): Promise<boolean> {
+  if (!db) return false;
 
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
+  const purchase = await db.query.purchasedBooks.findFirst({
+    where: and(
+      eq(purchasedBooks.userId, userId),
+      eq(purchasedBooks.sessionId, sessionId),
+    ),
   });
 
-  if (!project) {
-    return null;
-  }
+  return !!purchase;
+}
 
-  const tier = await getUserPricingTier(project.userId);
-  const limits = PRICING[tier];
+/**
+ * Get all books purchased by a user
+ */
+export async function getUserPurchasedBooks(userId: string) {
+  if (!db) return [];
 
-  // Count documents
-  const docResult = await db
-    .select({ count: count() })
-    .from(documents)
-    .where(eq(documents.projectId, projectId));
+  return db.query.purchasedBooks.findMany({
+    where: eq(purchasedBooks.userId, userId),
+    with: {
+      session: true,
+    },
+  });
+}
 
-  const docCount = docResult[0]?.count ?? 0;
+// ============================================================================
+// Feature Access Helpers
+// ============================================================================
 
-  // Count collaborators
-  const collabResult = await db
-    .select({ count: count() })
-    .from(projectCollaborators)
-    .where(eq(projectCollaborators.projectId, projectId));
+/**
+ * Check if user has GitHub sync access (Pro only)
+ */
+export async function hasGithubSyncAccess(userId: string): Promise<boolean> {
+  const tier = await getUserTier(userId);
+  return tier === "pro";
+}
 
-  const collaboratorCount = collabResult[0]?.count ?? 0;
+/**
+ * Get features available for a tier
+ */
+export function getTierFeatures(tier: Tier) {
+  return PRICING[tier];
+}
+
+// ============================================================================
+// Legacy Limit Functions (all return true - everything is unlimited now)
+// ============================================================================
+
+/**
+ * @deprecated Everything is unlimited in the new pricing model
+ */
+export async function canCreateProject(_userId: string): Promise<boolean> {
+  return true;
+}
+
+/**
+ * @deprecated Everything is unlimited in the new pricing model
+ */
+export async function canAddDocument(_projectId: string): Promise<boolean> {
+  return true;
+}
+
+/**
+ * @deprecated Everything is unlimited in the new pricing model
+ */
+export async function canAddCollaborator(_projectId: string): Promise<boolean> {
+  return true;
+}
+
+// ============================================================================
+// Usage Statistics (simplified - no limits)
+// ============================================================================
+
+/**
+ * Get user's subscription info
+ */
+export async function getUserSubscriptionInfo(userId: string) {
+  const tier = await getUserTier(userId);
+  const features = PRICING[tier.toUpperCase() as Tier];
 
   return {
-    tier: tier.toLowerCase() as "free" | "pro" | "team",
-    documents: {
-      used: docCount,
-      limit: limits.docsPerProject,
-      canAdd:
-        docCount < limits.docsPerProject || limits.docsPerProject === Infinity,
-    },
-    collaborators: {
-      used: collaboratorCount,
-      limit: limits.collaborators,
-      canAdd:
-        limits.collaborators === Infinity ||
-        (limits.collaborators > 0 && collaboratorCount < limits.collaborators),
-    },
+    tier,
+    ...features,
   };
 }

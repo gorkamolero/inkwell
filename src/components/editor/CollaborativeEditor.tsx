@@ -37,11 +37,15 @@ import {
   Bell,
   Bot,
   Check,
+  Copy,
+  ExternalLink,
   FileText,
   History,
   Loader2,
   MessageSquare,
+  Palette,
   Pencil,
+  Settings,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -597,10 +601,22 @@ function AiAssistantPanel({ isOpen, onClose }: AiAssistantPanelProps) {
 
 interface CollaborativeEditorInnerProps {
   sessionTitle: string | null;
+  isAuthenticated: boolean | null;
+  onCopyLink: () => void;
+  copied: boolean;
+  onShowTemplates: () => void;
+  onShowFormat: () => void;
+  onShowPreview: () => void;
 }
 
 function CollaborativeEditorInner({
   sessionTitle,
+  isAuthenticated,
+  onCopyLink,
+  copied,
+  onShowTemplates,
+  onShowFormat,
+  onShowPreview,
 }: CollaborativeEditorInnerProps) {
   const [wordCount, setWordCount] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
@@ -708,6 +724,71 @@ function CollaborativeEditorInner({
 
               {/* Status indicator */}
               <EditorReadyIndicator />
+              
+              {/* Divider */}
+              <div className="w-px h-6 bg-gray-300 mx-1" />
+              
+              {/* Copy Link */}
+              <button
+                type="button"
+                onClick={onCopyLink}
+                className="flex h-8 items-center gap-1 px-2 border-2 border-transparent hover:border-black hover:bg-gray-100 transition-all"
+                title="Copy Link"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </button>
+              
+              {/* Conditional buttons based on auth */}
+              {isAuthenticated === true ? (
+                <>
+                  {/* Templates */}
+                  <button
+                    type="button"
+                    onClick={onShowTemplates}
+                    className="flex h-8 items-center gap-1 px-2 border-2 border-transparent hover:border-black hover:bg-brutal-yellow transition-all"
+                    title="Templates"
+                  >
+                    <Palette className="h-4 w-4" />
+                  </button>
+                  
+                  {/* Customize */}
+                  <button
+                    type="button"
+                    onClick={onShowFormat}
+                    className="flex h-8 items-center gap-1 px-2 border-2 border-transparent hover:border-black hover:bg-gray-100 transition-all"
+                    title="Customize"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                  
+                  {/* Preview */}
+                  <button
+                    type="button"
+                    onClick={onShowPreview}
+                    className="flex h-8 items-center gap-1 px-2 border-2 border-transparent hover:border-black hover:bg-brutal-pink transition-all"
+                    title="Preview"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </button>
+                </>
+              ) : isAuthenticated === false ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentUrl = encodeURIComponent(window.location.pathname);
+                    window.location.href = `/login?callbackUrl=${currentUrl}`;
+                  }}
+                  className="flex h-8 items-center gap-1.5 px-3 border-2 border-black bg-brutal-yellow hover:bg-brutal-yellow/80 font-bold text-sm transition-all"
+                  title="Sign in to customize"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">Sign in</span>
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -790,11 +871,23 @@ function EditorSkeleton() {
 export interface CollaborativeEditorProps {
   roomId: string;
   sessionTitle?: string | null;
+  isAuthenticated: boolean | null;
+  onCopyLink: () => void;
+  copied: boolean;
+  onShowTemplates: () => void;
+  onShowFormat: () => void;
+  onShowPreview: () => void;
 }
 
 export function CollaborativeEditor({
   roomId,
   sessionTitle,
+  isAuthenticated,
+  onCopyLink,
+  copied,
+  onShowTemplates,
+  onShowFormat,
+  onShowPreview,
 }: CollaborativeEditorProps) {
   return (
     <RoomProvider
@@ -806,7 +899,15 @@ export function CollaborativeEditor({
       }}
     >
       <ClientSideSuspense fallback={<EditorSkeleton />}>
-        <CollaborativeEditorInner sessionTitle={sessionTitle ?? null} />
+        <CollaborativeEditorInner 
+          sessionTitle={sessionTitle ?? null}
+          isAuthenticated={isAuthenticated}
+          onCopyLink={onCopyLink}
+          copied={copied}
+          onShowTemplates={onShowTemplates}
+          onShowFormat={onShowFormat}
+          onShowPreview={onShowPreview}
+        />
       </ClientSideSuspense>
     </RoomProvider>
   );

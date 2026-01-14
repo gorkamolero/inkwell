@@ -23,7 +23,7 @@ export interface EpubWorkflowResult {
 /**
  * Fetch session data (step)
  */
-async function fetchSession(sessionId: string): Promise<GenerationInput> {
+async function fetchSession(sessionId: string, userId?: string): Promise<GenerationInput> {
   "use step";
 
   const session = await getSessionById(sessionId);
@@ -41,6 +41,8 @@ async function fetchSession(sessionId: string): Promise<GenerationInput> {
     content: session.content,
     formatConfig: session.formatConfig,
     type: session.type,
+    // Use provided userId or fallback to session owner
+    userId: userId || session.ownerId,
   };
 }
 
@@ -75,12 +77,13 @@ async function uploadToBlob(
  */
 export async function generateEpubWorkflow(
   sessionId: string,
-  jobId: string
+  jobId: string,
+  userId?: string
 ): Promise<EpubWorkflowResult> {
   "use workflow";
 
   // Step 1: Fetch session data
-  const input = await fetchSession(sessionId);
+  const input = await fetchSession(sessionId, userId);
 
   // Step 2: Generate ePub
   const epubResult = await generateEpub(input);

@@ -24,7 +24,8 @@ export interface GenerateEpubResult {
  */
 export async function generateEpub(
   content: ParsedDocument,
-  config: FormatConfig
+  config: FormatConfig,
+  addHotpressFooter: boolean = false
 ): Promise<GenerateEpubResult> {
   const startTime = Date.now();
 
@@ -75,6 +76,17 @@ export async function generateEpub(
       title: bm.title,
       content: bm.content,
       filename: bm.filename,
+    });
+  }
+
+  // Add Hotpress footer (colophon) for free tier
+  if (addHotpressFooter) {
+    chapters.push({
+      title: "Colophon",
+      content: `<section class="colophon">
+  <p style="text-align: center; margin-top: 2em;">Made with <a href="https://hotpress.com">Hotpress</a></p>
+</section>`,
+      filename: "colophon.xhtml",
     });
   }
 

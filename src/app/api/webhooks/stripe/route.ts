@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { db, subscriptions } from "@/lib/db";
+import { createId } from "@paralleldrive/cuid2";
+import { db, subscriptions, purchasedBooks } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,57 @@ export async function POST(req: Request) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      // Handle Creator book purchase (one-time payment)
+      if (
+        session.mode === "payment" &&
+        session.metadata?.type === "creator_book_purchase"
+      ) {
+        const { userId, sessionId } = session.metadata;
+        const paymentIntentId = session.payment_intent as string;
+
+        if (!userId || !sessionId || !paymentIntentId) {
+          console.error("Missing required metadata for creator purchase:", {
+            userId,
+            sessionId,
+            paymentIntentId,
+            checkoutSessionId: session.id,
+          });
+          break;
+        }
+
+        try {
+          // Insert purchase record with idempotency via unique constraint
+          await db
+            .insert(purchasedBooks)
+            .values({
+              id: createId(),
+              userId,
+              sessionId,
+              stripePaymentIntentId: paymentIntentId,
+            })
+            .onConflictDoNothing(); // Ignore if already exists (webhook retry)
+
+          console.log("Creator book purchase recorded:", {
+            userId,
+            sessionId,
+            paymentIntentId,
+          });
+
+          // TODO: Send purchase confirmation email
+          // - Receipt with payment details
+          // - Link to access the book
+          // - Instructions for downloading exports
+        } catch (error) {
+          console.error("Failed to record creator purchase:", error, {
+            userId,
+            sessionId,
+            paymentIntentId,
+          });
+        }
+        break;
+      }
+
+      // Handle Pro subscription
       if (!session.subscription || !session.client_reference_id) {
         break;
       }

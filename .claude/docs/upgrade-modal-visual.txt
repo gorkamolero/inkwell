@@ -1,0 +1,87 @@
+╔══════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                          ║
+║                            Unlock Professional Exports                                   ║
+║                    Choose the option that fits your publishing needs                     ║
+║                                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                          ║
+║  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓      ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓   ║
+║  ┃                                 ┃      ┃                                          ┃   ║
+║  ┃  Creator          [Per Book]   ┃      ┃  Pro                 [Annual]   ╔═Best═╗ ┃   ║
+║  ┃  Professional publishing for    ┃      ┃  For serious authors  ╔═══════╗║Value║ ┃   ║
+║  ┃  this book                      ┃      ┃  who publish regularly║       ║╚═════╝ ┃   ║
+║  ┃                                 ┃      ┃                       ╚═══════╝         ┃   ║
+║  ┃                                 ┃      ┃░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░┃   ║
+║  ┃  $12.99 one-time                ┃      ┃░ $39.99 /year                        ░░┃   ║
+║  ┃                                 ┃      ┃░ Pays for itself after 3 books       ░░┃   ║
+║  ┃                                 ┃      ┃░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░┃   ║
+║  ┃                                 ┃      ┃                                          ┃   ║
+║  ┃  ✓ Clean exports (no watermark)┃      ┃  ✨ Clean exports on ALL projects      ┃   ║
+║  ┃  ✓ Print-ready CMYK with bleed ┃      ┃  ✨ All premium templates              ┃   ║
+║  ┃  ✓ All premium templates       ┃      ┃  ✨ CMYK print-ready on everything     ┃   ║
+║  ┃  ✓ This book only              ┃      ┃  ✨ GitHub sync (coming soon)          ┃   ║
+║  ┃                                 ┃      ┃  ✨ No per-book fees ever              ┃   ║
+║  ┃                                 ┃      ┃                                          ┃   ║
+║  ┃  ╔═══════════════════════════╗  ┃      ┃  ╔════════════════════════════════════╗  ┃   ║
+║  ┃  ║ ⚡ Unlock This Book      ║  ┃      ┃  ║ ✨ Go Pro Now                     ║  ┃   ║
+║  ┃  ╚═══════════════════════════╝  ┃      ┃  ╚════════════════════════════════════╝  ┃   ║
+║  ┃                                 ┃      ┃                                          ┃   ║
+║  ┃  Perfect for single projects   ┃      ┃  Pays for itself after ~3 books per year┃   ║
+║  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛      ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛   ║
+║                                                                                          ║
+║  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓  ║
+║  ┃ Our Philosophy: Free tier is genuinely useful. Upgrade only when you need       ┃  ║
+║  ┃ professional polish. Your content is always yours.                               ┃  ║
+║  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  ║
+║                                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════════════════════╝
+
+KEY:
+  ┏━━━┓  = White card with black border (Creator option)
+  ░░░░░  = Yellow background (#FFE75C) (Pro option - highlighted)
+  ╔═══╗  = Button with neobrutalist shadow
+  ✓      = Check icon (Creator features)
+  ✨     = Sparkles icon (Pro features - emphasizing premium)
+  ╔Best╗
+  ║Value = Rotated badge on Pro option
+  ╚════╝
+
+COLORS:
+  Creator card: White (#FFFFFF)
+  Pro card: Yellow (#FFE75C)
+  Borders: Black (#000000) - 4px thick
+  Shadows: Black - 4px offset on Creator, 6px on Pro
+  Text: Black (#000000) on white/yellow
+  Buttons: White on Creator, Black on Pro
+
+RESPONSIVE:
+  Desktop (>768px): Side-by-side grid (2 columns)
+  Mobile (<768px): Stacked vertically
+
+INTERACTIONS:
+  - Hover: Button shadow increases
+  - Click: Loading spinner + "Redirecting..." text
+  - Both buttons disabled during loading
+  - Close: X button (top-right), Escape key, or click overlay
+  - Prevents body scroll when open
+
+DESIGN PHILOSOPHY:
+  Pro is INTENTIONALLY emphasized:
+  - Larger shadow (6px vs 4px)
+  - Yellow highlight color
+  - "Best Value" badge
+  - Sparkles vs checkmarks
+  - Positioned on right (primary position in LTR languages)
+  - Better messaging ("all projects" vs "this book only")
+
+  Why? Pro is objectively better value for regular users:
+  - $39.99 ÷ $12.99 = ~3.08 books to break even
+  - Unlocks ALL books, not just one
+  - Authors publishing regularly save significantly
+
+  However, Creator is still a valid option:
+  - Single-project authors
+  - Testing premium features before committing
+  - One-time export needs
+
+  The modal respects user choice while guiding toward better value.

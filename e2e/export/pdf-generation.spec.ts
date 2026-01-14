@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
-import { createEditorHelper } from "../utils/editor-helpers";
+import { mockAuthSession } from "../utils/auth-helpers";
 import { TEST_USERS } from "../fixtures/test-data";
+import { TEST_SESSION_SLUG } from "../fixtures/format-panel-helpers";
 
 /**
  * PDF Generation Tests
@@ -235,34 +235,34 @@ test.describe("Export Configuration", () => {
 
 test.describe("Pro Print Features", () => {
   test.beforeEach(async ({ page }) => {
+    // Mock auth session before navigating
     await mockAuthSession(page, TEST_USERS.owner);
-    await page.goto("/");
 
-    // Wait for editor to load
-    await expect(
-      page.getByRole("textbox", { name: /editor/i })
-    ).toBeVisible({ timeout: 15000 });
+    // Navigate to shared session page
+    await page.goto(`/s/${TEST_SESSION_SLUG}`);
 
-    // Open format panel
-    const formatButton = page.getByRole("button", { name: /format|settings|configure/i });
-    if (await formatButton.isVisible({ timeout: 2000 })) {
-      await formatButton.click();
-    }
+    // Wait for Liveblocks connection - indicated by "Live" badge
+    await expect(page.getByText("Live", { exact: true })).toBeVisible({
+      timeout: 30000,
+    });
+
+    // Wait for editor to be ready
+    await expect(page.getByRole("textbox", { name: /editor/i })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Open format panel via Customize button in toolbar
+    const customizeButton = page.getByRole("button", { name: /customize/i });
+    await expect(customizeButton).toBeVisible({ timeout: 5000 });
+    await customizeButton.click();
+
+    // Wait for format panel to open
+    await expect(page.getByText("Format Settings")).toBeVisible({ timeout: 5000 });
 
     // Expand Output section
     const outputSection = page.getByRole("button", { name: /output/i });
-    if (await outputSection.isVisible()) {
-      await outputSection.click();
-    }
-
-    // Make sure PDF format is selected
-    const pdfCheckbox = page.locator("text=PDF").first();
-    if (await pdfCheckbox.isVisible()) {
-      const isChecked = await pdfCheckbox.locator("input[type=checkbox]").isChecked();
-      if (!isChecked) {
-        await pdfCheckbox.click();
-      }
-    }
+    await outputSection.click();
+    await page.waitForTimeout(500); // Wait for section to expand
   });
 
   test("displays Pro badge for print features", async ({ page }) => {

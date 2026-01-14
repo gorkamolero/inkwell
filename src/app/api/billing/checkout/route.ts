@@ -3,10 +3,13 @@ import { z } from "zod";
 import {
   ApiError,
   type AuthContext,
-  validateBody,
   withAuth,
 } from "@/lib/api-utils";
-import { createCheckoutSession, PRICING } from "@/lib/stripe";
+import {
+  createProCheckoutSession,
+  createCreatorCheckoutSession,
+  PRICING,
+} from "@/lib/stripe";
 
 // ============================================================================
 // Schema
@@ -14,6 +17,7 @@ import { createCheckoutSession, PRICING } from "@/lib/stripe";
 
 const checkoutSchema = z.object({
   priceId: z.string().min(1, "Price ID is required"),
+  sessionId: z.string().optional(), // Required for Creator (per-book) purchases
 });
 
 // ============================================================================
@@ -24,29 +28,47 @@ async function createCheckoutHandler(
   request: NextRequest,
   { userId, userEmail }: AuthContext,
 ) {
-  const body = await validateBody(request, checkoutSchema);
-
-  // Validate that the priceId is one of our valid prices
-  const validPriceIds = [PRICING.PRO.priceId, PRICING.TEAM.priceId].filter(
-    Boolean,
-  );
-  if (!validPriceIds.includes(body.priceId)) {
-    throw ApiError.badRequest("Invalid price ID");
-  }
+  console.log("=== CHECKOUT HANDLER CALLED ===");
+  const rawBody = await request.json();
+  console.log("Raw request body:", JSON.stringify(rawBody));
+  const body = checkoutSchema.parse(rawBody);
+  console.log("Validated body:", JSON.stringify(body));
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   try {
-    const checkoutSession = await createCheckoutSession({
-      userId,
-      userEmail,
-      priceId: body.priceId,
-      successUrl: `${baseUrl}/settings?success=true`,
-      cancelUrl: `${baseUrl}/settings?canceled=true`,
-    });
+    // Handle Pro subscription (annual)
+    if (body.priceId === PRICING.PRO.priceId) {
+      const checkoutSession = await createProCheckoutSession({
+        userId,
+        userEmail,
+        successUrl: `${baseUrl}/settings?success=true`,
+        cancelUrl: `${baseUrl}/settings?canceled=true`,
+      });
+      return NextResponse.json({ url: checkoutSession.url });
+    }
 
-    return NextResponse.json({ url: checkoutSession.url });
+    // Handle Creator book purchase (one-time)
+    if (body.priceId === PRICING.CREATOR.priceId) {
+      if (!body.sessionId || body.sessionId === "undefined") {
+        throw ApiError.badRequest(
+          "Session ID is required for Creator purchases",
+        );
+      }
+
+      const checkoutSession = await createCreatorCheckoutSession({
+        userId,
+        userEmail,
+        sessionId: body.sessionId,
+        successUrl: `${baseUrl}/s/${body.sessionId}?purchased=true`,
+        cancelUrl: `${baseUrl}/s/${body.sessionId}?canceled=true`,
+      });
+      return NextResponse.json({ url: checkoutSession.url });
+    }
+
+    throw ApiError.badRequest("Invalid price ID");
   } catch (error) {
+    if (error instanceof ApiError) throw error;
     console.error("Error creating checkout session:", error);
     throw ApiError.internal("Failed to create checkout session");
   }

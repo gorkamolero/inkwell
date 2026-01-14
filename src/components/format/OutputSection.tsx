@@ -1,12 +1,16 @@
 "use client";
 
-import { Download, FileText, Book, Settings2, Sparkles } from "lucide-react";
+import { Download, FileText, Book, Settings2, Sparkles, Lock } from "lucide-react";
 import type { ChangeEvent } from "react";
+import { useState } from "react";
 import { FormatSection, useFormatContext } from "./FormatPanel";
 import { BrutalCard, BrutalInput, BrutalSwitch, BrutalBadge } from "@/components/ui";
+import { UpgradeModal } from "@/components/export/upgrade-modal";
+import { PRICING } from "@/lib/stripe";
 
 export interface OutputSectionProps {
   defaultExpanded?: boolean;
+  sessionId?: string; // For upgrade modal
 }
 
 /**
@@ -16,9 +20,11 @@ export interface OutputSectionProps {
  * - Select output formats (PDF, ePub)
  * - Configure PDF options (color profile, bleed)
  * - Configure ePub options (TOC depth)
+ * - Unlock professional exports
  */
-export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
+export function OutputSection({ defaultExpanded = false, sessionId }: OutputSectionProps) {
   const { config, updateConfig } = useFormatContext();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Get output config with defaults
   const output = (config as Record<string, unknown>).output as Record<string, unknown> || {};
@@ -64,6 +70,43 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
       ? formats.filter((f) => f !== format)
       : [...formats, format];
     updateOutput("formats", newFormats);
+  };
+
+  const handleUpgrade = async (tier: "creator" | "pro") => {
+    try {
+      const body = tier === "creator" && sessionId
+        ? { priceId: PRICING.CREATOR.priceId, sessionId }
+        : { priceId: PRICING.PRO.priceId };
+
+      const response = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        // If unauthorized, redirect to login
+        if (response.status === 401) {
+          const currentUrl = encodeURIComponent(window.location.pathname);
+          window.location.href = `/login?callbackUrl=${currentUrl}`;
+          return;
+        }
+        
+        const error = await response.json();
+        throw new Error(error.message || "Checkout failed");
+      }
+
+      const { url } = await response.json();
+      
+      if (!url) {
+        throw new Error("No checkout URL returned");
+      }
+      
+      window.location.href = url;
+    } catch (error) {
+      console.error("Upgrade failed:", error);
+      throw error;
+    }
   };
 
   return (
@@ -128,6 +171,39 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
               E-reader format
             </p>
           </BrutalCard>
+        </div>
+      </div>
+
+      {/* Export Access Status */}
+      <div className="mt-4 border-4 border-black bg-gray-50 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Lock className="h-4 w-4" />
+          <span className="font-bold">Export Options</span>
+        </div>
+        <p className="text-sm text-gray-600 mb-3">
+          Free exports include a small "Made with Hotpress" footer. Unlock professional exports:
+        </p>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className="w-full border-3 border-black bg-white px-4 py-2 text-left font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000]"
+          >
+            <div className="flex items-center justify-between">
+              <span>Creator - ${PRICING.CREATOR.price}</span>
+              <span className="text-xs text-gray-500">this book only</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className="w-full border-3 border-black bg-brutal-yellow px-4 py-2 text-left font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000]"
+          >
+            <div className="flex items-center justify-between">
+              <span>Pro - ${PRICING.PRO.price}/year</span>
+              <span className="text-xs">all projects</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -277,6 +353,15 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
             <strong>Tip:</strong> Add a cover image URL for a polished ePub. Square or portrait images work best.
           </div>
         </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {sessionId && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          onUpgrade={handleUpgrade}
+        />
       )}
     </FormatSection>
   );

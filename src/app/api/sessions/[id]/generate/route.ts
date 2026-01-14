@@ -125,7 +125,7 @@ export async function POST(
     // For PDF format, start the workflow
     if (format === "pdf") {
       // Start the workflow (runs in background, returns immediately)
-      await start(generatePdfWorkflow, [id, jobId]);
+      await start(generatePdfWorkflow, [id, jobId, context.userId]);
 
       console.log(`PDF workflow started for job: ${jobId}`);
 
@@ -143,7 +143,7 @@ export async function POST(
 
     // For ePub format, start the ePub workflow
     if (format === "epub") {
-      await start(generateEpubWorkflow, [id, jobId]);
+      await start(generateEpubWorkflow, [id, jobId, context.userId]);
 
       console.log(`ePub workflow started for job: ${jobId}`);
 

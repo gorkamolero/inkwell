@@ -5,7 +5,7 @@ import { PLANS } from "@/lib/stripe";
 export const metadata = {
   title: "Pricing",
   description:
-    "Simple, transparent pricing. Start free, upgrade when you need more.",
+    "Cover costs, don't extract. Free tier is genuinely useful. Paid = professional polish.",
 };
 
 export default function PricingPage() {
@@ -14,10 +14,11 @@ export default function PricingPage() {
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mb-4 text-4xl font-black text-black md:text-5xl">
-            Simple, Transparent Pricing
+            Simple, Honest Pricing
           </h1>
           <p className="mb-16 text-xl text-gray-700">
-            Start free, upgrade when you need more. No hidden fees.
+            Free is genuinely useful. Pay only when you need professional
+            polish.
           </p>
         </div>
 
@@ -27,8 +28,20 @@ export default function PricingPage() {
             name={PLANS.free.name}
             description={PLANS.free.description}
             price={PLANS.free.price}
-            features={PLANS.free.features}
-            ctaText="Get Started"
+            priceLabel=""
+            features={[...PLANS.free.features]}
+            ctaText={PLANS.free.cta}
+            ctaHref="/signup"
+          />
+
+          {/* Creator Plan */}
+          <PricingCard
+            name={PLANS.creator.name}
+            description={PLANS.creator.description}
+            price={PLANS.creator.price}
+            priceLabel={PLANS.creator.priceLabel}
+            features={[...PLANS.creator.features]}
+            ctaText={PLANS.creator.cta}
             ctaHref="/signup"
           />
 
@@ -37,21 +50,23 @@ export default function PricingPage() {
             name={PLANS.pro.name}
             description={PLANS.pro.description}
             price={PLANS.pro.price}
-            features={PLANS.pro.features}
-            ctaText="Start Pro Trial"
+            priceLabel={PLANS.pro.priceLabel}
+            features={[...PLANS.pro.features]}
+            ctaText={PLANS.pro.cta}
             ctaHref="/signup?plan=pro"
             highlighted
           />
+        </div>
 
-          {/* Team Plan */}
-          <PricingCard
-            name={PLANS.team.name}
-            description={PLANS.team.description}
-            price={PLANS.team.price}
-            features={PLANS.team.features}
-            ctaText="Contact Sales"
-            ctaHref="/contact"
-          />
+        {/* Philosophy callout */}
+        <div className="mx-auto mt-16 max-w-2xl border-4 border-black bg-yellow-100 p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <h3 className="mb-2 font-black text-black">Our Philosophy</h3>
+          <p className="text-gray-700">
+            Cover costs, don&apos;t extract. We only make money when you need
+            professional publishing. Your content is always yours - export and
+            leave anytime. No subscription ticking while you&apos;re in a
+            creative block.
+          </p>
         </div>
 
         {/* FAQ Section */}
@@ -61,20 +76,24 @@ export default function PricingPage() {
           </h2>
           <div className="space-y-6">
             <FaqItem
-              question="Can I switch plans later?"
-              answer="Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any differences."
+              question="What's the difference between Creator and Pro?"
+              answer="Creator unlocks professional exports for one book ($12.99 one-time). Pro unlocks everything across all your books ($39.99/year). If you publish regularly, Pro pays for itself after 3 books per year."
             />
             <FaqItem
-              question="What payment methods do you accept?"
-              answer="We accept all major credit cards through Stripe. For Team plans, we can also arrange invoicing."
+              question="Can I try before I buy?"
+              answer="Yes! Free tier lets you write, collaborate, and export unlimited books with a small footer. Try the full workflow before deciding if you need clean exports."
             />
             <FaqItem
-              question="Is there a free trial for Pro?"
-              answer="Yes, Pro comes with a 14-day free trial. No credit card required to start."
+              question="What happens to Creator purchases if I upgrade to Pro?"
+              answer="They stay yours forever! If you later cancel Pro, your purchased books still have clean exports unlocked."
             />
             <FaqItem
-              question="What happens to my content if I downgrade?"
-              answer="Your content is always yours. If you downgrade and exceed the free tier limits, you'll have read-only access to extra projects until you archive or delete them."
+              question="What's in the 'Made with Hotpress' footer?"
+              answer="Just a small text footer on free exports. No watermarks, no branding on content pages - just a single line at the end of your book."
+            />
+            <FaqItem
+              question="What is 'print-ready CMYK'?"
+              answer="Professional print shops require CMYK color space, bleed marks, and trim marks. These are included with Creator and Pro - essential if you're printing physical copies."
             />
           </div>
         </div>
@@ -87,6 +106,7 @@ function PricingCard({
   name,
   description,
   price,
+  priceLabel,
   features,
   ctaText,
   ctaHref,
@@ -95,7 +115,8 @@ function PricingCard({
   name: string;
   description: string;
   price: number;
-  features: readonly string[];
+  priceLabel: string;
+  features: string[];
   ctaText: string;
   ctaHref: string;
   highlighted?: boolean;
@@ -112,8 +133,16 @@ function PricingCard({
       </div>
 
       <div className="mb-6">
-        <span className="text-4xl font-black text-black">${price}</span>
-        <span className="text-gray-700">/month</span>
+        {price === 0 ? (
+          <span className="text-4xl font-black text-black">Free</span>
+        ) : (
+          <>
+            <span className="text-4xl font-black text-black">${price}</span>
+            {priceLabel && (
+              <span className="text-gray-700"> {priceLabel}</span>
+            )}
+          </>
+        )}
       </div>
 
       <ul className="mb-8 flex-1 space-y-3">

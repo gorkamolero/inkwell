@@ -121,6 +121,27 @@ export const subscriptions = pgTable("subscriptions", {
   cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
 });
 
+// Per-book purchases (Creator tier - $12.99 one-time)
+export const purchasedBooks = pgTable(
+  "purchased_books",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => writingSessions.id, { onDelete: "cascade" }),
+    stripePaymentIntentId: text("stripe_payment_intent_id"), // For tracking the one-time payment
+    purchasedAt: timestamp("purchased_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("purchased_books_user_session_unique").on(table.userId, table.sessionId),
+    index("purchased_books_user_id_idx").on(table.userId),
+    index("purchased_books_session_id_idx").on(table.sessionId),
+  ],
+);
+
 // ============================================================================
 // Hotpress Tables
 // ============================================================================
@@ -174,6 +195,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
     fields: [users.id],
     references: [subscriptions.userId],
   }),
+  purchasedBooks: many(purchasedBooks),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -227,6 +249,17 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
   }),
 }));
 
+export const purchasedBooksRelations = relations(purchasedBooks, ({ one }) => ({
+  user: one(users, {
+    fields: [purchasedBooks.userId],
+    references: [users.id],
+  }),
+  session: one(writingSessions, {
+    fields: [purchasedBooks.sessionId],
+    references: [writingSessions.id],
+  }),
+}));
+
 export const writingSessionsRelations = relations(
   writingSessions,
   ({ one, many }) => ({
@@ -235,6 +268,7 @@ export const writingSessionsRelations = relations(
       references: [users.id],
     }),
     liveblocksRooms: many(liveblocksRooms),
+    purchases: many(purchasedBooks),
   }),
 );
 
@@ -279,6 +313,8 @@ export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
+export type PurchasedBook = typeof purchasedBooks.$inferSelect;
+export type NewPurchasedBook = typeof purchasedBooks.$inferInsert;
 export type WritingSession = typeof writingSessions.$inferSelect;
 export type NewWritingSession = typeof writingSessions.$inferInsert;
 export type LiveblocksRoom = typeof liveblocksRooms.$inferSelect;

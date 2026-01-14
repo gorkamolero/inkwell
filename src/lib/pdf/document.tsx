@@ -36,12 +36,13 @@ registerFonts();
 interface BookDocumentProps {
   content: ParsedDocument;
   config: FormatConfig;
+  showHotpressColophon?: boolean;
 }
 
 /**
  * Main book document component
  */
-export function BookDocument({ content, config }: BookDocumentProps) {
+export function BookDocument({ content, config, showHotpressColophon }: BookDocumentProps) {
   const styles = createStyles(config);
   const { width, height } = getPageDimensions(config);
 
@@ -80,6 +81,7 @@ export function BookDocument({ content, config }: BookDocumentProps) {
         items={backMatterItems}
         config={config}
         footnotes={content.footnotes}
+        showHotpressColophon={showHotpressColophon}
       />
     </Document>
   );

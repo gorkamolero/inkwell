@@ -1,0 +1,217 @@
+# Implement New Pricing Model - Remaining Tasks
+
+This program orchestrates the implementation of Hotpress's new pricing model.
+The core architecture has been established - now we need the export gating and payment flow.
+
+## Context: What's Been Done
+
+**Database Schema:**
+- Added `purchased_books` table tracking per-book Creator purchases
+- Links userId + sessionId (writing session = book)
+- Tracks Stripe payment intent for one-time purchases
+
+**Pricing Model:**
+- FREE: Unlimited writing/exports with "Made with Hotpress" footer
+- CREATOR: $12.99 one-time per book (clean exports, print-ready)
+- PRO: $39.99/year (unlimited clean exports + GitHub sync)
+
+**Core Logic (subscription.ts):**
+- `getExportAccess(userId, sessionId)` returns ExportAccess with flags:
+  - hasCleanExports (no footer)
+  - hasPrintReady (CMYK, bleed marks)
+  - hasPremiumTemplates
+  - hasGithubSync
+- Checks: Pro subscription OR purchased_books entry for that session
+
+**Stripe Integration:**
+- `createProCheckoutSession()` - annual subscription
+- `createCreatorCheckoutSession()` - one-time book purchase with sessionId
+- Both set metadata.type for webhook routing
+
+**Key Paths:**
+- PDF generation: `src/lib/generation/pdf-generator.tsx` (React-PDF)
+- ePub generation: `src/lib/generation/epub-generator.ts`
+- Print features: `src/lib/generation/print-features.ts` (already gates Pro features)
+- Stripe webhook: `src/app/api/webhooks/stripe/route.ts`
+
+## Remaining Tasks
+
+We need 4 agents working in parallel:
+
+---
+
+session pdf_footer
+  model: sonnet
+  prompt: """
+  Add "Made with Hotpress" footer to free PDF exports.
+
+  CONTEXT:
+  - PDF generation uses React-PDF in src/lib/generation/pdf-generator.tsx
+  - getExportAccess(userId, sessionId) returns hasCleanExports boolean
+  - Free tier: hasCleanExports = false → show footer
+  - Creator/Pro: hasCleanExports = true → no footer
+
+  TASK:
+  1. Read src/lib/generation/pdf-generator.tsx to understand structure
+  2. Import getExportAccess from @/lib/subscription
+  3. Check hasCleanExports before rendering
+  4. Add footer component - last page, centered, small text:
+     "Made with Hotpress - hotpress.com"
+  5. Keep it tasteful - single line, gray text, doesn't interfere with content
+
+  DESIGN DECISION FOR YOU:
+  Should the footer be:
+  - On every page (like page numbers)?
+  - Only on the last page?
+  - On a separate final page?
+
+  Consider: Books have back matter. Last page of content vs dedicated footer page.
+  Implement what feels right for a book export.
+
+  TEST:
+  Verify the logic flows correctly with the existing access control.
+  """
+
+---
+
+session epub_footer
+  model: sonnet
+  prompt: """
+  Add "Made with Hotpress" footer to free ePub exports.
+
+  CONTEXT:
+  - ePub generation in src/lib/generation/epub-generator.ts
+  - Uses epub-gen library
+  - getExportAccess(userId, sessionId) returns hasCleanExports boolean
+  - Free tier: hasCleanExports = false → show footer
+  - Creator/Pro: hasCleanExports = true → no footer
+
+  TASK:
+  1. Read src/lib/generation/epub-generator.ts to understand structure
+  2. Import getExportAccess from @/lib/subscription
+  3. Check hasCleanExports before generating
+  4. Add footer to ePub content - probably as final chapter or colophon
+  5. Text: "Made with Hotpress - hotpress.com"
+
+  DESIGN DECISION FOR YOU:
+  ePub structure - should footer be:
+  - A final "chapter" in the TOC?
+  - Part of the last chapter content?
+  - A colophon (standard book metadata page)?
+
+  Consider: ePub readers handle chapters differently. What's least intrusive?
+
+  TEST:
+  Make sure it doesn't break ePub validation.
+  """
+
+---
+
+session upgrade_modal
+  model: sonnet
+  prompt: """
+  Build upgrade modal for export flow.
+
+  CONTEXT:
+  - When free user tries to export, show modal with two options:
+    1. Creator: Unlock this book - $12.99 one-time
+    2. Pro: Unlock everything - $39.99/year
+  - Modal should be Neobrutalist design (see src/components/ui/brutal-*)
+  - Existing billing flow: POST /api/billing/checkout with priceId + sessionId
+
+  ARCHITECTURE:
+  Component location: src/components/export/upgrade-modal.tsx
+
+  Props:
+  - sessionId: string (the book being exported)
+  - isOpen: boolean
+  - onClose: () => void
+  - onUpgrade: (tier: 'creator' | 'pro') => Promise<void>
+
+  DESIGN (Neobrutalism):
+  - Bold borders (4px black)
+  - Box shadows (4px 4px 0px black)
+  - Yellow (#FFE75C) for Pro option (highlighted)
+  - Clear pricing and feature comparison
+  - Show both options side-by-side on desktop, stacked on mobile
+
+  FEATURES TO DISPLAY:
+  Creator: Clean exports, print-ready, all templates (this book only)
+  Pro: Everything + GitHub sync + no per-book fees
+
+  TASK:
+  1. Create the component with proper types
+  2. Use existing brutal-* components if helpful
+  3. Handle loading states during checkout
+  4. Call /api/billing/checkout with appropriate params
+  5. Redirect to Stripe checkout on success
+
+  DESIGN DECISION FOR YOU:
+  What's the CTA hierarchy? Should we push Pro harder or present equally?
+  The pricing doc says "Pro pays for itself after 3 books" - include that math?
+  """
+
+---
+
+session stripe_webhook
+  model: sonnet
+  prompt: """
+  Update Stripe webhook to handle Creator book purchases.
+
+  CONTEXT:
+  - Existing webhook: src/app/api/webhooks/stripe/route.ts
+  - Currently handles subscription events (checkout.session.completed, etc.)
+  - NEW: Need to handle one-time Creator purchases (mode: "payment")
+
+  STRIPE EVENTS:
+  - checkout.session.completed with metadata.type = "creator_book_purchase"
+  - metadata.sessionId = the book being purchased
+  - metadata.userId = the buyer
+  - payment_intent.succeeded for one-time payments
+
+  DATABASE:
+  - Insert into purchased_books table
+  - Fields: id (cuid), userId, sessionId, stripePaymentIntentId, purchasedAt
+
+  TASK:
+  1. Read existing webhook handler to understand structure
+  2. Add handler for creator_book_purchase type
+  3. Extract metadata (userId, sessionId, payment intent ID)
+  4. Insert into purchased_books using Drizzle ORM
+  5. Handle idempotency (Stripe may retry webhooks)
+  6. Add error logging for debugging
+
+  ARCHITECTURE DECISION FOR YOU:
+  Should we send a confirmation email when someone purchases a book?
+  - Pro: Good UX, receipt of purchase
+  - Con: Requires email service setup, might not be ready
+
+  Implement the DB insert for sure. Email is optional - add a TODO if you think it's valuable.
+
+  TESTING:
+  Use Stripe CLI webhook testing: stripe listen --forward-to localhost:3000/api/webhooks/stripe
+  """
+
+---
+
+parallel
+  - pdf_footer
+  - epub_footer
+  - upgrade_modal
+  - stripe_webhook
+
+---
+
+echo "✅ All pricing implementation tasks complete!"
+echo ""
+echo "Summary:"
+echo "- PDF exports show footer for free tier"
+echo "- ePub exports show footer for free tier"
+echo "- Upgrade modal ready for export flow"
+echo "- Stripe webhook handles Creator purchases"
+echo ""
+echo "Next steps:"
+echo "1. Run migration: pnpm db:migrate"
+echo "2. Set up Stripe products (STRIPE_PRICE_CREATOR_BOOK, STRIPE_PRICE_PRO_ANNUAL)"
+echo "3. Test export flow with real Stripe checkout"
+echo "4. Integrate upgrade modal into export UI"

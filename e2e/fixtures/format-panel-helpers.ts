@@ -10,6 +10,8 @@
  */
 
 import { Page, expect } from "@playwright/test";
+import { mockAuthSession } from "../utils/auth-helpers";
+import { TEST_USERS } from "./test-data";
 
 /**
  * Pre-existing test session that has a working Liveblocks room.
@@ -22,6 +24,9 @@ export const TEST_SESSION_SLUG = "<TEST_SLUG>";
  * Uses the pre-existing test session for reliable Liveblocks connection.
  */
 export async function setupFormatPanelTest(page: Page): Promise<string> {
+  // Mock auth session first - required to see Customize button
+  await mockAuthSession(page, TEST_USERS.owner);
+  
   // Navigate directly to the pre-existing test session
   // This session already has a Liveblocks room, avoiding connection delays
   await page.goto(`/s/${TEST_SESSION_SLUG}`);
@@ -35,7 +40,7 @@ export async function setupFormatPanelTest(page: Page): Promise<string> {
     page.getByRole("textbox", { name: /editor/i })
   ).toBeVisible({ timeout: 10000 });
 
-  // Open the format panel via "Customize" button
+  // Open the format panel via "Customize" button (now in toolbar)
   const customizeButton = page.getByRole("button", { name: /customize/i });
   await expect(customizeButton).toBeVisible({ timeout: 5000 });
   await customizeButton.click();

@@ -8,6 +8,7 @@ import { lexicalToMarkdown } from "@/lib/editor-utils";
 import { getDefaultConfig, type FormatConfig } from "@/lib/format-schema";
 import { parseMarkdown } from "@/lib/pdf";
 import { generateEpub as generateEpubCore } from "@/lib/epub";
+import { getExportAccess } from "@/lib/subscription";
 import type { SerializedEditorState } from "lexical";
 import type { GenerationInput } from "./pdf-generator";
 
@@ -24,7 +25,7 @@ export interface EpubGenerationResult {
 export async function generateEpubBuffer(
   input: GenerationInput
 ): Promise<EpubGenerationResult> {
-  const { title, content, formatConfig, type } = input;
+  const { title, content, formatConfig, type, userId, sessionId } = input;
 
   // Parse Lexical content to markdown
   const editorState = JSON.parse(content) as SerializedEditorState;
@@ -46,8 +47,12 @@ export async function generateEpubBuffer(
     config.meta.title = title;
   }
 
-  // Generate ePub
-  const result = await generateEpubCore(parsedDoc, config);
+  // Check if we need to add "Made with Hotpress" footer
+  const exportAccess = await getExportAccess(userId || null, sessionId);
+  const shouldAddFooter = !exportAccess.hasCleanExports;
+
+  // Generate ePub with optional footer
+  const result = await generateEpubCore(parsedDoc, config, shouldAddFooter);
 
   return result;
 }

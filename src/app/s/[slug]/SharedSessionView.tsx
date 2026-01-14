@@ -1,7 +1,6 @@
 "use client";
 
-import { Check, Copy, ExternalLink, FileText, Palette, Settings, X } from "lucide-react";
-import Link from "next/link";
+import { X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CollaborativeEditor } from "@/components/editor/CollaborativeEditor";
 import {
@@ -47,6 +46,19 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [showFormat, setShowFormat] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsAuthenticated(!!data?.user);
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+      });
+  }, []);
 
   // Format config state
   const [formatConfig, setFormatConfig] = useState<FormatConfig>(
@@ -108,76 +120,18 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
   }, [session.formatConfig]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 md:py-12">
-      <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mx-auto mb-6 flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="text-xl md:text-2xl font-black tracking-tight text-black"
-          >
-            HOTPRESS
-          </Link>
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="flex items-center gap-1.5 md:gap-2 border-3 border-black bg-white px-2 md:px-3 py-1.5 text-sm md:text-base font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  <span className="hidden sm:inline">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  <span className="hidden sm:inline">Copy Link</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowTemplates(true)}
-              className="flex items-center gap-1.5 md:gap-2 border-3 border-black bg-brutal-yellow px-2 md:px-3 py-1.5 text-sm md:text-base font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
-            >
-              <Palette className="h-4 w-4" />
-              <span className="hidden sm:inline">Templates</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowFormat(true)}
-              className="flex items-center gap-1.5 md:gap-2 border-3 border-black bg-white px-2 md:px-3 py-1.5 text-sm md:text-base font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
-            >
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Customize</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowPreview(true)}
-              className="flex items-center gap-1.5 md:gap-2 border-3 border-black bg-brutal-pink px-2 md:px-3 py-1.5 text-sm md:text-base font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
-            >
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Preview</span>
-            </button>
-            <Link
-              href="/"
-              className="hidden md:flex items-center gap-2 border-3 border-black bg-brutal-yellow px-3 py-1.5 font-bold shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Create Your Own
-            </Link>
-          </div>
-        </div>
-
-        {/* Editor */}
-        <div className="mx-auto max-w-4xl">
-          <CollaborativeEditor
-            roomId={session.id}
-            sessionTitle={session.title}
-          />
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Editor - Full Screen */}
+      <CollaborativeEditor
+        roomId={session.id}
+        sessionTitle={session.title}
+        isAuthenticated={isAuthenticated}
+        onCopyLink={handleCopyLink}
+        copied={copied}
+        onShowTemplates={() => setShowTemplates(true)}
+        onShowFormat={() => setShowFormat(true)}
+        onShowPreview={() => setShowPreview(true)}
+      />
 
       {/* Format Panel Overlay */}
       {showFormat && (
@@ -233,7 +187,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
                 <BackMatterSection />
 
                 {/* Output Section */}
-                <OutputSection />
+                <OutputSection sessionId={session.id} />
               </FormatPanel>
             </div>
           </div>

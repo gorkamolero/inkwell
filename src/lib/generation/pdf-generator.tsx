@@ -16,6 +16,7 @@ import {
   filterPrintConfig,
   hasPrintFeaturesEnabled,
 } from "./print-features";
+import { getExportAccess } from "@/lib/subscription";
 
 export interface GenerationInput {
   sessionId: string;
@@ -23,6 +24,7 @@ export interface GenerationInput {
   content: string;
   formatConfig: unknown;
   type: string | null;
+  userId?: string | null;
 }
 
 export interface PrintOptions {
@@ -49,7 +51,7 @@ export async function generatePdfBuffer(
   input: GenerationInput,
   printOptions?: PrintOptions
 ): Promise<GenerationResult> {
-  const { title, content, formatConfig, type } = input;
+  const { title, content, formatConfig, type, sessionId, userId } = input;
 
   // Parse Lexical content to markdown
   const editorState = JSON.parse(content) as SerializedEditorState;
@@ -74,10 +76,18 @@ export async function generatePdfBuffer(
   // Register fonts before rendering
   registerFonts();
 
+  // Check export access for Hotpress colophon
+  const exportAccess = await getExportAccess(userId || null, sessionId);
+  const showHotpressColophon = !exportAccess.hasCleanExports;
+
   // Generate PDF
   const startTime = Date.now();
   const pdfBuffer = await renderToBuffer(
-    <BookDocument content={parsedDoc} config={config} />
+    <BookDocument
+      content={parsedDoc}
+      config={config}
+      showHotpressColophon={showHotpressColophon}
+    />
   );
 
   let finalBuffer = Buffer.from(pdfBuffer);

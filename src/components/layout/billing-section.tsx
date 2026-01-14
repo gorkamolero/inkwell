@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, Crown } from "lucide-react";
+import { Check, Crown, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { PLANS, type PlanType } from "@/lib/stripe";
+import { PLANS, PRICING, type PlanType } from "@/lib/stripe";
 import type { UserWithSubscription } from "@/types";
 
 function getCurrentPlan(stripePriceId: string | undefined | null): PlanType {
@@ -10,11 +10,12 @@ function getCurrentPlan(stripePriceId: string | undefined | null): PlanType {
     return "free";
   }
 
-  if (stripePriceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEAM) {
-    return "team";
+  if (stripePriceId === PRICING.PRO.priceId) {
+    return "pro";
   }
 
-  return "pro";
+  // Default to free for unknown price IDs
+  return "free";
 }
 
 interface BillingSectionProps {
@@ -25,6 +26,7 @@ export function BillingSection({ user }: BillingSectionProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const currentPlan = getCurrentPlan(user.subscription?.stripePriceId);
+  const isPro = currentPlan === "pro";
 
   const currentPlanInfo = PLANS[currentPlan];
 
@@ -45,7 +47,7 @@ export function BillingSection({ user }: BillingSectionProps) {
     }
   };
 
-  const handleUpgrade = async (priceId: string) => {
+  const handleUpgradeToPro = async () => {
     setIsLoading(true);
 
     try {
@@ -54,7 +56,7 @@ export function BillingSection({ user }: BillingSectionProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId: PRICING.PRO.priceId }),
       });
 
       const { url } = await response.json();
@@ -69,24 +71,40 @@ export function BillingSection({ user }: BillingSectionProps) {
   return (
     <div className="space-y-6">
       {/* Current Plan */}
-      <div className="border-4 border-yellow-400 bg-yellow-50 p-4">
+      <div
+        className={`border-4 p-4 ${
+          isPro
+            ? "border-yellow-400 bg-yellow-50"
+            : "border-gray-300 bg-gray-50"
+        }`}
+      >
         <div className="flex items-center gap-2">
-          <Crown className="h-5 w-5 text-yellow-600" />
+          {isPro ? (
+            <Crown className="h-5 w-5 text-yellow-600" />
+          ) : (
+            <Sparkles className="h-5 w-5 text-gray-600" />
+          )}
           <span className="font-bold text-black">
             Current Plan: {currentPlanInfo.name}
           </span>
         </div>
-        {user.subscription?.currentPeriodEnd && (
+        {isPro && user.subscription?.currentPeriodEnd && (
           <p className="mt-1 text-sm text-gray-700">
             Renews on{" "}
             {new Date(user.subscription.currentPeriodEnd).toLocaleDateString()}
+          </p>
+        )}
+        {!isPro && (
+          <p className="mt-1 text-sm text-gray-600">
+            Unlock individual books for $12.99 each, or go Pro for unlimited
+            clean exports.
           </p>
         )}
       </div>
 
       {/* Plan Features */}
       <div>
-        <h4 className="mb-2 font-bold text-black">Plan Features</h4>
+        <h4 className="mb-2 font-bold text-black">Your Features</h4>
         <ul className="space-y-2">
           {currentPlanInfo.features.map((feature) => (
             <li key={feature} className="flex items-center gap-2">
@@ -97,27 +115,34 @@ export function BillingSection({ user }: BillingSectionProps) {
         </ul>
       </div>
 
+      {/* Pro Benefits (for free users) */}
+      {!isPro && (
+        <div className="border-4 border-yellow-400 bg-yellow-50 p-4">
+          <h4 className="mb-2 font-bold text-black">
+            Go Pro - ${PRICING.PRO.price}/year
+          </h4>
+          <ul className="space-y-1 text-sm">
+            {PLANS.pro.features.map((feature) => (
+              <li key={feature} className="flex items-center gap-2">
+                <Check className="h-3 w-3 text-yellow-600" />
+                <span className="text-gray-700">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex flex-wrap gap-4">
-        {currentPlan === "free" ? (
-          <>
-            <button
-              type="button"
-              onClick={() => handleUpgrade(PLANS.pro.priceId!)}
-              disabled={isLoading}
-              className="border-4 border-black bg-yellow-400 px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Upgrade to Pro
-            </button>
-            <button
-              type="button"
-              onClick={() => handleUpgrade(PLANS.team.priceId!)}
-              disabled={isLoading}
-              className="border-4 border-black bg-white px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Upgrade to Team
-            </button>
-          </>
+        {!isPro ? (
+          <button
+            type="button"
+            onClick={handleUpgradeToPro}
+            disabled={isLoading}
+            className="border-4 border-black bg-yellow-400 px-6 py-2 font-bold text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoading ? "Loading..." : "Go Pro - $39.99/year"}
+          </button>
         ) : (
           <button
             type="button"

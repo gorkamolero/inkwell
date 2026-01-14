@@ -58,97 +58,156 @@ export const stripe = {
 // Pricing Configuration
 // ============================================================================
 
+// New pricing model: Feature-based (export quality), not limits-based
 export const PRICING = {
   FREE: {
-    projects: 3,
-    docsPerProject: 10,
-    collaborators: 0,
+    // Unlimited everything - gating is on export quality, not quantity
+    hasCleanExports: false,
+    hasPrintReady: false,
+    hasPremiumTemplates: false,
+    hasGithubSync: false,
+  },
+  CREATOR: {
+    // Per-book one-time purchase ($12.99)
+    price: 12.99,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR_BOOK!,
+    hasCleanExports: true,
+    hasPrintReady: true,
+    hasPremiumTemplates: true,
+    hasGithubSync: false,
   },
   PRO: {
-    price: 12,
-    priceId: process.env.STRIPE_PRICE_PRO!,
-    projects: Infinity,
-    docsPerProject: Infinity,
-    collaborators: 5,
-  },
-  TEAM: {
-    price: 29,
-    priceId: process.env.STRIPE_PRICE_TEAM!,
-    projects: Infinity,
-    docsPerProject: Infinity,
-    collaborators: Infinity,
+    // Annual subscription ($39.99/year)
+    price: 39.99,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_ANNUAL!,
+    hasCleanExports: true,
+    hasPrintReady: true,
+    hasPremiumTemplates: true,
+    hasGithubSync: true,
   },
 } as const;
 
 export type Tier = keyof typeof PRICING;
 
-// Legacy PLANS constant for backward compatibility with existing components
 export const PLANS = {
   free: {
-    name: "Free",
-    description: "For individuals getting started",
+    name: "Free Forever",
+    description: "Everything you need to write and publish",
     price: 0,
     features: [
-      "3 projects",
-      "10 docs per project",
-      "Basic editor",
-      "Export to Markdown",
-      "Community support",
+      "Unlimited writing & real-time collaboration",
+      "Unlimited projects",
+      "Unlimited PDF/EPUB exports",
+      "Basic templates",
+      '"Made with Hotpress" footer on exports',
     ],
-    limits: {
-      projects: PRICING.FREE.projects,
-      collaborators: PRICING.FREE.collaborators,
-      docsPerProject: PRICING.FREE.docsPerProject,
-      storage: 100, // MB
-    },
+    cta: "Get Started",
+  },
+  creator: {
+    name: "Creator",
+    description: "Professional publishing for your book",
+    price: PRICING.CREATOR.price,
+    priceId: PRICING.CREATOR.priceId,
+    priceLabel: "per book",
+    features: [
+      "Clean exports (no watermark/footer)",
+      "Print-ready CMYK with bleed marks",
+      "All premium templates for that book",
+      "Unlimited exports of that book forever",
+    ],
+    cta: "Unlock This Book",
   },
   pro: {
     name: "Pro",
-    description: "For serious writers and small teams",
+    description: "For serious authors who publish regularly",
     price: PRICING.PRO.price,
     priceId: PRICING.PRO.priceId,
+    priceLabel: "per year",
     features: [
-      "Unlimited projects",
-      "Unlimited documents",
-      "Up to 5 collaborators",
-      "Advanced editor features",
-      "Version history",
-      "GitHub sync",
-      "Export to PDF, EPUB, DOCX",
-      "Priority support",
+      "Clean exports on all projects",
+      "All premium templates",
+      "CMYK print-ready on everything",
+      "GitHub sync for manuscript versioning",
+      "No per-book fees ever",
     ],
-    limits: {
-      projects: PRICING.PRO.projects,
-      collaborators: PRICING.PRO.collaborators,
-      docsPerProject: PRICING.PRO.docsPerProject,
-      storage: 5000, // MB
-    },
-  },
-  team: {
-    name: "Team",
-    description: "For organizations and publishing teams",
-    price: PRICING.TEAM.price,
-    priceId: PRICING.TEAM.priceId,
-    features: [
-      "Everything in Pro",
-      "Unlimited collaborators",
-      "Team workspaces",
-      "Admin controls",
-      "API access",
-      "Custom branding",
-      "SSO (coming soon)",
-    ],
-    limits: {
-      projects: PRICING.TEAM.projects,
-      collaborators: PRICING.TEAM.collaborators,
-      docsPerProject: PRICING.TEAM.docsPerProject,
-      storage: 50000, // MB
-    },
+    cta: "Go Pro",
   },
 } as const;
 
 export type PlanType = keyof typeof PLANS;
 
+// Create checkout session for Pro subscription (annual)
+export async function createProCheckoutSession({
+  userId,
+  userEmail,
+  successUrl,
+  cancelUrl,
+}: {
+  userId: string;
+  userEmail: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  const session = await getStripe().checkout.sessions.create({
+    customer_email: userEmail,
+    client_reference_id: userId,
+    mode: "subscription",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price: PRICING.PRO.priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      userId,
+      type: "pro_subscription",
+    },
+  });
+
+  return session;
+}
+
+// Create checkout session for Creator book purchase (one-time)
+export async function createCreatorCheckoutSession({
+  userId,
+  userEmail,
+  sessionId,
+  successUrl,
+  cancelUrl,
+}: {
+  userId: string;
+  userEmail: string;
+  sessionId: string; // The writing session (book) being purchased
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  const session = await getStripe().checkout.sessions.create({
+    customer_email: userEmail,
+    client_reference_id: userId,
+    mode: "payment", // One-time payment, not subscription
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price: PRICING.CREATOR.priceId,
+        quantity: 1,
+      },
+    ],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      userId,
+      sessionId, // Track which book was purchased
+      type: "creator_book_purchase",
+    },
+  });
+
+  return session;
+}
+
+// Legacy function for backward compatibility
 export async function createCheckoutSession({
   userId,
   userEmail,
@@ -162,10 +221,12 @@ export async function createCheckoutSession({
   successUrl: string;
   cancelUrl: string;
 }) {
+  const isOneTimePayment = priceId === PRICING.CREATOR.priceId;
+
   const session = await getStripe().checkout.sessions.create({
     customer_email: userEmail,
     client_reference_id: userId,
-    mode: "subscription",
+    mode: isOneTimePayment ? "payment" : "subscription",
     payment_method_types: ["card"],
     line_items: [
       {
@@ -207,18 +268,26 @@ export async function getSubscription(subscriptionId: string) {
 // ============================================================================
 
 /**
- * Determine the tier from a Stripe price ID
+ * Determine the subscription tier from a Stripe price ID
+ * Note: CREATOR is per-book, tracked separately in purchased_books table
  */
 export function getTierFromPriceId(priceId: string | null | undefined): Tier {
   if (!priceId) return "FREE";
-  if (priceId === PRICING.TEAM.priceId) return "TEAM";
   if (priceId === PRICING.PRO.priceId) return "PRO";
+  // CREATOR purchases are tracked per-book, not as a subscription tier
   return "FREE";
 }
 
 /**
- * Get limits for a given tier
+ * Get feature flags for a given tier
  */
-export function getTierLimits(tier: Tier) {
+export function getTierFeatures(tier: Tier) {
   return PRICING[tier];
+}
+
+/**
+ * Check if a price ID is for a one-time book purchase
+ */
+export function isCreatorPurchase(priceId: string | null | undefined): boolean {
+  return priceId === PRICING.CREATOR.priceId;
 }
