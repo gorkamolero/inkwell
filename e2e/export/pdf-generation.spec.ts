@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
+import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { createEditorHelper } from "../utils/editor-helpers";
 import { TEST_USERS } from "../fixtures/test-data";
 
@@ -14,7 +14,7 @@ import { TEST_USERS } from "../fixtures/test-data";
  */
 test.describe("PDF Generation", () => {
   test.skip("can generate PDF from session", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const editor = createEditorHelper(page);
@@ -41,7 +41,7 @@ test.describe("PDF Generation", () => {
   });
 
   test.skip("shows progress indicator during generation", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const editor = createEditorHelper(page);
@@ -61,7 +61,7 @@ test.describe("PDF Generation", () => {
   });
 
   test.skip("handles generation errors gracefully", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     // Mock error response
@@ -89,7 +89,7 @@ test.describe("PDF Generation", () => {
   });
 
   test.skip("can generate EPUB format", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const editor = createEditorHelper(page);
@@ -117,7 +117,7 @@ test.describe("PDF Generation", () => {
   });
 
   test.skip("can generate HTML format", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const editor = createEditorHelper(page);
@@ -146,7 +146,7 @@ test.describe("PDF Generation", () => {
 
 test.describe("Export Preview", () => {
   test.skip("shows PDF preview before download", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const editor = createEditorHelper(page);
@@ -170,7 +170,7 @@ test.describe("Export Preview", () => {
   });
 
   test.skip("preview updates when format changes", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const editor = createEditorHelper(page);
@@ -199,7 +199,7 @@ test.describe("Export Preview", () => {
 
 test.describe("Export Configuration", () => {
   test.skip("can configure PDF color profile", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     // Look for output settings
@@ -211,7 +211,7 @@ test.describe("Export Configuration", () => {
   });
 
   test.skip("can configure PDF bleed", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const bleedInput = page.getByLabel(/bleed/i);
@@ -222,7 +222,7 @@ test.describe("Export Configuration", () => {
   });
 
   test.skip("can configure EPUB cover image", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/");
 
     const coverInput = page.getByLabel(/cover.*image/i);

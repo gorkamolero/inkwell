@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
+import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { mockApi } from "../utils/api-helpers";
 import { TEST_USERS, TEST_PROJECTS } from "../fixtures/test-data";
 
 test.describe("Collaborator Management", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("owner can view collaborator list", async ({ page }) => {
@@ -234,7 +234,7 @@ test.describe("Collaborator Management", () => {
 
 test.describe("Collaborator Access Control", () => {
   test("collaborator can view project but not settings", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.collaborator);
+    await setupAuthBeforeNavigation(page, TEST_USERS.collaborator);
 
     await mockApi(page, [
       {
@@ -267,7 +267,7 @@ test.describe("Collaborator Access Control", () => {
   });
 
   test("viewer can only read, not edit documents", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.viewer);
+    await setupAuthBeforeNavigation(page, TEST_USERS.viewer);
 
     await mockApi(page, [
       {

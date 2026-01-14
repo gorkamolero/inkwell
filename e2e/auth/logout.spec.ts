@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import {
-  mockAuthSession,
+  setupAuthBeforeNavigation,
   mockUnauthenticated,
   mockSignOut,
 } from "../utils/auth-helpers";
@@ -8,7 +8,7 @@ import { TEST_USERS } from "../fixtures/test-data";
 
 test.describe("Logout Flow", () => {
   test("logout button signs out user", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await mockSignOut(page, "/");
 
     await page.goto("/projects");
@@ -35,7 +35,7 @@ test.describe("Logout Flow", () => {
 
   test("session is cleared after logout", async ({ page }) => {
     // Start authenticated
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/projects");
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -51,7 +51,7 @@ test.describe("Logout Flow", () => {
   });
 
   test("logout clears local storage/cookies", async ({ page, context }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/projects");
 
     // Get session storage before logout

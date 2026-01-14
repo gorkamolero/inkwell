@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// Load environment variables for auth token signing
+config({ path: resolve(__dirname, ".env.local") });
 
 /**
  * Playwright E2E Test Configuration for Hotpress
@@ -42,7 +47,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3847",
 
     /* Collect trace when retrying the failed test. */
     trace: "on-first-retry",
@@ -81,8 +86,8 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   // Disabled - expecting dev server to be running separately
   // webServer: {
-  //   command: "pnpm run dev",
-  //   url: "http://localhost:3000",
+  //   command: "pnpm run dev --port 3847",
+  //   url: "http://localhost:3847",
   //   reuseExistingServer: !process.env.CI,
   //   timeout: 120 * 1000,
   // },

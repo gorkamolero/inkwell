@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
+import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { mockApi, mockApiError } from "../utils/api-helpers";
 import { TEST_USERS, TEST_PROJECTS } from "../fixtures/test-data";
 
 test.describe("Projects List", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("displays page header and new project button", async ({ page }) => {
@@ -127,7 +127,7 @@ test.describe("Projects List", () => {
 
 test.describe("Create Project", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("displays create project form", async ({ page }) => {
@@ -198,7 +198,7 @@ test.describe("Create Project", () => {
 
 test.describe("Project Detail", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("displays project name and description", async ({ page }) => {
@@ -251,7 +251,7 @@ test.describe("Project Detail", () => {
 
 test.describe("Delete Project", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("can delete project with confirmation", async ({ page }) => {
@@ -302,7 +302,7 @@ test.describe("Delete Project", () => {
 
 test.describe("Update Project", () => {
   test.beforeEach(async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
   });
 
   test("can update project name", async ({ page }) => {

@@ -5,7 +5,7 @@
  */
 
 import { Browser, BrowserContext, Page, chromium } from "@playwright/test";
-import { mockAuthSession } from "../utils/auth-helpers";
+import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { TestUser, TEST_USERS } from "./test-data";
 
 const LIVEBLOCKS_BASE_URL = "https://api.liveblocks.io/v2";
@@ -54,9 +54,9 @@ export async function setupCollaborationTest(
   const pageA = await contextA.newPage();
   const pageB = await contextB.newPage();
 
-  // Mock auth for each user
-  await mockAuthSession(pageA, userAData);
-  await mockAuthSession(pageB, userBData);
+  // Set up auth for each user
+  await setupAuthBeforeNavigation(pageA, userAData);
+  await setupAuthBeforeNavigation(pageB, userBData);
 
   return {
     browser,

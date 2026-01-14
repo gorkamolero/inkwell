@@ -65,11 +65,17 @@ test.describe("Rich Text Formatting", () => {
     await editor.bold();
     await editor.italic();
 
-    // Should have both bold and italic
-    const boldItalic = page
+    // Lexical may use nested elements OR a span with multiple classes
+    // Check for either pattern
+    const nestedElements = page
       .locator("strong em, em strong, b i, i b")
       .filter({ hasText: "bold and italic" });
-    await expect(boldItalic).toBeVisible();
+    const classBasedFormat = page
+      .locator("[class*='bold'][class*='italic'], .bold.italic")
+      .filter({ hasText: "bold and italic" });
+
+    // Either approach should work
+    await expect(nestedElements.or(classBasedFormat)).toBeVisible();
   });
 });
 

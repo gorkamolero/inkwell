@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { mockAuthSession, mockUnauthenticated } from "../utils/auth-helpers";
+import {
+  setupAuthBeforeNavigation,
+  mockUnauthenticated,
+} from "../utils/auth-helpers";
 import { TEST_USERS } from "../fixtures/test-data";
 
 test.describe("Protected Route Access", () => {
@@ -17,7 +20,7 @@ test.describe("Protected Route Access", () => {
     });
 
     test(`${path} is accessible to authenticated users`, async ({ page }) => {
-      await mockAuthSession(page, TEST_USERS.owner);
+      await setupAuthBeforeNavigation(page, TEST_USERS.owner);
       await page.goto(path);
 
       // Should NOT redirect to login
@@ -70,7 +73,7 @@ test.describe("Public Route Access", () => {
 
 test.describe("Session Persistence", () => {
   test("session persists across page navigations", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
 
     // Navigate to projects
     await page.goto("/projects");
@@ -86,7 +89,7 @@ test.describe("Session Persistence", () => {
   });
 
   test("authenticated user info is displayed", async ({ page }) => {
-    await mockAuthSession(page, TEST_USERS.owner);
+    await setupAuthBeforeNavigation(page, TEST_USERS.owner);
     await page.goto("/projects");
 
     // Should see user name or avatar somewhere in the UI

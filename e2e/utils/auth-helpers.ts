@@ -1,24 +1,70 @@
 /**
  * Authentication Helpers for E2E Tests
  *
- * These utilities mock NextAuth.js session endpoints to simulate
- * authenticated and unauthenticated states without real OAuth.
+ * Creates properly signed JWT cookies to authenticate with NextAuth v5.
+ * The middleware checks JWT cookies on the server, so we need real tokens.
  */
 
 import { Page, BrowserContext, Route } from "@playwright/test";
+import { encode } from "@auth/core/jwt";
 import { TestUser, TEST_USERS } from "../fixtures/test-data";
 
+// Load AUTH_SECRET from environment
+const AUTH_SECRET = process.env.AUTH_SECRET;
+
+if (!AUTH_SECRET) {
+  console.warn(
+    "AUTH_SECRET not found in environment. Auth mocking may not work."
+  );
+}
+
 /**
- * Mock an authenticated NextAuth.js session
+ * Create an authenticated session by setting a valid JWT cookie
  *
- * This intercepts the /api/auth/session endpoint to return
- * a mock session object, simulating a logged-in user.
+ * This creates a properly signed JWT that the NextAuth middleware will accept.
  */
 export async function mockAuthSession(
   page: Page,
   user: TestUser = TEST_USERS.owner
 ): Promise<void> {
-  // Mock the session endpoint
+  if (!AUTH_SECRET) {
+    throw new Error("AUTH_SECRET is required for auth mocking");
+  }
+
+  // Create the JWT token with the same structure NextAuth expects
+  const token = await encode({
+    token: {
+      sub: user.id,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      picture: user.image,
+      login: user.login,
+      accessToken: user.accessToken,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+    },
+    secret: AUTH_SECRET,
+    salt: "authjs.session-token",
+  });
+
+  // Get the base URL from the page or use default
+  const baseURL = new URL(page.url() || "http://localhost:3847");
+
+  // Set the session cookie
+  await page.context().addCookies([
+    {
+      name: "authjs.session-token",
+      value: token,
+      domain: baseURL.hostname,
+      path: "/",
+      httpOnly: true,
+      secure: false, // false for localhost
+      sameSite: "Lax",
+    },
+  ]);
+
+  // Also mock the session endpoint for client-side fetching
   await page.route("**/api/auth/session", async (route: Route) => {
     await route.fulfill({
       status: 200,
@@ -67,11 +113,77 @@ export async function mockAuthSession(
 }
 
 /**
+ * Set up authentication before navigating to a page
+ *
+ * Use this when you need to be authenticated before the first navigation.
+ */
+export async function setupAuthBeforeNavigation(
+  page: Page,
+  user: TestUser = TEST_USERS.owner
+): Promise<void> {
+  if (!AUTH_SECRET) {
+    throw new Error("AUTH_SECRET is required for auth mocking");
+  }
+
+  // Create the JWT token
+  const token = await encode({
+    token: {
+      sub: user.id,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      picture: user.image,
+      login: user.login,
+      accessToken: user.accessToken,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+    },
+    secret: AUTH_SECRET,
+    salt: "authjs.session-token",
+  });
+
+  // Set cookies before any navigation
+  await page.context().addCookies([
+    {
+      name: "authjs.session-token",
+      value: token,
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
+
+  // Set up API mocks
+  await page.route("**/api/auth/session", async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          login: user.login,
+        },
+        accessToken: user.accessToken,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      }),
+    });
+  });
+}
+
+/**
  * Mock an unauthenticated state
  *
- * Returns an empty session to simulate a logged-out user.
+ * Clears auth cookies and returns empty session.
  */
 export async function mockUnauthenticated(page: Page): Promise<void> {
+  // Clear any existing auth cookies
+  await page.context().clearCookies();
+
   await page.route("**/api/auth/session", async (route: Route) => {
     await route.fulfill({
       status: 200,
@@ -138,13 +250,16 @@ export async function mockSignIn(
 /**
  * Mock sign-out
  *
- * Simulates the sign-out flow.
+ * Simulates the sign-out flow and clears cookies.
  */
 export async function mockSignOut(
   page: Page,
   redirectTo: string = "/"
 ): Promise<void> {
   await page.route("**/api/auth/signout*", async (route: Route) => {
+    // Clear auth cookies
+    await page.context().clearCookies();
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -163,15 +278,16 @@ export async function setupAuthenticatedContext(
   user: TestUser = TEST_USERS.owner
 ): Promise<Page> {
   const page = await context.newPage();
-  await mockAuthSession(page, user);
+  await setupAuthBeforeNavigation(page, user);
   return page;
 }
 
 /**
- * Clear all auth-related routes
+ * Clear all auth-related routes and cookies
  *
  * Removes any previously set up auth mocks.
  */
 export async function clearAuthMocks(page: Page): Promise<void> {
+  await page.context().clearCookies();
   await page.unrouteAll();
 }

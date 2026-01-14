@@ -15,6 +15,13 @@ export class EditorHelper {
   }
 
   /**
+   * Get the editor container locator (scopes selectors to editor only)
+   */
+  get editorContainer(): Locator {
+    return this.page.locator(".hotpress-editor");
+  }
+
+  /**
    * Get the editor textbox locator
    */
   get editor(): Locator {
@@ -23,9 +30,20 @@ export class EditorHelper {
 
   /**
    * Wait for the editor to be visible and ready
+   * Waits for both the textbox AND content indicators (toolbar/word count)
    */
-  async waitForEditor(timeout: number = 15000): Promise<void> {
+  async waitForEditor(timeout: number = 30000): Promise<void> {
+    // Wait for the editor textbox to be visible
     await expect(this.editor).toBeVisible({ timeout });
+
+    // Wait for the editor to be truly ready by checking for toolbar or word count
+    // These only appear after the editor is fully initialized
+    // Use .first() to avoid strict mode violation when both are visible
+    const readyIndicator = this.page
+      .getByRole("button", { name: /undo/i })
+      .or(this.page.getByText(/\d+ words?/))
+      .first();
+    await expect(readyIndicator).toBeVisible({ timeout });
   }
 
   /**
@@ -188,9 +206,14 @@ export class EditorHelper {
 
   /**
    * Assert underlined text is visible
+   * Lexical uses spans with 'underline' class, not <u> elements
    */
   async expectUnderline(text: string): Promise<void> {
-    await expect(this.page.locator("u").filter({ hasText: text })).toBeVisible();
+    await expect(
+      this.page
+        .locator("u, .underline, [class*='underline']")
+        .filter({ hasText: text })
+    ).toBeVisible();
   }
 
   /**
@@ -212,17 +235,17 @@ export class EditorHelper {
   }
 
   /**
-   * Assert bullet list items count
+   * Assert bullet list items count (scoped to editor)
    */
   async expectBulletListItems(count: number): Promise<void> {
-    await expect(this.page.locator("ul li")).toHaveCount(count);
+    await expect(this.editorContainer.locator("ul li")).toHaveCount(count);
   }
 
   /**
-   * Assert numbered list items count
+   * Assert numbered list items count (scoped to editor)
    */
   async expectNumberedListItems(count: number): Promise<void> {
-    await expect(this.page.locator("ol li")).toHaveCount(count);
+    await expect(this.editorContainer.locator("ol li")).toHaveCount(count);
   }
 
   // ============================================================================
