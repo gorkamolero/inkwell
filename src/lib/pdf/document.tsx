@@ -20,6 +20,7 @@ import type {
   TextNode,
   VerseNode,
   CalloutNode,
+  InlineNode,
 } from "./content-parser";
 import { getDropCapLetter, getTextAfterDropCap } from "./content-parser";
 import { FrontMatter } from "./front-matter";
@@ -27,6 +28,7 @@ import { BackMatter } from "./back-matter";
 import { SceneBreakOrnament, ChapterOrnament } from "./ornaments";
 import { registerFonts } from "./styles/fonts";
 import { createStyles, getPageDimensions, type BookStyles } from "./styles/theme";
+import { formatChapterNumber } from "./utils/number-format";
 
 // Ensure fonts are registered
 registerFonts();
@@ -46,10 +48,6 @@ export function BookDocument({ content, config }: BookDocumentProps) {
   // Get front and back matter items from config
   const frontMatterItems = (config.frontMatter as Array<{ type: string; [key: string]: unknown }>) || [];
   const backMatterItems = (config.backMatter as Array<{ type: string; [key: string]: unknown }>) || [];
-
-  // Track page numbers (front matter uses roman numerals, main content uses arabic)
-  // TODO: Implement proper page counting across sections
-  const startPageNumber = 1;
 
   return (
     <Document
@@ -74,7 +72,6 @@ export function BookDocument({ content, config }: BookDocumentProps) {
           config={config}
           width={width}
           height={height}
-          startPageNumber={startPageNumber + chapterIndex * 2}
         />
       ))}
 
@@ -82,6 +79,7 @@ export function BookDocument({ content, config }: BookDocumentProps) {
       <BackMatter
         items={backMatterItems}
         config={config}
+        footnotes={content.footnotes}
       />
     </Document>
   );
@@ -93,7 +91,6 @@ interface ChapterPagesProps {
   config: FormatConfig;
   width: number;
   height: number;
-  startPageNumber: number;
 }
 
 /**
@@ -105,7 +102,6 @@ function ChapterPages({
   config,
   width,
   height,
-  startPageNumber,
 }: ChapterPagesProps) {
   const chapters = config.chapters;
   const headers = config.headers;
@@ -117,6 +113,11 @@ function ChapterPages({
       <Page
         size={{ width, height }}
         style={[styles.page, styles.pageRight, styles.chapterTitlePage]}
+        bookmark={
+          chapters?.numbering?.enabled
+            ? `${formatChapterNumber(chapter.number, chapters.numbering.format)}: ${chapter.title}`
+            : chapter.title
+        }
       >
         {/* Chapter numbering */}
         {chapters?.numbering?.enabled && (
@@ -153,7 +154,6 @@ function ChapterPages({
           <Header
             config={config}
             styles={styles}
-            pageNumber={startPageNumber + 1}
             isLeftPage={true}
           />
         )}
@@ -176,7 +176,6 @@ function ChapterPages({
           <Footer
             config={config}
             styles={styles}
-            pageNumber={startPageNumber + 1}
           />
         )}
       </Page>
@@ -217,8 +216,8 @@ function ContentNodeComponent({
           <View style={styles.dropCapContainer}>
             <Text style={styles.dropCap}>{dropCapLetter}</Text>
             <Text style={styles.dropCapText}>
-              {restOfText.map((textNode, i) => (
-                <TextNodeComponent key={i} node={textNode} styles={styles} />
+              {restOfText.map((inlineNode, i) => (
+                <InlineNodeComponent key={i} node={inlineNode} styles={styles} />
               ))}
             </Text>
           </View>
@@ -233,20 +232,20 @@ function ContentNodeComponent({
               : styles.paragraph
           }
         >
-          {paragraph.children.map((textNode, i) => (
-            <TextNodeComponent key={i} node={textNode} styles={styles} />
+          {paragraph.children.map((inlineNode, i) => (
+            <InlineNodeComponent key={i} node={inlineNode} styles={styles} />
           ))}
         </Text>
       );
     }
 
     case "heading": {
-      const headingStyle =
-        node.level === 2
-          ? styles.heading2
-          : node.level === 3
-            ? styles.heading3
-            : styles.heading4;
+      const headingStyles: Record<number, typeof styles.heading2> = {
+        2: styles.heading2,
+        3: styles.heading3,
+        4: styles.heading4,
+      };
+      const headingStyle = headingStyles[node.level] || styles.heading4;
 
       return <Text style={headingStyle}>{node.content}</Text>;
     }
@@ -256,8 +255,8 @@ function ContentNodeComponent({
         <View style={styles.blockquote}>
           {node.children.map((para, i) => (
             <Text key={i} style={styles.paragraph}>
-              {para.children.map((textNode, j) => (
-                <TextNodeComponent key={j} node={textNode} styles={styles} />
+              {para.children.map((inlineNode, j) => (
+                <InlineNodeComponent key={j} node={inlineNode} styles={styles} />
               ))}
             </Text>
           ))}
@@ -334,8 +333,8 @@ function ContentNodeComponent({
           <View>
             {calloutNode.children.map((para, i) => (
               <Text key={i} style={styles.paragraph}>
-                {para.children.map((textNode, j) => (
-                  <TextNodeComponent key={j} node={textNode} styles={styles} />
+                {para.children.map((inlineNode, j) => (
+                  <InlineNodeComponent key={j} node={inlineNode} styles={styles} />
                 ))}
               </Text>
             ))}
@@ -349,8 +348,8 @@ function ContentNodeComponent({
           )}
           {calloutNode.children.map((para, i) => (
             <Text key={i} style={styles.paragraph}>
-              {para.children.map((textNode, j) => (
-                <TextNodeComponent key={j} node={textNode} styles={styles} />
+              {para.children.map((inlineNode, j) => (
+                <InlineNodeComponent key={j} node={inlineNode} styles={styles} />
               ))}
             </Text>
           ))}
@@ -363,60 +362,79 @@ function ContentNodeComponent({
   }
 }
 
-interface TextNodeComponentProps {
-  node: TextNode;
+interface InlineNodeComponentProps {
+  node: InlineNode;
   styles: BookStyles;
 }
 
 /**
- * Renders inline text with formatting
+ * Renders inline content (text with formatting or footnote reference)
  */
-function TextNodeComponent({ node, styles }: TextNodeComponentProps) {
-  if (node.bold && node.italic) {
+function InlineNodeComponent({ node, styles }: InlineNodeComponentProps) {
+  if (node.type === "footnote-ref") {
     return (
-      <Text style={[styles.bold, styles.italic]}>{node.content}</Text>
+      <Text style={styles.footnoteRef}>{node.number}</Text>
     );
   }
-  if (node.bold) {
-    return <Text style={styles.bold}>{node.content}</Text>;
+
+  // TextNode
+  const textNode = node as TextNode;
+  if (textNode.bold && textNode.italic) {
+    return (
+      <Text style={[styles.bold, styles.italic]}>{textNode.content}</Text>
+    );
   }
-  if (node.italic) {
-    return <Text style={styles.italic}>{node.content}</Text>;
+  if (textNode.bold) {
+    return <Text style={styles.bold}>{textNode.content}</Text>;
   }
-  if (node.code) {
-    return <Text style={styles.code}>{node.content}</Text>;
+  if (textNode.italic) {
+    return <Text style={styles.italic}>{textNode.content}</Text>;
   }
-  return <Text>{node.content}</Text>;
+  if (textNode.code) {
+    return <Text style={styles.code}>{textNode.content}</Text>;
+  }
+  return <Text>{textNode.content}</Text>;
 }
 
 interface HeaderProps {
   config: FormatConfig;
   styles: BookStyles;
-  pageNumber: number;
   isLeftPage: boolean;
 }
 
 /**
- * Renders running header
+ * Renders running header with accurate page numbers using render prop
  */
-function Header({ config, styles, pageNumber, isLeftPage }: HeaderProps) {
+function Header({ config, styles, isLeftPage }: HeaderProps) {
   const headers = config.headers;
   if (!headers?.enabled) return null;
 
-  const leftText = headers.left
-    ?.replace("{author}", config.meta?.author || "")
-    .replace("{title}", config.meta?.title || "")
-    .replace("{n}", String(pageNumber));
+  const author = config.meta?.author || "";
+  const title = config.meta?.title || "";
 
-  const rightText = headers.right
-    ?.replace("{author}", config.meta?.author || "")
-    .replace("{title}", config.meta?.title || "")
-    .replace("{n}", String(pageNumber));
+  // Pre-compute static parts of header text
+  const leftTemplate = headers.left
+    ?.replace("{author}", author)
+    .replace("{title}", title);
+
+  const rightTemplate = headers.right
+    ?.replace("{author}", author)
+    .replace("{title}", title);
 
   return (
-    <View style={styles.header}>
-      <Text style={styles.headerLeft}>{isLeftPage ? leftText : ""}</Text>
-      <Text style={styles.headerRight}>{isLeftPage ? "" : rightText}</Text>
+    <View style={styles.header} fixed>
+      <Text
+        style={styles.headerLeft}
+        render={({ pageNumber }) =>
+          isLeftPage ? (leftTemplate?.replace("{n}", String(pageNumber)) || "") : ""
+        }
+      />
+      <Text
+        style={styles.headerRight}
+        render={({ pageNumber }) =>
+          isLeftPage ? "" : (rightTemplate?.replace("{n}", String(pageNumber)) || "")
+        }
+      />
     </View>
   );
 }
@@ -424,102 +442,28 @@ function Header({ config, styles, pageNumber, isLeftPage }: HeaderProps) {
 interface FooterProps {
   config: FormatConfig;
   styles: BookStyles;
-  pageNumber: number;
 }
 
 /**
- * Renders page footer with page number
+ * Renders page footer with accurate page number using render prop
  */
-function Footer({ config, styles, pageNumber }: FooterProps) {
+function Footer({ config, styles }: FooterProps) {
   const footers = config.footers;
   if (!footers?.enabled) return null;
 
   const format = footers.pageNumber?.format || "{n}";
-  const text = format.replace("{n}", String(pageNumber));
 
-  return <Text style={styles.footer}>{text}</Text>;
-}
-
-/**
- * Format chapter number according to format string
- */
-function formatChapterNumber(num: number, format: string): string {
-  return format
-    .replace("{n}", String(num))
-    .replace("{roman}", toRoman(num))
-    .replace("{word}", toWord(num));
-}
-
-/**
- * Convert number to Roman numerals
- */
-function toRoman(num: number): string {
-  const romanNumerals: [number, string][] = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-
-  let result = "";
-  let remaining = num;
-
-  for (const [value, numeral] of romanNumerals) {
-    while (remaining >= value) {
-      result += numeral;
-      remaining -= value;
-    }
-  }
-
-  return result;
-}
-
-/**
- * Convert number to word
- */
-function toWord(num: number): string {
-  const words = [
-    "",
-    "One",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-    "Ten",
-    "Eleven",
-    "Twelve",
-    "Thirteen",
-    "Fourteen",
-    "Fifteen",
-    "Sixteen",
-    "Seventeen",
-    "Eighteen",
-    "Nineteen",
-    "Twenty",
-  ];
-
-  if (num <= 20) return words[num];
-  if (num < 100) {
-    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-    const tensDigit = Math.floor(num / 10);
-    const onesDigit = num % 10;
-    return tens[tensDigit] + (onesDigit > 0 ? `-${words[onesDigit]}` : "");
-  }
-
-  return String(num);
+  return (
+    <Text
+      style={styles.footer}
+      fixed
+      render={({ pageNumber, totalPages }) =>
+        format
+          .replace("{n}", String(pageNumber))
+          .replace("{total}", String(totalPages))
+      }
+    />
+  );
 }
 
 export default BookDocument;

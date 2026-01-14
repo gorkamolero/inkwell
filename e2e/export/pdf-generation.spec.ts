@@ -232,3 +232,87 @@ test.describe("Export Configuration", () => {
     }
   });
 });
+
+test.describe("Pro Print Features", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockAuthSession(page, TEST_USERS.owner);
+    await page.goto("/");
+
+    // Wait for editor to load
+    await expect(
+      page.getByRole("textbox", { name: /editor/i })
+    ).toBeVisible({ timeout: 15000 });
+
+    // Open format panel
+    const formatButton = page.getByRole("button", { name: /format|settings|configure/i });
+    if (await formatButton.isVisible({ timeout: 2000 })) {
+      await formatButton.click();
+    }
+
+    // Expand Output section
+    const outputSection = page.getByRole("button", { name: /output/i });
+    if (await outputSection.isVisible()) {
+      await outputSection.click();
+    }
+
+    // Make sure PDF format is selected
+    const pdfCheckbox = page.locator("text=PDF").first();
+    if (await pdfCheckbox.isVisible()) {
+      const isChecked = await pdfCheckbox.locator("input[type=checkbox]").isChecked();
+      if (!isChecked) {
+        await pdfCheckbox.click();
+      }
+    }
+  });
+
+  test("displays Pro badge for print features", async ({ page }) => {
+    // Look for the PRO badge in the print features section
+    const proBadge = page.locator("text=PRO").first();
+    await expect(proBadge).toBeVisible();
+  });
+
+  test("shows print-ready features section header", async ({ page }) => {
+    const sectionHeader = page.getByText(/print-ready features/i);
+    await expect(sectionHeader).toBeVisible();
+  });
+
+  test("can toggle trim marks", async ({ page }) => {
+    const trimMarksSwitch = page.getByLabel(/trim marks/i);
+    if (await trimMarksSwitch.isVisible()) {
+      const wasChecked = await trimMarksSwitch.isChecked();
+      await trimMarksSwitch.click();
+      await expect(trimMarksSwitch).toBeChecked({ checked: !wasChecked });
+    }
+  });
+
+  test("can toggle registration marks", async ({ page }) => {
+    const registrationSwitch = page.getByLabel(/registration marks/i);
+    if (await registrationSwitch.isVisible()) {
+      const wasChecked = await registrationSwitch.isChecked();
+      await registrationSwitch.click();
+      await expect(registrationSwitch).toBeChecked({ checked: !wasChecked });
+    }
+  });
+
+  test("can toggle color bars", async ({ page }) => {
+    const colorBarsSwitch = page.getByLabel(/color bars/i);
+    if (await colorBarsSwitch.isVisible()) {
+      const wasChecked = await colorBarsSwitch.isChecked();
+      await colorBarsSwitch.click();
+      await expect(colorBarsSwitch).toBeChecked({ checked: !wasChecked });
+    }
+  });
+
+  test("can set output intent to PDF/X-4", async ({ page }) => {
+    const outputIntentSelect = page.getByLabel(/output intent/i);
+    if (await outputIntentSelect.isVisible()) {
+      await outputIntentSelect.selectOption("PDF/X-4");
+      await expect(outputIntentSelect).toHaveValue("PDF/X-4");
+    }
+  });
+
+  test("shows pro tip about print features", async ({ page }) => {
+    const proTip = page.getByText(/pro tip.*print shops/i);
+    await expect(proTip).toBeVisible();
+  });
+});

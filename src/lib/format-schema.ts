@@ -472,8 +472,13 @@ export type Images = z.infer<typeof ImagesSchema>;
 const OutputFormatSchema = z.enum(["pdf", "epub", "html", "markdown"]);
 
 export const PdfOutputSchema = z.object({
-  colorProfile: z.enum(["RGB", "CMYK"]).optional().default("CMYK"),
-  bleed: z.string().optional().default("0.125in"),
+  colorProfile: z.enum(["RGB", "CMYK"]).optional().default("RGB"),
+  bleed: z.string().optional().default("0"),
+  // Pro print features
+  trimMarks: z.boolean().optional().default(false),
+  registrationMarks: z.boolean().optional().default(false),
+  colorBars: z.boolean().optional().default(false),
+  outputIntent: z.enum(["none", "PDF/X-4"]).optional().default("none"),
 });
 
 export const EpubOutputSchema = z.object({
@@ -484,8 +489,12 @@ export const EpubOutputSchema = z.object({
 export const OutputSchema = z.object({
   formats: z.array(OutputFormatSchema).optional().default(["pdf"]),
   pdf: PdfOutputSchema.optional().default(() => ({
-    colorProfile: "CMYK" as const,
-    bleed: "0.125in",
+    colorProfile: "RGB" as const,
+    bleed: "0",
+    trimMarks: false,
+    registrationMarks: false,
+    colorBars: false,
+    outputIntent: "none" as const,
   })),
   epub: EpubOutputSchema.optional().default(() => ({
     tocDepth: 2,
@@ -673,8 +682,12 @@ export const FormatConfigSchema = z.object({
   output: OutputSchema.optional().default(() => ({
     formats: ["pdf"] as ("pdf" | "epub" | "html" | "markdown")[],
     pdf: {
-      colorProfile: "CMYK" as const,
-      bleed: "0.125in",
+      colorProfile: "RGB" as const,
+      bleed: "0",
+      trimMarks: false,
+      registrationMarks: false,
+      colorBars: false,
+      outputIntent: "none" as const,
     },
     epub: {
       tocDepth: 2,
@@ -828,8 +841,12 @@ export const DEFAULT_BOOK_CONFIG: FormatConfig = {
   output: {
     formats: ["pdf"],
     pdf: {
-      colorProfile: "CMYK",
-      bleed: "0.125in",
+      colorProfile: "RGB",
+      bleed: "0",
+      trimMarks: false,
+      registrationMarks: false,
+      colorBars: false,
+      outputIntent: "none",
     },
     epub: {
       tocDepth: 2,
@@ -972,6 +989,10 @@ export const DEFAULT_ARTICLE_CONFIG: FormatConfig = {
     pdf: {
       colorProfile: "RGB",
       bleed: "0",
+      trimMarks: false,
+      registrationMarks: false,
+      colorBars: false,
+      outputIntent: "none",
     },
     epub: {
       tocDepth: 2,
@@ -1118,6 +1139,10 @@ export const DEFAULT_THREAD_CONFIG: FormatConfig = {
     pdf: {
       colorProfile: "RGB",
       bleed: "0",
+      trimMarks: false,
+      registrationMarks: false,
+      colorBars: false,
+      outputIntent: "none",
     },
     epub: {
       tocDepth: 1,

@@ -15,6 +15,7 @@ import type { FormatConfig } from "@/lib/format-schema";
 import type { Chapter } from "./content-parser";
 import { getFontWithFallback } from "./styles/fonts";
 import { getPageDimensions, getMargins, parseToPoints } from "./styles/theme";
+import { toRomanLower } from "./utils/number-format";
 
 // =============================================================================
 // Types
@@ -223,7 +224,11 @@ function HalfTitlePage({ config }: PageProps) {
   const title = config.meta?.title || "Untitled";
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.centeredPage}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.centeredPage}
+      bookmark="Half Title"
+    >
       <Text style={styles.halfTitle}>{title}</Text>
     </Page>
   );
@@ -239,7 +244,11 @@ function TitlePage({ config, item }: PageProps) {
   const includeAuthor = (item?.includeAuthor as boolean) ?? true;
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Title Page"
+    >
       <View style={styles.titleContainer}>
         {/* Series name */}
         {meta?.series?.name && (
@@ -300,7 +309,11 @@ This is a work of fiction. Names, characters, businesses, places, events, and in
   };
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Copyright"
+    >
       <View style={styles.copyrightContainer}>
         <Text style={styles.copyrightText}>{getCopyrightText()}</Text>
 
@@ -326,7 +339,11 @@ function DedicationPage({ config, item }: PageProps) {
   if (!content) return null;
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.centeredPage}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.centeredPage}
+      bookmark="Dedication"
+    >
       <Text style={styles.dedicationText}>{content}</Text>
     </Page>
   );
@@ -343,7 +360,11 @@ function EpigraphPage({ config, item }: PageProps) {
   if (!quote) return null;
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.centeredPage}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.centeredPage}
+      bookmark="Epigraph"
+    >
       <View style={styles.epigraphContainer}>
         <Text style={styles.epigraphQuote}>&ldquo;{quote}&rdquo;</Text>
         {attribution && (
@@ -364,7 +385,11 @@ function TableOfContentsPage({ config, chapters }: PageProps) {
   if (!chapters || chapters.length === 0) return null;
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Contents"
+    >
       <Text style={styles.tocTitle}>Contents</Text>
 
       {chapters.map((chapter, index) => (
@@ -392,33 +417,7 @@ function formatTocNumber(num: number, format?: string): string {
   if (format.includes("{roman}")) {
     return toRomanLower(num);
   }
-  if (format.includes("{n}")) {
-    return String(num);
-  }
   return String(num);
-}
-
-/**
- * Convert to lowercase roman numerals
- */
-function toRomanLower(num: number): string {
-  const romanNumerals: [number, string][] = [
-    [1000, "m"], [900, "cm"], [500, "d"], [400, "cd"],
-    [100, "c"], [90, "xc"], [50, "l"], [40, "xl"],
-    [10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"],
-  ];
-
-  let result = "";
-  let remaining = num;
-
-  for (const [value, numeral] of romanNumerals) {
-    while (remaining >= value) {
-      result += numeral;
-      remaining -= value;
-    }
-  }
-
-  return result;
 }
 
 // =============================================================================
