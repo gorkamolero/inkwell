@@ -7,3 +7,5 @@
 export * from "./pdf-generator";
 export * from "./epub-generator";
 export * from "./storage";
+export * from "./print-processor";
+export * from "./print-features";

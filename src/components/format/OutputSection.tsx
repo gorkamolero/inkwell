@@ -1,9 +1,9 @@
 "use client";
 
-import { Download, FileText, Book, Settings2 } from "lucide-react";
+import { Download, FileText, Book, Settings2, Sparkles } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { FormatSection, useFormatContext } from "./FormatPanel";
-import { BrutalCard, BrutalInput } from "@/components/ui";
+import { BrutalCard, BrutalInput, BrutalSwitch, BrutalBadge } from "@/components/ui";
 
 export interface OutputSectionProps {
   defaultExpanded?: boolean;
@@ -173,6 +173,62 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
           <div className="rounded border-2 border-gray-300 bg-gray-50 p-2 text-xs text-gray-600">
             <strong>CMYK</strong> is recommended for professional printing.
             <strong> RGB</strong> is for digital viewing only.
+          </div>
+
+          {/* Pro Print Features */}
+          <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-300">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-4 w-4" />
+              <span className="font-bold">Print-Ready Features</span>
+              <BrutalBadge variant="primary">PRO</BrutalBadge>
+            </div>
+
+            <div className="space-y-3">
+              {/* Trim Marks */}
+              <BrutalSwitch
+                label="Trim Marks"
+                description="Add crop marks at corners for cutting"
+                checked={(pdf.trimMarks as boolean) ?? false}
+                onCheckedChange={(v) => updatePdf("trimMarks", v)}
+              />
+
+              {/* Registration Marks */}
+              <BrutalSwitch
+                label="Registration Marks"
+                description="Add alignment targets for color separation"
+                checked={(pdf.registrationMarks as boolean) ?? false}
+                onCheckedChange={(v) => updatePdf("registrationMarks", v)}
+              />
+
+              {/* Color Bars */}
+              <BrutalSwitch
+                label="Color Bars"
+                description="Add CMYK color verification bars"
+                checked={(pdf.colorBars as boolean) ?? false}
+                onCheckedChange={(v) => updatePdf("colorBars", v)}
+              />
+
+              {/* PDF/X-4 Output Intent */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">
+                  Output Intent
+                </label>
+                <select
+                  value={(pdf.outputIntent as string) || "none"}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => updatePdf("outputIntent", e.target.value)}
+                  className="w-full border-brutal bg-white px-3 py-2 font-bold shadow-[4px_4px_0_0_#000] focus:outline-none focus:ring-0"
+                >
+                  <option value="none">None (Standard PDF)</option>
+                  <option value="PDF/X-4">PDF/X-4 (Print Production)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pro features info */}
+            <div className="mt-3 rounded border-2 border-brutal-yellow bg-brutal-yellow/20 p-2 text-xs">
+              <strong>Pro tip:</strong> These features prepare your PDF for professional print shops.
+              Trim marks show where to cut, registration marks align colors.
+            </div>
           </div>
         </div>
       )}
