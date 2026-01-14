@@ -8,8 +8,9 @@ export default defineConfig({
   testDir: "./e2e",
 
   /* Global setup and teardown for database seeding */
-  globalSetup: require.resolve("./e2e/fixtures/global-setup"),
-  globalTeardown: require.resolve("./e2e/fixtures/global-teardown"),
+  // Temporarily disabled - DB seeding not required for mocked tests
+  // globalSetup: require.resolve("./e2e/fixtures/global-setup"),
+  // globalTeardown: require.resolve("./e2e/fixtures/global-teardown"),
 
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -78,10 +79,11 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "pnpm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  // Disabled - expecting dev server to be running separately
+  // webServer: {
+  //   command: "pnpm run dev",
+  //   url: "http://localhost:3000",
+  //   reuseExistingServer: !process.env.CI,
+  //   timeout: 120 * 1000,
+  // },
 });

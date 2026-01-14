@@ -4,6 +4,12 @@
  * Runs once before all tests to seed the database.
  */
 
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// Load environment variables from .env.local
+config({ path: resolve(__dirname, "../../.env.local") });
+
 import { seedTestDatabase } from "./db-seed";
 
 async function globalSetup(): Promise<void> {
