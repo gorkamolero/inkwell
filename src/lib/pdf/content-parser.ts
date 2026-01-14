@@ -13,9 +13,23 @@ export interface TextNode {
   code?: boolean;
 }
 
+export interface FootnoteRefNode {
+  type: "footnote-ref";
+  id: string;
+  number: number; // Sequential display number
+}
+
+export interface Footnote {
+  id: string;
+  number: number;
+  content: string;
+}
+
+export type InlineNode = TextNode | FootnoteRefNode;
+
 export interface ParagraphNode {
   type: "paragraph";
-  children: TextNode[];
+  children: InlineNode[];
   isFirstInChapter?: boolean;
   isFirstAfterSceneBreak?: boolean;
 }
@@ -81,6 +95,7 @@ export interface ParsedDocument {
   title?: string;
   chapters: Chapter[];
   wordCount: number;
+  footnotes: Footnote[];
 }
 
 /**
@@ -93,6 +108,18 @@ export function parseMarkdown(markdown: string): ParsedDocument {
   let documentTitle: string | undefined;
   let wordCount = 0;
 
+  // Footnote tracking
+  const footnoteDefinitions: Map<string, string> = new Map();
+  const footnoteReferences: Set<string> = new Set();
+
+  // First pass: collect footnote definitions
+  for (const line of lines) {
+    const footnoteDefMatch = line.match(/^\[\^([^\]]+)\]:\s*(.+)$/);
+    if (footnoteDefMatch) {
+      footnoteDefinitions.set(footnoteDefMatch[1], footnoteDefMatch[2]);
+    }
+  }
+
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
@@ -100,6 +127,12 @@ export function parseMarkdown(markdown: string): ParsedDocument {
 
     // Skip empty lines
     if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    // Skip footnote definitions (already collected)
+    if (/^\[\^[^\]]+\]:\s*.+$/.test(trimmed)) {
       i++;
       continue;
     }
@@ -194,7 +227,7 @@ export function parseMarkdown(markdown: string): ParsedDocument {
         children: [
           {
             type: "paragraph",
-            children: parseInlineFormatting(blockquoteText),
+            children: parseInlineFormatting(blockquoteText, footnoteReferences, footnoteDefinitions),
           },
         ],
       });
@@ -285,7 +318,7 @@ export function parseMarkdown(markdown: string): ParsedDocument {
 
       currentChapter.content.push({
         type: "paragraph",
-        children: parseInlineFormatting(paragraphText),
+        children: parseInlineFormatting(paragraphText, footnoteReferences, footnoteDefinitions),
         isFirstInChapter,
         isFirstAfterSceneBreak,
       });
@@ -308,22 +341,73 @@ export function parseMarkdown(markdown: string): ParsedDocument {
     });
   }
 
+  // Build footnotes array in order of first reference
+  const footnotes: Footnote[] = [];
+  const footnoteNumberMap: Map<string, number> = new Map();
+  let footnoteNumber = 1;
+
+  // Assign numbers in order of first appearance
+  for (const id of footnoteReferences) {
+    if (footnoteDefinitions.has(id)) {
+      footnoteNumberMap.set(id, footnoteNumber);
+      footnotes.push({
+        id,
+        number: footnoteNumber,
+        content: footnoteDefinitions.get(id)!,
+      });
+      footnoteNumber++;
+    }
+  }
+
+  // Update footnote reference numbers in all chapters
+  for (const chapter of chapters) {
+    assignFootnoteNumbers(chapter.content, footnoteNumberMap);
+  }
+
   return {
     title: documentTitle,
     chapters,
     wordCount,
+    footnotes,
   };
 }
 
 /**
- * Parse inline formatting (bold, italic, code)
+ * Recursively assign footnote numbers to all footnote references
  */
-function parseInlineFormatting(text: string): TextNode[] {
-  const nodes: TextNode[] = [];
+function assignFootnoteNumbers(nodes: ContentNode[], numberMap: Map<string, number>): void {
+  for (const node of nodes) {
+    if (node.type === "paragraph") {
+      for (const child of node.children) {
+        if (child.type === "footnote-ref" && numberMap.has(child.id)) {
+          child.number = numberMap.get(child.id)!;
+        }
+      }
+    } else if (node.type === "blockquote") {
+      for (const para of node.children) {
+        for (const child of para.children) {
+          if (child.type === "footnote-ref" && numberMap.has(child.id)) {
+            child.number = numberMap.get(child.id)!;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Parse inline formatting (bold, italic, code, footnote refs)
+ */
+function parseInlineFormatting(
+  text: string,
+  footnoteReferences: Set<string>,
+  footnoteDefinitions: Map<string, string>
+): InlineNode[] {
+  const nodes: InlineNode[] = [];
 
   // Simple regex-based parser for inline formatting
-  // Matches: **bold**, *italic*, `code`
-  const pattern = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+  // Matches: **bold**, *italic*, `code`, [^footnote]
+  const pattern = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`|\[\^([^\]]+)\])/g;
 
   let lastIndex = 0;
   let match = pattern.exec(text);
@@ -358,6 +442,16 @@ function parseInlineFormatting(text: string): TextNode[] {
         type: "text",
         content: match[4],
         code: true,
+      });
+    } else if (match[5] && footnoteDefinitions.has(match[5])) {
+      // Footnote reference - only add if definition exists
+      const id = match[5];
+      footnoteReferences.add(id);
+      // Number will be assigned later based on order of references
+      nodes.push({
+        type: "footnote-ref",
+        id,
+        number: 0, // Placeholder, will be assigned after parsing
       });
     }
 
@@ -396,7 +490,7 @@ function countWordsInText(text: string): number {
  */
 export function getDropCapLetter(paragraph: ParagraphNode): string | null {
   const firstChild = paragraph.children[0];
-  if (firstChild && firstChild.content.length > 0) {
+  if (firstChild && firstChild.type === "text" && firstChild.content.length > 0) {
     return firstChild.content[0].toUpperCase();
   }
   return null;
@@ -405,9 +499,9 @@ export function getDropCapLetter(paragraph: ParagraphNode): string | null {
 /**
  * Get paragraph text without the first letter (for drop cap)
  */
-export function getTextAfterDropCap(paragraph: ParagraphNode): TextNode[] {
+export function getTextAfterDropCap(paragraph: ParagraphNode): InlineNode[] {
   const result = [...paragraph.children];
-  if (result.length > 0 && result[0].content.length > 0) {
+  if (result.length > 0 && result[0].type === "text" && result[0].content.length > 0) {
     result[0] = {
       ...result[0],
       content: result[0].content.slice(1),

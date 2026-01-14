@@ -216,9 +216,9 @@ export function OutputSection({ defaultExpanded = false }: OutputSectionProps) {
             </div>
           </div>
 
-          {/* Coming soon notice */}
-          <div className="rounded border-2 border-brutal-blue/30 bg-brutal-blue/10 p-2 text-xs text-brutal-blue">
-            <strong>Note:</strong> ePub generation coming soon. Configure now for when it&apos;s available.
+          {/* Info box */}
+          <div className="rounded border-2 border-gray-300 bg-gray-50 p-2 text-xs text-gray-600">
+            <strong>Tip:</strong> Add a cover image URL for a polished ePub. Square or portrait images work best.
           </div>
         </div>
       )}

@@ -11,6 +11,7 @@
 
 import { Page, Text, View, Link, StyleSheet } from "@react-pdf/renderer";
 import type { FormatConfig } from "@/lib/format-schema";
+import type { Footnote } from "./content-parser";
 import { getFontWithFallback } from "./styles/fonts";
 import { getPageDimensions, getMargins, parseToPoints } from "./styles/theme";
 
@@ -31,6 +32,7 @@ interface BookReference {
 interface BackMatterProps {
   items: BackMatterItem[];
   config: FormatConfig;
+  footnotes?: Footnote[];
 }
 
 interface PageProps {
@@ -141,6 +143,24 @@ function createBackMatterStyles(config: FormatConfig) {
     appendixContent: {
       textAlign: "justify",
     },
+
+    // Endnotes
+    endnoteEntry: {
+      flexDirection: "row",
+      marginBottom: 8,
+    },
+
+    endnoteNumber: {
+      width: 24,
+      fontSize: bodySize * 0.9,
+      fontWeight: "bold",
+    },
+
+    endnoteContent: {
+      flex: 1,
+      fontSize: bodySize,
+      textAlign: "justify",
+    },
   });
 }
 
@@ -159,7 +179,11 @@ function AcknowledgementsPage({ config, item }: PageProps) {
   const paragraphs = content.split("\n\n").filter(Boolean);
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Acknowledgements"
+    >
       <Text style={styles.sectionTitle}>Acknowledgements</Text>
 
       {paragraphs.length > 0 ? (
@@ -192,7 +216,11 @@ function AboutAuthorPage({ config, item }: PageProps) {
   const paragraphs = content.split("\n\n").filter(Boolean);
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="About the Author"
+    >
       <Text style={styles.sectionTitle}>About the Author</Text>
 
       <View style={styles.authorBioContainer}>
@@ -221,7 +249,11 @@ function AlsoByPage({ config, item }: PageProps) {
   const authorName = config.meta?.author || "This Author";
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark={`Also By ${authorName}`}
+    >
       <Text style={styles.sectionTitle}>Also By {authorName}</Text>
 
       <View style={styles.bookListContainer}>
@@ -270,7 +302,11 @@ function GlossaryPage({ config, item }: PageProps) {
     });
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Glossary"
+    >
       <Text style={styles.sectionTitle}>Glossary</Text>
 
       {entries.map((entry, index) => (
@@ -297,7 +333,11 @@ function AppendixPage({ config, item }: PageProps) {
   const paragraphs = content.split("\n\n").filter(Boolean);
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark={title}
+    >
       <Text style={styles.sectionTitle}>{title}</Text>
 
       {paragraphs.map((para, index) => (
@@ -323,7 +363,11 @@ function EpiloguePage({ config, item }: PageProps) {
   const paragraphs = content.split("\n\n").filter(Boolean);
 
   return (
-    <Page size={{ width: styles.page.width, height: styles.page.height }} style={styles.page}>
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Epilogue"
+    >
       <Text style={styles.sectionTitle}>Epilogue</Text>
 
       {paragraphs.map((para, index) => (
@@ -338,6 +382,37 @@ function EpiloguePage({ config, item }: PageProps) {
   );
 }
 
+/**
+ * Endnotes Page - Renders all footnotes as endnotes
+ */
+interface EndnotesPageProps {
+  config: FormatConfig;
+  footnotes: Footnote[];
+}
+
+function EndnotesPage({ config, footnotes }: EndnotesPageProps) {
+  const styles = createBackMatterStyles(config);
+
+  if (footnotes.length === 0) return null;
+
+  return (
+    <Page
+      size={{ width: styles.page.width, height: styles.page.height }}
+      style={styles.page}
+      bookmark="Notes"
+    >
+      <Text style={styles.sectionTitle}>Notes</Text>
+
+      {footnotes.map((note) => (
+        <View key={note.id} style={styles.endnoteEntry}>
+          <Text style={styles.endnoteNumber}>{note.number}.</Text>
+          <Text style={styles.endnoteContent}>{note.content}</Text>
+        </View>
+      ))}
+    </Page>
+  );
+}
+
 // =============================================================================
 // Main Export
 // =============================================================================
@@ -345,12 +420,13 @@ function EpiloguePage({ config, item }: PageProps) {
 /**
  * Renders all back matter pages based on configuration
  */
-export function BackMatter({ items, config }: BackMatterProps) {
-  if (!items || items.length === 0) return null;
+export function BackMatter({ items, config, footnotes }: BackMatterProps) {
+  const hasContent = (items && items.length > 0) || (footnotes && footnotes.length > 0);
+  if (!hasContent) return null;
 
   return (
     <>
-      {items.map((item, index) => {
+      {items?.map((item, index) => {
         switch (item.type) {
           case "epilogue":
             return <EpiloguePage key={index} config={config} item={item} />;
@@ -368,6 +444,11 @@ export function BackMatter({ items, config }: BackMatterProps) {
             return null;
         }
       })}
+
+      {/* Render endnotes if there are any footnotes */}
+      {footnotes && footnotes.length > 0 && (
+        <EndnotesPage config={config} footnotes={footnotes} />
+      )}
     </>
   );
 }
@@ -379,4 +460,5 @@ export {
   GlossaryPage,
   AppendixPage,
   EpiloguePage,
+  EndnotesPage,
 };

@@ -360,6 +360,13 @@ export function createStyles(config: FormatConfig) {
       marginBottom: 6,
       textTransform: "uppercase",
     },
+
+    // Footnote reference (superscript number)
+    footnoteRef: {
+      fontSize: bodySize * 0.65,
+      verticalAlign: "super",
+      lineHeight: 0,
+    },
   });
 }
 
