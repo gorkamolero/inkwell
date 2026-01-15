@@ -21,6 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   adapter,
   session: { strategy: "jwt" },
+  redirectProxyUrl: process.env.AUTH_REDIRECT_PROXY_URL,
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
