@@ -103,11 +103,13 @@ function LivePresenceAvatars() {
 
   const selfName = String(self?.info?.name || "You");
   const selfColor = String(self?.info?.color || "#000");
+  const selfPicture = (self?.info?.picture as string | undefined) || null;
 
   const otherUsers = others.map((other) => ({
     id: other.connectionId.toString(),
     name: String(other.info?.name || "Anonymous"),
     color: String(other.info?.color || "#666"),
+    avatarUrl: (other.info?.picture as string | undefined) || null,
   }));
 
   const handleEditClick = () => {
@@ -165,10 +167,19 @@ function LivePresenceAvatars() {
               title="Click to change your name"
             >
               <div
-                className="flex h-7 w-7 items-center justify-center border-2 border-black text-xs font-bold text-white"
+                className="flex h-7 w-7 items-center justify-center border-2 border-black text-xs font-bold text-white overflow-hidden"
                 style={{ backgroundColor: selfColor }}
               >
-                {selfName.charAt(0).toUpperCase()}
+                {selfPicture ? (
+                  // biome-ignore lint/performance/noImgElement: External avatar URLs from GitHub
+                  <img
+                    src={selfPicture}
+                    alt={selfName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  selfName.charAt(0).toUpperCase()
+                )}
               </div>
               <span className="text-xs font-medium max-w-[80px] truncate hidden sm:inline">
                 {selfName}
@@ -183,11 +194,20 @@ function LivePresenceAvatars() {
       {otherUsers.slice(0, 4).map((user) => (
         <div
           key={user.id}
-          className="flex h-7 w-7 items-center justify-center border-2 border-black text-xs font-bold text-white"
+          className="flex h-7 w-7 items-center justify-center border-2 border-black text-xs font-bold text-white overflow-hidden"
           style={{ backgroundColor: user.color }}
           title={user.name}
         >
-          {user.name.charAt(0).toUpperCase()}
+          {user.avatarUrl ? (
+            // biome-ignore lint/performance/noImgElement: External avatar URLs from GitHub
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            user.name.charAt(0).toUpperCase()
+          )}
         </div>
       ))}
       {otherUsers.length > 4 && (
@@ -663,6 +683,7 @@ function EditableTitle({ sessionId, initialTitle }: EditableTitleProps) {
 
   return (
     <button
+      type="button"
       onClick={handleStartEdit}
       className="font-bold text-black truncate max-w-[300px] hover:text-brutal-blue transition-colors text-left"
       title="Click to edit title"

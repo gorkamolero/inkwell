@@ -25,14 +25,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
 import {
   BrutalBadge,
-  BrutalButton,
-  BrutalDialog,
-  BrutalDialogContent,
-  BrutalDialogDescription,
-  BrutalDialogFooter,
-  BrutalDialogHeader,
-  BrutalDialogTitle,
-  BrutalInput,
 } from "@/components/ui";
 import { createEditorConfig } from "@/lib/editor-config";
 

@@ -8,6 +8,10 @@ import { accounts, sessions, users } from "./db/schema";
 
 const PROTECTED_PATHS = ["/projects", "/settings", "/dashboard"];
 
+// Cookie config for subdomain sharing (needed for auth.hotpress.app proxy)
+const useSecureCookies = process.env.NODE_ENV === "production";
+const cookieDomain = process.env.NODE_ENV === "production" ? ".hotpress.app" : undefined;
+
 const adapter = db
   ? DrizzleAdapter(db, {
       usersTable: users,
@@ -22,6 +26,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter,
   session: { strategy: "jwt" },
   redirectProxyUrl: process.env.AUTH_REDIRECT_PROXY_URL,
+  cookies: {
+    sessionToken: {
+      name: useSecureCookies ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+      },
+    },
+    callbackUrl: {
+      name: useSecureCookies ? "__Secure-authjs.callback-url" : "authjs.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+      },
+    },
+    csrfToken: {
+      name: useSecureCookies ? "__Secure-authjs.csrf-token" : "authjs.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+      },
+    },
+    pkceCodeVerifier: {
+      name: useSecureCookies ? "__Secure-authjs.pkce.code_verifier" : "authjs.pkce.code_verifier",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+        maxAge: 60 * 15, // 15 minutes
+      },
+    },
+    state: {
+      name: useSecureCookies ? "__Secure-authjs.state" : "authjs.state",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+        maxAge: 60 * 15, // 15 minutes
+      },
+    },
+  },
   providers: [
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,

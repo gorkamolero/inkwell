@@ -44,6 +44,7 @@ export function DeleteSessionButton({ sessionId }: DeleteSessionButtonProps) {
           </p>
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={handleDelete}
               disabled={isDeleting}
               className="flex-1 border-3 border-black bg-red-500 px-4 py-2 font-bold text-white shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -51,6 +52,7 @@ export function DeleteSessionButton({ sessionId }: DeleteSessionButtonProps) {
               {isDeleting ? "Deleting..." : "Delete"}
             </button>
             <button
+              type="button"
               onClick={() => setShowConfirm(false)}
               disabled={isDeleting}
               className="flex-1 border-3 border-black bg-white px-4 py-2 font-bold transition-colors hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -65,6 +67,7 @@ export function DeleteSessionButton({ sessionId }: DeleteSessionButtonProps) {
 
   return (
     <button
+      type="button"
       onClick={() => setShowConfirm(true)}
       className="flex items-center justify-center border-3 border-black bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
       title="Delete session"
