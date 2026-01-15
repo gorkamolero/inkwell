@@ -48,8 +48,8 @@ export async function mockAuthSession(
     salt: "authjs.session-token",
   });
 
-  // Use baseURL from Playwright config or fallback
-  const baseURL = new URL(page.context().baseURL || "http://localhost:3847");
+  // Use default localhost for tests
+  const baseURL = new URL("http://localhost:3847");
 
   // Set the session cookie
   await page.context().addCookies([

@@ -186,7 +186,7 @@ export async function mockGitHubApi(
     await page.route("**/api/github/contents*", async (route: Route) => {
       const url = new URL(route.request().url());
       const path = url.searchParams.get("path") ?? "";
-      const content = mocks.contents[path];
+      const content = mocks.contents?.[path];
 
       if (content) {
         await route.fulfill({
