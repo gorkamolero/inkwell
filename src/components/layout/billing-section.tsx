@@ -51,18 +51,35 @@ export function BillingSection({ user }: BillingSectionProps) {
     setIsLoading(true);
 
     try {
+      const priceId = PRICING.PRO.priceId;
+      if (!priceId) {
+        console.error("Pro price ID not configured");
+        alert("Payment system not configured. Please try again later.");
+        return;
+      }
+
       const response = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ priceId: PRICING.PRO.priceId }),
+        body: JSON.stringify({ priceId }),
       });
 
-      const { url } = await response.json();
-      window.location.href = url;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      if (!data.url) {
+        throw new Error("No checkout URL returned");
+      }
+
+      window.location.href = data.url;
     } catch (error) {
       console.error("Failed to create checkout session:", error);
+      alert("Failed to start checkout. Please try again.");
     } finally {
       setIsLoading(false);
     }
