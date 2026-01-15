@@ -16,11 +16,11 @@ import { $createParagraphNode, $createTextNode, $getRoot } from "lexical";
 import {
   Check,
   ChevronDown,
-  Copy,
   FileText,
   Loader2,
-  Share2,
+  Maximize2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EditorToolbar } from "@/components/editor/editor-toolbar";
 import {
@@ -300,17 +300,13 @@ function TypeSelector({
 }
 
 export function HotpressEditor(): React.ReactElement {
+  const router = useRouter();
   const [session, setSession] = useState<SessionData | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [wordCount, setWordCount] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
-
-  // Share dialog state
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [isCreatingShare, setIsCreatingShare] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [isMaximizing, setIsMaximizing] = useState(false);
 
   // Handle client-side mounting
   useEffect(() => {
@@ -391,57 +387,37 @@ export function HotpressEditor(): React.ReactElement {
     [session],
   );
 
-  // Handle share button click - opens dialog
-  const handleShare = useCallback(() => {
+  // Handle maximize button click - creates share link and navigates to fullscreen
+  const handleMaximize = useCallback(async () => {
     if (!session) return;
 
-    // If we already have a share slug, show it
-    if (session.shareSlug) {
-      setShareUrl(`${window.location.origin}/s/${session.shareSlug}`);
-    }
-    setShareDialogOpen(true);
-  }, [session]);
-
-  // Create share link via API
-  const handleCreateShareLink = useCallback(async () => {
-    if (!session) return;
-
-    setIsCreatingShare(true);
+    setIsMaximizing(true);
     try {
-      const response = await fetch(`/api/sessions/${session.id}/share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      // If no share slug exists, create one
+      let slug = session.shareSlug;
+      
+      if (!slug) {
+        const response = await fetch(`/api/sessions/${session.id}/share`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to create share link");
+        if (!response.ok) {
+          throw new Error("Failed to create share link");
+        }
+
+        const data = await response.json();
+        slug = data.shareSlug;
       }
 
-      const data = await response.json();
-      setShareUrl(data.shareUrl);
-      setSession((prev) =>
-        prev ? { ...prev, shareSlug: data.shareSlug } : null,
-      );
+      // Navigate to fullscreen editor
+      router.push(`/s/${slug}`);
     } catch (error) {
-      console.error("Failed to share:", error);
-    } finally {
-      setIsCreatingShare(false);
+      console.error("Failed to maximize:", error);
+      setIsMaximizing(false);
     }
-  }, [session]);
-
-  // Copy share URL to clipboard
-  const handleCopyShareUrl = useCallback(async () => {
-    if (!shareUrl) return;
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
-    }
-  }, [shareUrl]);
+  }, [session, router]);
 
   const handleSaveStart = useCallback(() => {
     setSaveStatus("saving");
@@ -537,94 +513,27 @@ export function HotpressEditor(): React.ReactElement {
         <div className="flex items-center gap-4">
           <SaveStatusBadge status={saveStatus} />
 
-          {/* Share button */}
+          {/* Maximize button */}
           <button
             type="button"
-            onClick={handleShare}
-            className="flex items-center gap-2 border-3 border-black bg-brutal-blue px-3 py-1.5 font-bold text-white shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000]"
+            onClick={handleMaximize}
+            disabled={isMaximizing}
+            className="flex items-center gap-2 border-3 border-black bg-brutal-blue px-3 py-1.5 font-bold text-white shadow-[4px_4px_0_0_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Share2 className="h-4 w-4" />
-            Share
+            {isMaximizing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Opening...
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-4 w-4" />
+                Go Fullscreen
+              </>
+            )}
           </button>
         </div>
       </div>
-
-      {/* Share Dialog */}
-      <BrutalDialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <BrutalDialogContent className="max-w-md">
-          <BrutalDialogHeader>
-            <BrutalDialogTitle>Share Session</BrutalDialogTitle>
-            <BrutalDialogDescription>
-              Share this writing session with others. Anyone with the link can
-              view and edit.
-            </BrutalDialogDescription>
-          </BrutalDialogHeader>
-
-          <div className="space-y-4 py-4">
-            {shareUrl ? (
-              <div className="space-y-3">
-                <label className="block text-xs font-bold uppercase tracking-wider">
-                  Share Link
-                </label>
-                <div className="flex gap-2">
-                  <BrutalInput
-                    value={shareUrl}
-                    readOnly
-                    className="flex-1 font-mono text-sm"
-                  />
-                  <BrutalButton
-                    variant="primary"
-                    size="icon"
-                    onClick={handleCopyShareUrl}
-                    title={shareCopied ? "Copied!" : "Copy link"}
-                  >
-                    {shareCopied ? (
-                      <Check className="h-4 w-4" strokeWidth={2.5} />
-                    ) : (
-                      <Copy className="h-4 w-4" strokeWidth={2.5} />
-                    )}
-                  </BrutalButton>
-                </div>
-                {shareCopied && (
-                  <p className="text-sm text-green-600 font-medium">
-                    Link copied to clipboard!
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <Share2 className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-sm text-gray-600 mb-4">
-                  Generate a link to share this session with collaborators
-                </p>
-                <BrutalButton
-                  variant="primary"
-                  onClick={handleCreateShareLink}
-                  disabled={isCreatingShare}
-                >
-                  {isCreatingShare ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Share Link"
-                  )}
-                </BrutalButton>
-              </div>
-            )}
-          </div>
-
-          <BrutalDialogFooter>
-            <BrutalButton
-              variant="outline"
-              onClick={() => setShareDialogOpen(false)}
-            >
-              Done
-            </BrutalButton>
-          </BrutalDialogFooter>
-        </BrutalDialogContent>
-      </BrutalDialog>
     </div>
   );
 }

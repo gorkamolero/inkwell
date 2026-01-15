@@ -596,10 +596,86 @@ function AiAssistantPanel({ isOpen, onClose }: AiAssistantPanelProps) {
 }
 
 // ============================================================================
+// Editable Title Component
+// ============================================================================
+
+interface EditableTitleProps {
+  sessionId: string;
+  initialTitle: string | null;
+}
+
+function EditableTitle({ sessionId, initialTitle }: EditableTitleProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState(initialTitle || "Untitled");
+  const [editValue, setEditValue] = useState(title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleStartEdit = () => {
+    setEditValue(title);
+    setIsEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const handleSave = async () => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== title) {
+      try {
+        const response = await fetch(`/api/sessions/${sessionId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: trimmed }),
+        });
+
+        if (response.ok) {
+          setTitle(trimmed);
+        }
+      } catch (error) {
+        console.error("Failed to update title:", error);
+      }
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleSave}
+        className="h-7 max-w-[300px] border-2 border-black px-2 font-bold text-black focus:outline-none focus:ring-2 focus:ring-brutal-yellow"
+        maxLength={100}
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={handleStartEdit}
+      className="font-bold text-black truncate max-w-[300px] hover:text-brutal-blue transition-colors text-left"
+      title="Click to edit title"
+    >
+      {title}
+    </button>
+  );
+}
+
+// ============================================================================
 // Collaborative Editor Inner
 // ============================================================================
 
 interface CollaborativeEditorInnerProps {
+  roomId: string;
   sessionTitle: string | null;
   isAuthenticated: boolean | null;
   onCopyLink: () => void;
@@ -610,6 +686,7 @@ interface CollaborativeEditorInnerProps {
 }
 
 function CollaborativeEditorInner({
+  roomId,
   sessionTitle,
   isAuthenticated,
   onCopyLink,
@@ -646,8 +723,8 @@ function CollaborativeEditorInner({
   const threadCount = threads?.length ?? 0;
 
   return (
-    <div className="flex">
-      <div className="flex-1 border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+    <div className="flex h-full">
+      <div className="flex-1 flex flex-col border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <LexicalComposer initialConfig={editorConfig}>
           {/* Liveblocks Plugin - handles all collaboration + floating comments */}
           <LiveblocksPlugin>
@@ -660,12 +737,13 @@ function CollaborativeEditorInner({
             </FloatingToolbar>
           </LiveblocksPlugin>
 
-          {/* Header with presence */}
-          <div className="flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2">
+          {/* Header with presence - FIXED */}
+          <div className="flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2 flex-shrink-0">
             <div className="flex items-center gap-3">
-              <h2 className="font-bold text-black truncate max-w-[200px]">
-                {sessionTitle || "Untitled"}
-              </h2>
+              <EditableTitle
+                sessionId={roomId}
+                initialTitle={sessionTitle}
+              />
               <LivePresenceAvatars />
             </div>
             <div className="flex items-center gap-1">
@@ -792,16 +870,20 @@ function CollaborativeEditorInner({
             </div>
           </div>
 
-          {/* Toolbar */}
-          <EditorToolbar />
-
-          {/* Editor content */}
-          <div className="relative">
-            <EditorContentArea onWordCountChange={setWordCount} />
+          {/* Toolbar - FIXED */}
+          <div className="flex-shrink-0">
+            <EditorToolbar />
           </div>
 
-          {/* Status bar */}
-          <div className="flex items-center justify-between border-t-3 border-black bg-gray-50 px-4 py-3">
+          {/* Editor content - SCROLLABLE */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="relative">
+              <EditorContentArea onWordCountChange={setWordCount} />
+            </div>
+          </div>
+
+          {/* Status bar - FIXED */}
+          <div className="flex items-center justify-between border-t-3 border-black bg-gray-50 px-4 py-3 flex-shrink-0">
             <span className="flex items-center gap-1.5 text-sm text-gray-600">
               <FileText className="h-4 w-4" />
               {wordCount} {wordCount === 1 ? "word" : "words"}
@@ -900,6 +982,7 @@ export function CollaborativeEditor({
     >
       <ClientSideSuspense fallback={<EditorSkeleton />}>
         <CollaborativeEditorInner 
+          roomId={roomId}
           sessionTitle={sessionTitle ?? null}
           isAuthenticated={isAuthenticated}
           onCopyLink={onCopyLink}

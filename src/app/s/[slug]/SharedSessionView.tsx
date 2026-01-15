@@ -120,18 +120,20 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
   }, [session.formatConfig]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Editor - Full Screen */}
-      <CollaborativeEditor
-        roomId={session.id}
-        sessionTitle={session.title}
-        isAuthenticated={isAuthenticated}
-        onCopyLink={handleCopyLink}
-        copied={copied}
-        onShowTemplates={() => setShowTemplates(true)}
-        onShowFormat={() => setShowFormat(true)}
-        onShowPreview={() => setShowPreview(true)}
-      />
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      {/* Editor - Full Screen with internal scrolling */}
+      <div className="flex-1 overflow-hidden">
+        <CollaborativeEditor
+          roomId={session.id}
+          sessionTitle={session.title}
+          isAuthenticated={isAuthenticated}
+          onCopyLink={handleCopyLink}
+          copied={copied}
+          onShowTemplates={() => setShowTemplates(true)}
+          onShowFormat={() => setShowFormat(true)}
+          onShowPreview={() => setShowPreview(true)}
+        />
+      </div>
 
       {/* Format Panel Overlay */}
       {showFormat && (
