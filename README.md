@@ -2,177 +2,243 @@
 
 **Write together. Publish instantly.**
 
-Collaborative writing with live output. Books, articles, threads. Your content, your format. PDF regenerates on every save.
+A collaborative writing platform where your book is always ready. Real-time editing with your team, professional PDF/EPUB exports, and complete creative control over typography and layout.
 
-## What is Hotpress?
+[Live Demo](https://hotpress.app) · [Documentation](#getting-started)
 
-Hotpress is a collaborative writing platform where the output is always ready. Write a book, article, or thread with your team. PDF regenerates on every save. Your content stays yours (GitHub-backed).
+## Why Hotpress?
+
+Traditional publishing tools make you choose: collaborate OR format. Hotpress does both. Write with your team in real-time while your book stays print-ready. Every save, every keystroke—your PDF regenerates automatically.
+
+**No signup required.** Start writing immediately. Create an account when you're ready to save.
 
 ## Features
 
-- **Real-time Collaboration** - Write with your team, see their cursors. Powered by Liveblocks.
-- **Live Output** - PDF regenerates automatically on every save
-- **You Own It** - Content saved to your GitHub repo. No vendor lock-in.
-- **Any Format** - Books, articles, threads, newsletters, docs
-- **API-First** - SDK for automation. Claude-ready for AI editing.
-- **No Signup Required** - Start writing immediately. Sign up when you're ready.
+### Real-time Collaboration
+- **Live cursors** — See collaborators typing in real-time with colored cursors and names
+- **Conflict-free editing** — Yjs CRDT ensures no overwrites, ever
+- **Presence awareness** — Know who's in your document
+- **Powered by Liveblocks** — Enterprise-grade collaboration infrastructure
+
+### Professional Publishing
+
+#### Export Formats
+- **PDF** — Print-ready with CMYK color profiles, bleed marks, trim marks, and PDF/X-4 output
+- **EPUB** — Standard ebook format with configurable TOC depth and cover images
+
+#### 20+ Typography Templates
+- **Serif classics** — Cormorant Garamond, EB Garamond, Libre Baskerville, Merriweather
+- **Modern sans** — Inter, Roboto, Source Sans Pro, Exo 2
+- **Accessible** — Atkinson Hyperlegible, OpenDyslexic
+- **Genre-specific** — Templates optimized for fiction, non-fiction, technical writing
+
+#### Complete Format Control
+- **Page sizes** — 6×9, 5.5×8.5, 5×8, A5, US Letter, or custom dimensions
+- **Margins** — Standard, Wide, Narrow presets or pixel-perfect custom margins
+- **Chapter styles** — Numbered (1, I, One), drop caps (2-5 lines), custom title fonts
+- **Scene breaks** — Asterisks, dots, dashes, fleurons, asterisms, dinkus, or blank space
+- **Headers/Footers** — Per-page templates with author, title, chapter, page numbers
+- **Front matter** — Half title, title page, copyright, dedication, epigraph, TOC, preface, foreword
+- **Back matter** — Epilogue, acknowledgements, about the author, also by, glossary, appendix
+
+### Version Control
+- **Git-backed** — Full commit history via GitHub integration
+- **One-click restore** — Browse and restore any previous version
+- **No vendor lock-in** — Your content lives in your GitHub repo
+
+### Document Types
+- Books (chapters, front/back matter)
+- Articles (blog posts, essays)
+- Threads (social media content)
+
+## Pricing
+
+### Free Forever — $0
+Everything you need to write and publish:
+- ✓ Unlimited writing & real-time collaboration
+- ✓ Unlimited projects
+- ✓ Unlimited PDF/EPUB exports
+- ✓ Basic templates
+- ✓ "Made with Hotpress" footer on exports
+
+### Creator — $12.99 per book
+Professional publishing for your book:
+- ✓ Clean exports (no watermark)
+- ✓ Print-ready CMYK with bleed marks
+- ✓ All premium templates
+- ✓ Unlimited exports forever
+- One-time purchase, yours to keep
+
+### Pro — $39.99/year
+For authors who publish regularly:
+- ✓ Clean exports on ALL projects
+- ✓ All premium templates
+- ✓ CMYK print-ready on everything
+- ✓ GitHub sync for manuscript versioning
+- ✓ No per-book fees ever
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript (strict)
-- **Real-time**: Liveblocks (Yjs CRDT)
-- **Database**: PostgreSQL + Drizzle ORM
-- **Auth**: NextAuth v5 (GitHub OAuth, optional)
-- **Storage**: GitHub (user's repos)
-- **PDF Generation**: GitHub Actions + Python/ReportLab
-- **UI**: ShadCN + Tailwind + Neobrutalist design
-- **Editor**: Lexical
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript (strict mode) |
+| Real-time | Liveblocks (Yjs CRDT) |
+| Editor | Lexical |
+| Database | PostgreSQL + Drizzle ORM |
+| Auth | NextAuth v5 (GitHub OAuth) |
+| Payments | Stripe |
+| PDF | React-PDF |
+| Storage | GitHub (user repos) |
+| UI | Tailwind + Neobrutalist design system |
 
 ## Getting Started
 
 ### Prerequisites
-
 - Node.js 20+
 - pnpm 9+
-- Docker (for local PostgreSQL)
+- PostgreSQL (Docker or hosted)
 
 ### Quick Start
 
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/your-org/hotpress.git
-   cd hotpress
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pnpm install
-   ```
-
-3. **Start the database**
-
-   ```bash
-   docker compose up -d
-   ```
-
-   This starts PostgreSQL on port 5432 and Adminer (database UI) on port 8080.
-
-4. **Set up environment variables**
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   Edit `.env.local` and fill in your values:
-   - Generate `AUTH_SECRET` with: `openssl rand -base64 32`
-   - Create GitHub OAuth app at https://github.com/settings/developers
-   - Create Stripe account and get API keys
-
-5. **Run database migrations**
-
-   ```bash
-   pnpm db:generate
-   pnpm db:migrate
-   ```
-
-6. **Start the development server**
-
-   ```bash
-   pnpm dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Database Management
-
 ```bash
-# Generate migration files from schema changes
-pnpm db:generate
+# Clone
+git clone https://github.com/gorkamolero/inkwell.git
+cd inkwell
 
-# Run pending migrations
+# Install
+pnpm install
+
+# Database (Docker)
+docker compose up -d
+
+# Environment
+cp .env.example .env.local
+# Edit .env.local with your values
+
+# Migrate
 pnpm db:migrate
 
-# Open Drizzle Studio for database browsing
-pnpm db:studio
+# Run
+pnpm dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `AUTH_SECRET` | NextAuth.js secret key | Yes |
-| `AUTH_GITHUB_ID` | GitHub OAuth client ID | Yes |
-| `AUTH_GITHUB_SECRET` | GitHub OAuth client secret | Yes |
-| `STRIPE_SECRET_KEY` | Stripe secret key | Yes |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Yes |
-| `STRIPE_PRICE_PRO` | Stripe Price ID for Pro plan | Yes |
-| `STRIPE_PRICE_TEAM` | Stripe Price ID for Team plan | Yes |
-| `LIVEBLOCKS_SECRET_KEY` | Liveblocks secret for real-time | Yes |
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `AUTH_SECRET` | NextAuth secret (`openssl rand -base64 32`) |
+| `AUTH_GITHUB_ID` | GitHub OAuth client ID |
+| `AUTH_GITHUB_SECRET` | GitHub OAuth client secret |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `NEXT_PUBLIC_STRIPE_PRICE_CREATOR_BOOK` | Stripe Price ID for Creator tier |
+| `NEXT_PUBLIC_STRIPE_PRICE_PRO_ANNUAL` | Stripe Price ID for Pro tier |
+| `LIVEBLOCKS_SECRET_KEY` | Liveblocks secret key |
 
-See `.env.example` for the complete list with documentation.
+### Scripts
+
+```bash
+pnpm dev          # Development server
+pnpm build        # Production build
+pnpm start        # Production server
+pnpm lint         # Biome linting
+pnpm db:generate  # Generate migrations
+pnpm db:migrate   # Run migrations
+pnpm db:studio    # Database browser
+```
 
 ## Design System
 
-Hotpress uses a **Neobrutalist** design system inspired by Gumroad's aesthetic:
+Hotpress uses a **Neobrutalist** design language:
 
+```css
+.brutal {
+  border: 3px solid black;
+  box-shadow: 4px 4px 0 black;
+}
+```
+
+### Colors
+| Name | Hex | Usage |
+|------|-----|-------|
+| Yellow | `#FFE75C` | Primary accent |
+| Blue | `#0066FF` | Links, actions |
+| Pink | `#FF66B2` | Highlights |
+| Green | `#00FF66` | Success states |
+| Red | `#FF3333` | Errors, warnings |
+
+### Principles
 - Bold 3-4px black borders
-- Offset box shadows (4px right, 4px down)
-- High contrast colors: black, white, yellow accent
+- Hard drop shadows (no blur)
+- High contrast
+- No rounded corners
+- No gradients
 - Hover: elements "lift" with expanded shadow
 - Active: elements "press" with reduced shadow
-- No rounded corners, no gradients
-
-### Key Colors
-
-- **Primary**: `#FFE75C` (Yellow)
-- **Secondary**: `#0066FF` (Blue)
-- **Accent Pink**: `#FF66B2`
-- **Success**: `#00FF66`
-- **Error**: `#FF3333`
-
-## Scripts
-
-```bash
-pnpm dev          # Start development server
-pnpm build        # Build for production
-pnpm start        # Start production server
-pnpm lint         # Run ESLint
-pnpm db:generate  # Generate migrations
-pnpm db:migrate   # Run migrations
-pnpm db:studio    # Open Drizzle Studio
-```
 
 ## Deployment
 
 ### Vercel (Recommended)
 
 1. Push to GitHub
-2. Import project in Vercel
+2. Import in Vercel
 3. Set environment variables
 4. Deploy
 
+For preview deployments with OAuth, set `AUTH_REDIRECT_PROXY_URL` to your production domain (e.g., `https://auth.yourdomain.com`).
+
 ### Self-Hosted
 
-1. Build the application:
-   ```bash
-   pnpm build
-   ```
+```bash
+pnpm build
+pnpm start
+```
 
-2. Start with:
-   ```bash
-   pnpm start
-   ```
-
-Make sure to set up:
+Ensure you configure:
 - PostgreSQL database
 - Environment variables
-- Stripe webhook endpoint
-- Liveblocks configuration
+- Stripe webhook endpoint (`/api/webhooks/stripe`)
+- Liveblocks authentication
+
+## API
+
+### Sessions
+- `POST /api/sessions` — Create new writing session
+- `GET /api/sessions/[id]` — Get session content
+- `PUT /api/sessions/[id]` — Update session content
+- `DELETE /api/sessions/[id]` — Delete session
+- `POST /api/sessions/[id]/claim` — Claim anonymous session
+- `GET /api/sessions/[id]/generate` — Generate PDF
+- `GET /api/sessions/[id]/epub` — Generate EPUB
+
+### Projects
+- `GET /api/projects` — List user projects
+- `POST /api/projects` — Create project
+- `GET /api/projects/[id]` — Get project
+- `PUT /api/projects/[id]` — Update project
+- `DELETE /api/projects/[id]` — Delete project
+
+### Billing
+- `POST /api/billing/checkout` — Create Stripe checkout session
+- `POST /api/billing/portal` — Create billing portal session
+- `POST /api/webhooks/stripe` — Stripe webhook handler
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run `pnpm lint` (zero warnings policy)
+5. Submit a pull request
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+Built with 🖤 by [Gorka Molero](https://github.com/gorkamolero)
