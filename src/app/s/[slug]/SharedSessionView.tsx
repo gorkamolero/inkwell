@@ -120,7 +120,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
   }, [session.formatConfig]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Editor - Full Screen with internal scrolling */}
       <div className="flex-1 overflow-hidden">
         <CollaborativeEditor
