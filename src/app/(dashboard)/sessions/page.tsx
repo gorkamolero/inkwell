@@ -2,7 +2,7 @@ import { Clock, ExternalLink, FileEdit, Github, Plus } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
-import { getUserSessions } from "@/lib/session";
+import { claimSession, getSessionById, getSessionIdFromCookie, getUserSessions } from "@/lib/session";
 import { NewSessionButton } from "./new-session-button";
 import { DeleteSessionButton } from "./delete-session-button";
 
@@ -40,6 +40,15 @@ async function SessionsGrid() {
 
   if (!session?.user?.id) {
     return <EmptyState />;
+  }
+
+  // Auto-claim any unclaimed session from cookie
+  const cookieSessionId = await getSessionIdFromCookie();
+  if (cookieSessionId) {
+    const pendingSession = await getSessionById(cookieSessionId);
+    if (pendingSession && !pendingSession.ownerId) {
+      await claimSession(cookieSessionId, session.user.id);
+    }
   }
 
   const sessions = await getUserSessions(session.user.id);
