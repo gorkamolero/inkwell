@@ -48,15 +48,12 @@ export async function mockAuthSession(
     salt: "authjs.session-token",
   });
 
-  // Use default localhost for tests
-  const baseURL = new URL("http://localhost:3847");
-
-  // Set the session cookie
+  // Set the session cookie for localhost
   await page.context().addCookies([
     {
       name: "authjs.session-token",
       value: token,
-      domain: baseURL.hostname,
+      domain: "localhost",
       path: "/",
       httpOnly: true,
       secure: false, // false for localhost
