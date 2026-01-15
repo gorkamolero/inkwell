@@ -41,6 +41,7 @@ import {
   ExternalLink,
   FileText,
   History,
+  Home,
   Loader2,
   MessageSquare,
   Palette,
@@ -48,6 +49,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AiChat } from "@liveblocks/react-ui";
 import { BrutalBadge } from "@/components/ui";
@@ -747,6 +749,17 @@ function CollaborativeEditorInner({
               <LivePresenceAvatars />
             </div>
             <div className="flex items-center gap-1">
+              {/* Dashboard/Home button */}
+              {isAuthenticated === true && (
+                <Link
+                  href="/sessions"
+                  className="flex h-8 w-8 items-center justify-center border-2 border-transparent hover:border-black hover:bg-brutal-yellow transition-all"
+                  title="Back to Dashboard"
+                >
+                  <Home className="h-4 w-4" />
+                </Link>
+              )}
+
               {/* Threads toggle (also opens composer when text selected) */}
               <button
                 type="button"

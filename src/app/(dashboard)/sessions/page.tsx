@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getUserSessions } from "@/lib/session";
 import { NewSessionButton } from "./new-session-button";
+import { DeleteSessionButton } from "./delete-session-button";
 
 export const metadata = {
   title: "Sessions - Hotpress",
@@ -130,6 +131,7 @@ function SessionCard({
               <ExternalLink className="h-4 w-4" />
             </Link>
           )}
+          <DeleteSessionButton sessionId={session.id} />
         </div>
       </div>
     </div>
