@@ -4,6 +4,7 @@ import { ListItemNode, ListNode } from "@lexical/list";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import type { Klass, LexicalNode } from "lexical";
+import { ImageNode } from "@/lib/nodes/ImageNode";
 
 /**
  * Shared Lexical editor theme - neobrutalist style
@@ -54,6 +55,7 @@ export const EDITOR_NODES_BASE: Klass<LexicalNode>[] = [
   CodeHighlightNode,
   LinkNode,
   AutoLinkNode,
+  ImageNode,
 ];
 
 /**

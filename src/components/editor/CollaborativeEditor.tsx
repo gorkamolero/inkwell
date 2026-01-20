@@ -2,6 +2,8 @@
 
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
+import { ImageNode } from "@/lib/nodes/ImageNode";
+import { ImagePastePlugin } from "@/lib/plugins/ImagePastePlugin";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { TRANSFORMERS } from "@lexical/markdown";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -9,8 +11,10 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { AUTOLINK_MATCHERS } from "@/lib/plugins/autolink-matchers";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
@@ -321,6 +325,8 @@ function EditorContentArea({ onWordCountChange }: EditorContentAreaProps) {
       <HistoryPlugin />
       <ListPlugin />
       <LinkPlugin />
+      <AutoLinkPlugin matchers={AUTOLINK_MATCHERS} />
+      <ImagePastePlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
       <WordCountPlugin onWordCountChange={onWordCountChange} />
     </>
@@ -737,6 +743,7 @@ function CollaborativeEditorInner({
       CodeHighlightNode,
       LinkNode,
       AutoLinkNode,
+      ImageNode,
     ],
     onError: (error: Error) => {
       console.error("Lexical error:", error);

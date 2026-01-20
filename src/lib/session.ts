@@ -6,13 +6,14 @@
  */
 
 import { createId } from "@paralleldrive/cuid2";
-import { eq } from "drizzle-orm";
+import { eq, or, inArray } from "drizzle-orm";
 import { cookies } from "next/headers";
 import {
   db,
   type NewWritingSession,
   type WritingSession,
   writingSessions,
+  sessionCollaborators,
 } from "./db";
 import {
   type ContentType,
@@ -271,6 +272,27 @@ export async function getUserSessions(
   userId: string,
 ): Promise<WritingSession[]> {
   const database = requireDb();
+
+  // Get session IDs where user is a collaborator
+  const collaboratorSessions = await database
+    .select({ sessionId: sessionCollaborators.sessionId })
+    .from(sessionCollaborators)
+    .where(eq(sessionCollaborators.userId, userId));
+
+  const collaboratorSessionIds = collaboratorSessions.map((c) => c.sessionId);
+
+  // Query for sessions user owns OR is a collaborator on
+  if (collaboratorSessionIds.length > 0) {
+    return database.query.writingSessions.findMany({
+      where: or(
+        eq(writingSessions.ownerId, userId),
+        inArray(writingSessions.id, collaboratorSessionIds)
+      ),
+      orderBy: (sessions, { desc }) => [desc(sessions.updatedAt)],
+    });
+  }
+
+  // No collaborations, just return owned sessions
   return database.query.writingSessions.findMany({
     where: eq(writingSessions.ownerId, userId),
     orderBy: (sessions, { desc }) => [desc(sessions.updatedAt)],

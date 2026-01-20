@@ -6,8 +6,11 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { AUTOLINK_MATCHERS } from "@/lib/plugins/autolink-matchers";
+import { ImagePastePlugin } from "@/lib/plugins/ImagePastePlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { $createHeadingNode } from "@lexical/rich-text";
@@ -474,6 +477,8 @@ export function HotpressEditor(): React.ReactElement {
           <HistoryPlugin />
           <ListPlugin />
           <LinkPlugin />
+          <AutoLinkPlugin matchers={AUTOLINK_MATCHERS} />
+          <ImagePastePlugin />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <InitialContentPlugin content={session.content} />
           <AutoSavePlugin
