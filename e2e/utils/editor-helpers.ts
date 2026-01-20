@@ -291,6 +291,70 @@ export class EditorHelper {
   async getTextContent(): Promise<string> {
     return (await this.editor.textContent()) ?? "";
   }
+
+  // ============================================================================
+  // Link Helpers
+  // ============================================================================
+
+  /**
+   * Assert a link is visible with specific href
+   */
+  async expectLink(text: string, href?: string): Promise<void> {
+    const link = this.editorContainer.locator("a").filter({ hasText: text });
+    await expect(link).toBeVisible();
+    if (href) {
+      await expect(link).toHaveAttribute("href", href);
+    }
+  }
+
+  /**
+   * Assert no link with given text exists
+   */
+  async expectNoLink(text: string): Promise<void> {
+    const link = this.editorContainer.locator("a").filter({ hasText: text });
+    await expect(link).toHaveCount(0);
+  }
+
+  // ============================================================================
+  // Image Helpers
+  // ============================================================================
+
+  /**
+   * Assert an image is visible in the editor
+   */
+  async expectImage(altText?: string): Promise<void> {
+    if (altText) {
+      await expect(
+        this.editorContainer.locator(`img[alt="${altText}"]`)
+      ).toBeVisible();
+    } else {
+      await expect(this.editorContainer.locator("img")).toBeVisible();
+    }
+  }
+
+  /**
+   * Get count of images in editor
+   */
+  async getImageCount(): Promise<number> {
+    return this.editorContainer.locator("img").count();
+  }
+
+  /**
+   * Paste text from clipboard (simulates Ctrl+V with text)
+   */
+  async pasteText(text: string): Promise<void> {
+    await this.focus();
+    await this.page.evaluate(async (textToPaste) => {
+      const clipboardData = new DataTransfer();
+      clipboardData.setData("text/plain", textToPaste);
+      const event = new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.activeElement?.dispatchEvent(event);
+    }, text);
+  }
 }
 
 /**
