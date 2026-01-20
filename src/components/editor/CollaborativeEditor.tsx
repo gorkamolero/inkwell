@@ -4,6 +4,7 @@ import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ImageNode } from "@/lib/nodes/ImageNode";
 import { ImagePastePlugin } from "@/lib/plugins/ImagePastePlugin";
+import { LinkPastePlugin } from "@/lib/plugins/LinkPastePlugin";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { TRANSFORMERS } from "@lexical/markdown";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -326,6 +327,7 @@ function EditorContentArea({ onWordCountChange }: EditorContentAreaProps) {
       <ListPlugin />
       <LinkPlugin />
       <AutoLinkPlugin matchers={AUTOLINK_MATCHERS} />
+      <LinkPastePlugin />
       <ImagePastePlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
       <WordCountPlugin onWordCountChange={onWordCountChange} />

@@ -11,6 +11,7 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { AUTOLINK_MATCHERS } from "@/lib/plugins/autolink-matchers";
 import { ImagePastePlugin } from "@/lib/plugins/ImagePastePlugin";
+import { LinkPastePlugin } from "@/lib/plugins/LinkPastePlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { $createHeadingNode } from "@lexical/rich-text";
@@ -478,6 +479,7 @@ export function HotpressEditor(): React.ReactElement {
           <ListPlugin />
           <LinkPlugin />
           <AutoLinkPlugin matchers={AUTOLINK_MATCHERS} />
+          <LinkPastePlugin />
           <ImagePastePlugin />
           <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
           <InitialContentPlugin content={session.content} />
