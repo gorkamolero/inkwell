@@ -12,10 +12,9 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { AUTOLINK_MATCHERS } from "@/lib/plugins/autolink-matchers";
+import { AutoLinkOnIdlePlugin } from "@/lib/plugins/AutoLinkOnIdlePlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
@@ -326,7 +325,7 @@ function EditorContentArea({ onWordCountChange }: EditorContentAreaProps) {
       <HistoryPlugin />
       <ListPlugin />
       <LinkPlugin />
-      <AutoLinkPlugin matchers={AUTOLINK_MATCHERS} />
+      <AutoLinkOnIdlePlugin />
       <LinkPastePlugin />
       <ImagePastePlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
