@@ -7,7 +7,6 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
-import { nanoid } from "nanoid";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -37,9 +36,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique filename
+    // Generate unique filename using built-in crypto
     const ext = file.name.split(".").pop() || "png";
-    const filename = `${nanoid()}.${ext}`;
+    const filename = `${crypto.randomUUID()}.${ext}`;
 
     // Check if Vercel Blob is configured
     if (process.env.BLOB_READ_WRITE_TOKEN) {
@@ -66,10 +65,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Configure max body size for file uploads
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

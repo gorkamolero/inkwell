@@ -5,6 +5,7 @@
  * Supports URL-based images with alt text and optional captions.
  */
 
+import type { ReactElement } from "react";
 import type {
   DOMConversionMap,
   DOMConversionOutput,
@@ -44,7 +45,7 @@ function convertImageElement(domNode: Node): null | DOMConversionOutput {
   return null;
 }
 
-export class ImageNode extends DecoratorNode<JSX.Element> {
+export class ImageNode extends DecoratorNode<ReactElement> {
   __src: string;
   __altText: string;
   __width?: number;
@@ -138,7 +139,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return this.__altText;
   }
 
-  decorate(): JSX.Element {
+  decorate(): ReactElement {
     // Note: Using native <img> because Lexical DecoratorNode requires synchronous
     // rendering and next/image doesn't work well in this context
     return (
