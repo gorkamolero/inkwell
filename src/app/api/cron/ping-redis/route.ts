@@ -3,26 +3,26 @@ import { headers } from "next/headers";
 import { pingRedis } from "@/lib/redis-ping";
 
 /**
- * Cron endpoint to keep Upstash Redis alive
- * 
+ * Cron endpoint to keep Upstash Redis alive.
  * Upstash deletes databases after 14 days of inactivity.
- * This endpoint should be called at least once every 13 days.
  * 
- * Configure cron in vercel.json:
- * { "crons": [{ "path": "/api/cron/ping-redis", "schedule": "0 0 */13 * *" }] }
- * 
- * Optional: Set CRON_SECRET in Vercel environment for request validation.
- * Vercel sends this as x-vercel-cron-signature header.
+ * Configure cron in vercel.json with schedule: every 13 days.
+ * Set CRON_SECRET in Vercel for request validation (optional).
+ * If CRON_SECRET is set in Vercel, you must configure the same secret
+ * in the cron job settings so Vercel sends it as x-vercel-cron-signature.
  */
 export async function GET() {
-  // Verify cron secret if configured
   const headersList = await headers();
   const cronSignature = headersList.get("x-vercel-cron-signature");
   const expectedSecret = process.env.CRON_SECRET;
 
-  if (expectedSecret && cronSignature !== expectedSecret) {
-    console.warn("[cron] Unauthorized cron request");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // If CRON_SECRET is set, validate the signature
+  if (expectedSecret) {
+    // Vercel only sends the header if you configured a secret in cron settings
+    if (cronSignature !== expectedSecret) {
+      console.warn("[cron] Unauthorized cron request - invalid signature");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const result = await pingRedis();
