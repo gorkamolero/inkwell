@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { MobileNav } from "./mobile-nav";
@@ -17,17 +16,10 @@ export async function Header() {
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link
             href="/"
-            className="flex items-center gap-3"
+            className="text-2xl font-black tracking-tight text-black"
             aria-label="Hotpress - Go to homepage"
           >
-            <Image
-              src="/trading-sauce-icon.png"
-              alt="Trading Sauce"
-              width={48}
-              height={48}
-              className="h-12 w-auto"
-              priority
-            />
+            Hotpress
           </Link>
 
 

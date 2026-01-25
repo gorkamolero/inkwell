@@ -1,5 +1,4 @@
 import { Github, Twitter } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 export function Footer() {
@@ -7,16 +6,14 @@ export function Footer() {
     <footer className="border-t-4 border-black bg-white py-12">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-4">
-          <div className="flex flex-col">
-            <Image
-              src="/trading-sauce-logo.png"
-              alt="Trading Sauce"
-              width={200}
-              height={60}
-              className="h-auto w-48 object-contain"
-              priority
-            />
-            <p className="mt-4 text-gray-700">
+          <div>
+            <Link
+              href="/"
+              className="text-xl font-black tracking-tight text-black"
+            >
+              Hotpress
+            </Link>
+            <p className="mt-2 text-gray-700">
               Write together. Publish instantly.
             </p>
           </div>
