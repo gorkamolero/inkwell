@@ -4,7 +4,13 @@ import { sendDocumentEditedEmail } from "@/lib/email";
 import { db, projects, projectCollaborators, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { Liveblocks } from "@liveblocks/node";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+
+// Initialize Redis client (Upstash)
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL || process.env.REDIS_URL,
+  token: process.env.KV_REST_API_TOKEN || process.env.KV_REST_API_READ_ONLY_TOKEN,
+});
 
 // Redis key prefix for online users
 const ONLINE_USERS_PREFIX = "hotpress:online-users:";
@@ -44,8 +50,8 @@ function getWebhookHandler() {
 async function isUserOnline(roomId: string, userId: string): Promise<boolean> {
   try {
     const key = `${ONLINE_USERS_PREFIX}${roomId}`;
-    const members = await kv.smembers(key);
-    return members.includes(userId);
+    const members = await redis.smembers(key);
+    return Array.isArray(members) && members.includes(userId);
   } catch (error) {
     console.error("Redis error checking online status:", error);
     return false; // Fail open - don't send notification if Redis fails
@@ -58,8 +64,8 @@ async function isUserOnline(roomId: string, userId: string): Promise<boolean> {
 async function addUserOnline(roomId: string, userId: string): Promise<void> {
   try {
     const key = `${ONLINE_USERS_PREFIX}${roomId}`;
-    await kv.sadd(key, userId);
-    await kv.expire(key, ONLINE_USERS_TTL);
+    await redis.sadd(key, userId);
+    await redis.expire(key, ONLINE_USERS_TTL);
   } catch (error) {
     console.error("Redis error adding user online:", error);
   }
@@ -71,7 +77,7 @@ async function addUserOnline(roomId: string, userId: string): Promise<void> {
 async function removeUserOnline(roomId: string, userId: string): Promise<void> {
   try {
     const key = `${ONLINE_USERS_PREFIX}${roomId}`;
-    await kv.srem(key, userId);
+    await redis.srem(key, userId);
   } catch (error) {
     console.error("Redis error removing user online:", error);
   }
@@ -83,7 +89,8 @@ async function removeUserOnline(roomId: string, userId: string): Promise<void> {
 async function getRoomOnlineUsers(roomId: string): Promise<string[]> {
   try {
     const key = `${ONLINE_USERS_PREFIX}${roomId}`;
-    return await kv.smembers(key);
+    const members = await redis.smembers(key);
+    return Array.isArray(members) ? members : [];
   } catch (error) {
     console.error("Redis error getting room users:", error);
     return [];

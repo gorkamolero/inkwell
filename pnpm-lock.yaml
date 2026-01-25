@@ -140,12 +140,12 @@ importers:
       '@react-pdf/renderer':
         specifier: ^4.3.2
         version: 4.3.2(react@19.2.3)
+      '@upstash/redis':
+        specifier: ^1.36.1
+        version: 1.36.1
       '@vercel/blob':
         specifier: ^2.0.0
         version: 2.0.0
-      '@vercel/kv':
-        specifier: ^1.0.1
-        version: 1.0.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -157,7 +157,7 @@ importers:
         version: 3.1.3
       drizzle-orm:
         specifier: ^0.45.1
-        version: 0.45.1(postgres@3.4.8)
+        version: 0.45.1(@upstash/redis@1.36.1)(postgres@3.4.8)
       epub-gen-memory:
         specifier: ^1.1.2
         version: 1.1.2
@@ -2309,8 +2309,8 @@ packages:
   '@types/react@19.2.8':
     resolution: {integrity: sha512-3MbSL37jEchWZz2p2mjntRZtPt837ij10ApxKfgmXCTuHWagYg7iA5bqPw6C8BMPfwidlvfPI/fxOc42HLhcyg==}
 
-  '@upstash/redis@1.25.1':
-    resolution: {integrity: sha512-ACj0GhJ4qrQyBshwFgPod6XufVEfKX2wcaihsEvSdLYnY+m+pa13kGt1RXm/yTHKf4TQi/Dy2A8z/y6WUEOmlg==}
+  '@upstash/redis@1.36.1':
+    resolution: {integrity: sha512-N6SjDcgXdOcTAF+7uNoY69o7hCspe9BcA7YjQdxVu5d25avljTwyLaHBW3krWjrP0FfocgMk94qyVtQbeDp39A==}
 
   '@vercel/blob@2.0.0':
     resolution: {integrity: sha512-oAj7Pdy83YKSwIaMFoM7zFeLYWRc+qUpW3PiDSblxQMnGFb43qs4bmfq7dr/+JIfwhs6PTwe1o2YBwKhyjWxXw==}
@@ -2324,11 +2324,6 @@ packages:
     peerDependenciesMeta:
       '@aws-sdk/credential-provider-web-identity':
         optional: true
-
-  '@vercel/kv@1.0.1':
-    resolution: {integrity: sha512-uTKddsqVYS2GRAM/QMNNXCTuw9N742mLoGRXoNDcyECaxEXvIHG0dEY+ZnYISV4Vz534VwJO+64fd9XeSggSKw==}
-    engines: {node: '>=14.6'}
-    deprecated: 'Vercel KV is deprecated. If you had an existing KV store, it should have moved to Upstash Redis which you will see under Vercel Integrations. For new projects, install a Redis integration from Vercel Marketplace: https://vercel.com/marketplace?category=storage&search=redis'
 
   '@vercel/oidc@3.0.5':
     resolution: {integrity: sha512-fnYhv671l+eTTp48gB4zEsTW/YtRgRPnkI2nT7x6qw5rkI1Lq2hTmQIpHPgyThI0znLK+vX2n9XxKdXZ7BUbbw==}
@@ -4239,6 +4234,9 @@ packages:
   ulid@3.0.1:
     resolution: {integrity: sha512-dPJyqPzx8preQhqq24bBG1YNkvigm87K8kVEHCD+ruZg24t6IFEFv00xMWfxcC4djmFtiTLdFuADn4+DOz6R7Q==}
     hasBin: true
+
+  uncrypto@0.1.3:
+    resolution: {integrity: sha512-Ql87qFHB3s/De2ClA9e0gsnS6zXG27SkTiSJwjCc9MebbfapQfuPzumMIUMi38ezPZVNFcHI9sUIepeQfw8J8Q==}
 
   unctx@2.5.0:
     resolution: {integrity: sha512-p+Rz9x0R7X+CYDkT+Xg8/GhpcShTlU8n+cf9OtOEf7zEQsNcCZO1dPKNRDqvUTaq+P32PMMkxWHwfrxkqfqAYg==}
@@ -6757,9 +6755,9 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  '@upstash/redis@1.25.1':
+  '@upstash/redis@1.36.1':
     dependencies:
-      crypto-js: 4.2.0
+      uncrypto: 0.1.3
 
   '@vercel/blob@2.0.0':
     dependencies:
@@ -6774,10 +6772,6 @@ snapshots:
       '@vercel/oidc': 3.1.0
     optionalDependencies:
       '@aws-sdk/credential-provider-web-identity': 3.609.0(@aws-sdk/client-sts@3.968.0)
-
-  '@vercel/kv@1.0.1':
-    dependencies:
-      '@upstash/redis': 1.25.1
 
   '@vercel/oidc@3.0.5': {}
 
@@ -7422,8 +7416,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.45.1(postgres@3.4.8):
+  drizzle-orm@0.45.1(@upstash/redis@1.36.1)(postgres@3.4.8):
     optionalDependencies:
+      '@upstash/redis': 1.36.1
       postgres: 3.4.8
 
   dunder-proto@1.0.1:
@@ -8678,6 +8673,8 @@ snapshots:
   ufo@1.6.2: {}
 
   ulid@3.0.1: {}
+
+  uncrypto@0.1.3: {}
 
   unctx@2.5.0:
     dependencies:
