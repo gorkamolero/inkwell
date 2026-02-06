@@ -9,7 +9,12 @@ import {
   withProject,
 } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
-import { listDocuments, listDocumentsInPath, saveDocument } from "@/lib/github";
+import {
+  isAppInstalled,
+  listDocuments,
+  listDocumentsInPath,
+  saveDocument,
+} from "@/lib/github-app";
 import { canAddDocument } from "@/lib/subscription";
 
 // ============================================================================
@@ -32,7 +37,7 @@ const createDocumentSchema = z.object({
 
 async function listDocumentsHandler(
   _request: NextRequest,
-  { project, accessToken }: ProjectContext,
+  { project }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -52,24 +57,36 @@ async function listDocumentsHandler(
     },
   });
 
-  // If GitHub is connected and project has a repo, sync from GitHub
+  // If project has a GitHub repo, sync from GitHub using the App
   let githubDocs: Array<{ path: string; name: string; sha: string }> = [];
 
-  if (accessToken && project.githubRepo) {
+  if (project.githubRepo) {
     const [owner, repo] = project.githubRepo.split("/");
     const branch = project.githubBranch || "main";
+
+    // Check if GitHub App is installed
+    const installed = await isAppInstalled(owner);
+    if (!installed) {
+      return NextResponse.json({
+        documents: localDocs.map((doc) => ({
+          ...doc,
+          existsOnGitHub: false,
+        })),
+        needsInstall: true,
+        warning: "GitHub App not installed",
+      });
+    }
 
     try {
       if (project.chaptersPath) {
         githubDocs = await listDocumentsInPath(
-          accessToken,
           owner,
           repo,
           project.chaptersPath,
           branch,
         );
       } else {
-        githubDocs = await listDocuments(accessToken, owner, repo, branch);
+        githubDocs = await listDocuments(owner, repo, branch);
       }
 
       // Merge GitHub docs with local docs
@@ -130,7 +147,7 @@ async function listDocumentsHandler(
     }
   }
 
-  // No GitHub connected, return local docs only
+  // No GitHub repo connected, return local docs only
   return NextResponse.json({
     documents: localDocs.map((doc) => ({
       ...doc,
@@ -147,7 +164,7 @@ export const GET = withProject(listDocumentsHandler);
 
 async function createDocumentHandler(
   request: NextRequest,
-  { project, accessToken, role, isOwner }: ProjectContext,
+  { project, role, isOwner }: ProjectContext,
 ) {
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -183,12 +200,11 @@ async function createDocumentHandler(
     throw ApiError.conflict("A document with this path already exists");
   }
 
-  // If GitHub is connected with a valid repo, create the file on GitHub
+  // If GitHub repo is connected, create the file on GitHub
   let sha: string | undefined;
   const content = body.content || `# ${body.title || "New Document"}\n`;
 
   const hasValidGitHubRepo =
-    accessToken &&
     project.githubRepo &&
     project.githubRepo.includes("/") &&
     !project.githubRepo.startsWith("__NEW__");
@@ -197,9 +213,16 @@ async function createDocumentHandler(
     const [owner, repo] = project.githubRepo!.split("/");
     const branch = project.githubBranch || "main";
 
+    // Check if GitHub App is installed
+    const installed = await isAppInstalled(owner);
+    if (!installed) {
+      throw ApiError.forbidden(
+        "GitHub App not installed. Please install the Hotpress app on your repository.",
+      );
+    }
+
     try {
       sha = await saveDocument(
-        accessToken,
         owner,
         repo,
         fullPath,

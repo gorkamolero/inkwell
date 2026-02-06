@@ -9,7 +9,12 @@ import {
 } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
 import { countWords, extractTitle } from "@/lib/editor-utils";
-import { deleteDocument, getDocument, saveDocument } from "@/lib/github";
+import {
+  deleteDocument,
+  getDocument,
+  isAppInstalled,
+  saveDocument,
+} from "@/lib/github-app";
 
 // ============================================================================
 // Schemas
@@ -76,7 +81,7 @@ async function getDocumentHandler(
   context: ProjectContext,
   docId: string,
 ) {
-  const { project, accessToken } = context;
+  const { project } = context;
 
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -84,19 +89,31 @@ async function getDocumentHandler(
 
   const document = await getDocumentRecord(project.id, docId);
 
-  // If GitHub is connected, fetch content from GitHub
-  if (accessToken && project.githubRepo) {
+  // If project has a GitHub repo, fetch content using GitHub App
+  if (project.githubRepo) {
     const [owner, repo] = project.githubRepo.split("/");
     const branch = project.githubBranch || "main";
 
+    // Check if GitHub App is installed
+    const installed = await isAppInstalled(owner);
+    if (!installed) {
+      return NextResponse.json({
+        document: {
+          id: document.id,
+          path: document.path,
+          title: document.title,
+          wordCount: document.wordCount,
+          lastSyncedAt: document.lastSyncedAt,
+        },
+        content: null as string | null,
+        sha: null as string | null,
+        needsInstall: true,
+        warning: "GitHub App not installed - please install to access content",
+      });
+    }
+
     try {
-      const documentData = await getDocument(
-        accessToken,
-        owner,
-        repo,
-        document.path,
-        branch,
-      );
+      const documentData = await getDocument(owner, repo, document.path, branch);
 
       return NextResponse.json({
         document: {
@@ -115,7 +132,7 @@ async function getDocumentHandler(
     }
   }
 
-  // No GitHub connected, return document metadata only
+  // No GitHub repo configured
   return NextResponse.json({
     document: {
       id: document.id,
@@ -126,7 +143,7 @@ async function getDocumentHandler(
     },
     content: null as string | null,
     sha: null as string | null,
-    warning: "GitHub not connected - cannot fetch content",
+    warning: "No GitHub repo connected",
   });
 }
 
@@ -139,7 +156,7 @@ async function saveDocumentHandler(
   context: ProjectContext,
   docId: string,
 ) {
-  const { project, accessToken, role, isOwner } = context;
+  const { project, role, isOwner } = context;
 
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -150,20 +167,27 @@ async function saveDocumentHandler(
     throw ApiError.forbidden("You need editor permissions to save documents");
   }
 
-  // Require GitHub for saving
-  if (!accessToken || !project.githubRepo) {
-    throw ApiError.forbidden("GitHub must be connected to save documents");
+  // Require GitHub repo for saving
+  if (!project.githubRepo) {
+    throw ApiError.forbidden("No GitHub repo connected to save to");
+  }
+
+  const [owner, repo] = project.githubRepo.split("/");
+  const branch = project.githubBranch || "main";
+
+  // Check if GitHub App is installed
+  const installed = await isAppInstalled(owner);
+  if (!installed) {
+    throw ApiError.forbidden(
+      "GitHub App not installed. Please install the Hotpress app on your repository.",
+    );
   }
 
   const document = await getDocumentRecord(project.id, docId);
   const body = await validateBody(request, updateDocumentSchema);
 
-  const [owner, repo] = project.githubRepo.split("/");
-  const branch = project.githubBranch || "main";
-
   try {
     const newSha = await saveDocument(
-      accessToken,
       owner,
       repo,
       document.path,
@@ -218,7 +242,7 @@ async function deleteDocumentHandler(
   context: ProjectContext,
   docId: string,
 ) {
-  const { project, accessToken, isOwner } = context;
+  const { project, isOwner } = context;
 
   if (!db) {
     throw ApiError.internal("Database not configured");
@@ -232,23 +256,19 @@ async function deleteDocumentHandler(
   const document = await getDocumentRecord(project.id, docId);
   const body = await validateBody(request, deleteDocumentSchema);
 
-  // Delete from GitHub if connected
-  if (accessToken && project.githubRepo) {
+  // Delete from GitHub if repo is connected
+  if (project.githubRepo) {
     const [owner, repo] = project.githubRepo.split("/");
     const branch = project.githubBranch || "main";
 
-    try {
-      await deleteDocument(
-        accessToken,
-        owner,
-        repo,
-        document.path,
-        body.sha,
-        branch,
-      );
-    } catch (error) {
-      console.error("Error deleting from GitHub:", error);
-      throw ApiError.internal("Failed to delete document from GitHub");
+    const installed = await isAppInstalled(owner);
+    if (installed) {
+      try {
+        await deleteDocument(owner, repo, document.path, body.sha, branch);
+      } catch (error) {
+        console.error("Error deleting from GitHub:", error);
+        throw ApiError.internal("Failed to delete document from GitHub");
+      }
     }
   }
 
@@ -278,7 +298,7 @@ export async function PUT(request: NextRequest, routeContext: DocRouteContext) {
 
   const handler = withProject(
     (req, ctx) => saveDocumentHandler(req, ctx, docId),
-    { minRole: "editor", requireGitHub: true },
+    { minRole: "editor" },
   );
 
   return handler(request, { params: Promise.resolve({ projectId }) });

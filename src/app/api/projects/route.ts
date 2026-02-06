@@ -6,14 +6,16 @@ import {
   type AuthContext,
   generateId,
   generateSlug,
+  getGitHubAccessToken,
   validateBody,
   withAuth,
 } from "@/lib/api-utils";
-import { accounts, db, projectCollaborators, projects } from "@/lib/db";
+import { db, projectCollaborators, projects } from "@/lib/db";
 import {
   createRepository,
   getInstallationId,
   getInstallationOctokit,
+  getInstallUrl,
 } from "@/lib/github-app";
 import { canCreateProject } from "@/lib/subscription";
 
@@ -198,19 +200,16 @@ async function createProjectHandler(
     const visibility = parts[2] || "private";
     const isPrivate = visibility === "private";
 
-    // Get user's GitHub access token
-    const userAccount = await db
-      .select({ accessToken: accounts.access_token })
-      .from(accounts)
-      .where(and(eq(accounts.userId, userId), eq(accounts.provider, "github")))
-      .limit(1);
-
-    if (!userAccount[0]?.accessToken) {
-      throw ApiError.forbidden("GitHub account not connected");
+    // Get user's GitHub access token (still needed for repo creation)
+    const accessToken = await getGitHubAccessToken(userId);
+    if (!accessToken) {
+      throw ApiError.forbidden(
+        "GitHub account not connected. Please sign in with GitHub to create repositories.",
+      );
     }
 
     const result = await createRepository(
-      userAccount[0].accessToken,
+      accessToken,
       repoName,
       isPrivate,
       body.description,
@@ -218,12 +217,15 @@ async function createProjectHandler(
 
     if (!result) {
       throw ApiError.badRequest(
-        "Could not create repository. Make sure you have permission to create repositories.",
+        "Could not create repository. You may need to grant additional permissions or the repository name may already exist.",
       );
     }
 
     githubRepo = `${result.owner}/${result.repo}`;
     githubBranch = result.defaultBranch;
+
+    // Note: After creating the repo, user needs to install the GitHub App on it
+    // The frontend should guide them to do this
   } else if (githubRepo && !githubBranch) {
     // If connecting to an existing GitHub repo, fetch the actual default branch
     const [owner, repoName] = githubRepo.split("/");
@@ -236,6 +238,11 @@ async function createProjectHandler(
           repo: repoName,
         });
         githubBranch = repoData.default_branch;
+      } else {
+        // GitHub App not installed - throw error
+        throw ApiError.forbidden(
+          `GitHub App not installed. Please install the Hotpress app at ${getInstallUrl()} for the ${owner} account.`,
+        );
       }
     } catch (error) {
       console.error("Failed to fetch default branch:", error);

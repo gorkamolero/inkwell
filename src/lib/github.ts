@@ -1,3 +1,12 @@
+/**
+ * @deprecated This module uses user OAuth tokens for GitHub access.
+ * All code has been migrated to use `github-app.ts` which uses GitHub App
+ * installation tokens for better security (users choose which repos to grant access).
+ *
+ * This file is kept for reference only and can be safely deleted.
+ * See docs/GITHUB_APP_MIGRATION.md for details.
+ */
+
 import { Octokit } from "@octokit/rest";
 
 // ============================================================================

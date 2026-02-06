@@ -16,7 +16,13 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { BookSelector } from "@/components/dashboard/BookSelector";
 import { FolderPicker } from "@/components/dashboard/FolderPicker";
 import { BrutalInput, BrutalTextarea } from "@/components/ui";
-import type { RepoInfo, RepoStructure } from "@/lib/github";
+import type { RepoInfo } from "@/lib/github-app";
+
+// Structure types (inline since they're UI-specific)
+interface RepoStructure {
+  type: "single" | "multi";
+  books?: { name: string; path: string }[];
+}
 import { cn } from "@/lib/utils";
 
 interface CreateProjectFormProps {

@@ -4,7 +4,7 @@ import { Clock, GitCommit, Loader2, RotateCcw, User, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { BrutalButton } from "@/components/ui/brutal-button";
 import { formatRelativeTime } from "@/lib/editor-utils";
-import type { CommitInfo } from "@/lib/github";
+import type { CommitInfo } from "@/lib/github-app";
 import { cn } from "@/lib/utils";
 
 interface VersionHistoryProps {

@@ -2,15 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { ApiError, type ProjectContext, withProject } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
-import { getCommitHistory } from "@/lib/github";
-
-// ============================================================================
-// Route context type with docId
-// ============================================================================
-
-interface DocRouteContext {
-  params: Promise<{ projectId: string; docId: string }>;
-}
+import { getCommitHistory, isAppInstalled } from "@/lib/github-app";
 
 // ============================================================================
 // Helper: Get document by ID or path
@@ -21,7 +13,6 @@ async function getDocumentRecord(projectId: string, docId: string) {
     throw ApiError.internal("Database not configured");
   }
 
-  // docId could be either the document ID or the URL-encoded path
   const document = await db.query.documents.findFirst({
     where: eq(documents.id, docId),
   });
@@ -47,7 +38,15 @@ async function getDocumentRecord(projectId: string, docId: string) {
 }
 
 // ============================================================================
-// GET /api/projects/[projectId]/documents/[docId]/history - Get commit history
+// Route context type with docId
+// ============================================================================
+
+interface DocRouteContext {
+  params: Promise<{ projectId: string; docId: string }>;
+}
+
+// ============================================================================
+// GET /api/projects/[projectId]/documents/[docId]/history
 // ============================================================================
 
 async function getHistoryHandler(
@@ -55,32 +54,32 @@ async function getHistoryHandler(
   context: ProjectContext,
   docId: string,
 ) {
-  const { project, accessToken } = context;
+  const { project } = context;
 
   if (!db) {
     throw ApiError.internal("Database not configured");
   }
 
-  // Require GitHub for history
-  if (!accessToken || !project.githubRepo) {
+  // Require GitHub repo for history
+  if (!project.githubRepo) {
+    throw ApiError.badRequest("No GitHub repo connected - cannot get history");
+  }
+
+  const [owner, repo] = project.githubRepo.split("/");
+  const branch = project.githubBranch || "main";
+
+  // Check if GitHub App is installed
+  const installed = await isAppInstalled(owner);
+  if (!installed) {
     throw ApiError.forbidden(
-      "GitHub must be connected to view document history",
+      "GitHub App not installed. Please install the Hotpress app on your repository.",
     );
   }
 
   const document = await getDocumentRecord(project.id, docId);
 
-  const [owner, repo] = project.githubRepo.split("/");
-  const branch = project.githubBranch || "main";
-
   try {
-    const commits = await getCommitHistory(
-      accessToken,
-      owner,
-      repo,
-      document.path,
-      branch,
-    );
+    const history = await getCommitHistory(owner, repo, document.path, branch);
 
     return NextResponse.json({
       document: {
@@ -88,11 +87,11 @@ async function getHistoryHandler(
         path: document.path,
         title: document.title,
       },
-      commits,
+      history,
     });
   } catch (error) {
-    console.error("Error fetching history:", error);
-    throw ApiError.internal("Failed to fetch document history");
+    console.error("Error fetching commit history:", error);
+    throw ApiError.internal("Failed to fetch document history from GitHub");
   }
 }
 
@@ -103,10 +102,7 @@ async function getHistoryHandler(
 export async function GET(request: NextRequest, routeContext: DocRouteContext) {
   const { projectId, docId } = await routeContext.params;
 
-  const handler = withProject(
-    (req, ctx) => getHistoryHandler(req, ctx, docId),
-    { requireGitHub: true },
-  );
+  const handler = withProject((req, ctx) => getHistoryHandler(req, ctx, docId));
 
   return handler(request, { params: Promise.resolve({ projectId }) });
 }

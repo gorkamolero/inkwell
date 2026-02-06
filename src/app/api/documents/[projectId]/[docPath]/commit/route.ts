@@ -1,13 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  ApiError,
-  requireDatabase,
-  requireGitHubAccessToken,
-} from "@/lib/api-utils";
+import { ApiError, requireDatabase } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { documents, projects } from "@/lib/db";
-import { saveDocument } from "@/lib/github";
+import { isAppInstalled, saveDocument } from "@/lib/github-app";
 
 interface RouteParams {
   params: Promise<{
@@ -36,14 +32,13 @@ export async function POST(
     const { message } = body;
 
     const database = requireDatabase();
-    const accessToken = await requireGitHubAccessToken(session.user.id);
 
     const project = await database.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
 
     if (!project?.githubRepo) {
-      throw ApiError.notFound("Project not found");
+      throw ApiError.notFound("Project not found or no GitHub repo connected");
     }
 
     const documentPath = decodeURIComponent(docPath);
@@ -62,8 +57,15 @@ export async function POST(
     const [owner, repo] = project.githubRepo.split("/");
     const branch = project.githubBranch || "main";
 
+    // Check if GitHub App is installed
+    const installed = await isAppInstalled(owner);
+    if (!installed) {
+      throw ApiError.forbidden(
+        "GitHub App not installed. Please install the Hotpress app on your repository.",
+      );
+    }
+
     const newSha = await saveDocument(
-      accessToken,
       owner,
       repo,
       documentPath,

@@ -86,7 +86,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GITHUB_SECRET,
       authorization: {
         params: {
-          scope: "read:user user:email repo",
+          // Identity only - repo access via GitHub App installation
+          scope: "read:user user:email",
         },
       },
     }),

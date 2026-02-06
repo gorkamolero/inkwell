@@ -2,14 +2,8 @@ import { and, eq, or } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { LazyDocumentEditor } from "@/components/editor/LazyEditor";
 import { auth } from "@/lib/auth";
-import {
-  accounts,
-  db,
-  documents,
-  projectCollaborators,
-  projects,
-} from "@/lib/db";
-import { getDocument } from "@/lib/github";
+import { db, documents, projectCollaborators, projects } from "@/lib/db";
+import { getDocument, isAppInstalled } from "@/lib/github-app";
 
 interface EditorPageProps {
   params: Promise<{
@@ -23,25 +17,6 @@ export default async function EditorPage({ params }: EditorPageProps) {
   const session = await auth();
 
   if (!session?.user?.id || !db) {
-    notFound();
-  }
-
-  // Get user's GitHub access token
-  const userAccount = await db
-    .select({ accessToken: accounts.access_token })
-    .from(accounts)
-    .where(
-      and(
-        eq(accounts.userId, session.user.id),
-        eq(accounts.provider, "github"),
-      ),
-    )
-    .limit(1);
-
-  const accessToken = userAccount[0]?.accessToken;
-
-  if (!accessToken) {
-    // User doesn't have GitHub connected
     notFound();
   }
 
@@ -97,22 +72,26 @@ export default async function EditorPage({ params }: EditorPageProps) {
   let sha: string = document.lastCommitSha || "";
   const hasDraft = !!document.draftContent;
 
-  if (!hasDraft && hasValidGitHubRepo && accessToken) {
+  if (!hasDraft && hasValidGitHubRepo) {
     const [owner, repo] = project.githubRepo!.split("/");
     const branch = project.githubBranch || "main";
 
-    try {
-      const documentData = await getDocument(
-        accessToken,
-        owner,
-        repo,
-        document.path,
-        branch,
-      );
-      content = documentData.content;
-      sha = documentData.sha;
-    } catch (error) {
-      console.error("Failed to fetch document from GitHub:", error);
+    // Check if GitHub App is installed
+    const installed = await isAppInstalled(owner);
+
+    if (installed) {
+      try {
+        const documentData = await getDocument(
+          owner,
+          repo,
+          document.path,
+          branch,
+        );
+        content = documentData.content;
+        sha = documentData.sha;
+      } catch (error) {
+        console.error("Failed to fetch document from GitHub:", error);
+      }
     }
   }
 

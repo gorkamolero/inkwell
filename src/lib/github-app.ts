@@ -3,6 +3,45 @@ import * as path from "node:path";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface RepoInfo {
+  id: number;
+  name: string;
+  fullName: string;
+  private: boolean;
+  defaultBranch: string;
+}
+
+export interface DocumentInfo {
+  path: string;
+  name: string;
+  sha: string;
+}
+
+export interface DocumentContent {
+  content: string;
+  sha: string;
+}
+
+export interface CommitInfo {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export interface CommitResult {
+  sha: string;
+  commitUrl: string;
+}
+
+// ============================================================================
+// GitHub App Authentication
+// ============================================================================
+
 // Read private key from file
 function getPrivateKey(): string {
   const keyPath = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
@@ -30,7 +69,7 @@ export function getAppOctokit(): Octokit {
   });
 }
 
-// Get installation ID for a user
+// Get installation ID for a user/org
 export async function getInstallationId(
   username: string,
 ): Promise<number | null> {
@@ -84,11 +123,11 @@ export async function getInstallationOctokit(
   });
 }
 
-// Get an Octokit instance for a specific user (finds their installation)
-export async function getOctokitForUser(
-  username: string,
+// Get an Octokit instance for a specific repo owner (finds their installation)
+export async function getOctokitForOwner(
+  owner: string,
 ): Promise<Octokit | null> {
-  const installationId = await getInstallationId(username);
+  const installationId = await getInstallationId(owner);
   if (!installationId) {
     return null;
   }
@@ -96,8 +135,14 @@ export async function getOctokitForUser(
   return getInstallationOctokit(installationId);
 }
 
+// ============================================================================
+// Repository Operations
+// ============================================================================
+
 // List repositories accessible to an installation
-export async function listInstallationRepos(installationId: number) {
+export async function listInstallationRepos(
+  installationId: number,
+): Promise<RepoInfo[]> {
   const octokit = await getInstallationOctokit(installationId);
 
   const { data } = await octokit.apps.listReposAccessibleToInstallation({
@@ -113,7 +158,11 @@ export async function listInstallationRepos(installationId: number) {
   }));
 }
 
-// Create a new repository for a user using their OAuth token
+/**
+ * Create a new repository for a user using their OAuth token.
+ * This still requires OAuth because GitHub Apps can't create repos for users.
+ * Falls back gracefully if user doesn't have repo create permission.
+ */
 export async function createRepository(
   accessToken: string,
   repoName: string,
@@ -143,31 +192,297 @@ export async function createRepository(
 }
 
 // ============================================================================
-// Content Operations using OAuth Token
+// Document Operations (using GitHub App installation tokens)
 // ============================================================================
 
-interface CommitFileResult {
-  sha: string;
-  commitUrl: string;
+/**
+ * List all markdown files in a repository.
+ */
+export async function listDocuments(
+  owner: string,
+  repo: string,
+  branch: string,
+): Promise<DocumentInfo[]> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+
+  const { data: ref } = await octokit.git.getRef({
+    owner,
+    repo,
+    ref: `heads/${branch}`,
+  });
+
+  const { data: tree } = await octokit.git.getTree({
+    owner,
+    repo,
+    tree_sha: ref.object.sha,
+    recursive: "true",
+  });
+
+  return tree.tree
+    .filter(
+      (item): item is typeof item & { path: string; sha: string } =>
+        item.type === "blob" &&
+        item.path !== undefined &&
+        item.path.endsWith(".md") &&
+        item.sha !== undefined,
+    )
+    .map((item) => ({
+      path: item.path,
+      name: item.path.split("/").pop() ?? item.path,
+      sha: item.sha,
+    }));
 }
 
 /**
- * Get the SHA of a file if it exists
+ * List markdown files in a specific path.
  */
-export async function getFileSha(
-  accessToken: string,
+export async function listDocumentsInPath(
   owner: string,
   repo: string,
-  path: string,
+  dirPath: string,
+  branch: string,
+): Promise<DocumentInfo[]> {
+  const maybeOctokit = await getOctokitForOwner(owner);
+  if (!maybeOctokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+  
+  // Assign to a const that TypeScript knows is non-null
+  const octokit = maybeOctokit;
+  const documents: DocumentInfo[] = [];
+
+  async function listRecursive(currentPath: string): Promise<void> {
+    try {
+      const { data } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: currentPath,
+        ref: branch,
+      });
+
+      if (!Array.isArray(data)) return;
+
+      for (const item of data) {
+        if (item.type === "file" && item.name.endsWith(".md")) {
+          documents.push({
+            path: item.path,
+            name: item.name,
+            sha: item.sha,
+          });
+        } else if (item.type === "dir") {
+          await listRecursive(item.path);
+        }
+      }
+    } catch (error) {
+      // Ignore 404 errors for empty directories
+      if ((error as { status?: number }).status !== 404) {
+        throw error;
+      }
+    }
+  }
+
+  await listRecursive(dirPath);
+  return documents;
+}
+
+/**
+ * Get the content of a document.
+ */
+export async function getDocument(
+  owner: string,
+  repo: string,
+  filePath: string,
+  branch: string,
+): Promise<DocumentContent> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+
+  const { data } = await octokit.repos.getContent({
+    owner,
+    repo,
+    path: filePath,
+    ref: branch,
+  });
+
+  if (Array.isArray(data) || data.type !== "file") {
+    throw new Error(`Path "${filePath}" is not a file`);
+  }
+
+  const content = Buffer.from(data.content, "base64").toString("utf-8");
+
+  return {
+    content,
+    sha: data.sha,
+  };
+}
+
+/**
+ * Save (create or update) a document.
+ */
+export async function saveDocument(
+  owner: string,
+  repo: string,
+  filePath: string,
+  content: string,
+  sha: string | null,
+  message: string,
+  branch: string,
+): Promise<string> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+
+  const { data } = await octokit.repos.createOrUpdateFileContents({
+    owner,
+    repo,
+    path: filePath,
+    message,
+    content: Buffer.from(content).toString("base64"),
+    branch,
+    sha: sha ?? undefined,
+  });
+
+  return data.content?.sha ?? "";
+}
+
+/**
+ * Delete a document.
+ */
+export async function deleteDocument(
+  owner: string,
+  repo: string,
+  filePath: string,
+  sha: string,
+  branch: string,
+): Promise<void> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+
+  await octokit.repos.deleteFile({
+    owner,
+    repo,
+    path: filePath,
+    message: `Delete ${filePath}`,
+    sha,
+    branch,
+  });
+}
+
+// ============================================================================
+// Version History Operations
+// ============================================================================
+
+/**
+ * Get commit history for a file.
+ */
+export async function getCommitHistory(
+  owner: string,
+  repo: string,
+  filePath: string,
+  branch: string,
+): Promise<CommitInfo[]> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+
+  const { data } = await octokit.repos.listCommits({
+    owner,
+    repo,
+    path: filePath,
+    sha: branch,
+    per_page: 100,
+  });
+
+  return data.map((commit) => ({
+    sha: commit.sha,
+    message: commit.commit.message,
+    author: commit.commit.author?.name ?? commit.author?.login ?? "Unknown",
+    date: commit.commit.author?.date ?? new Date().toISOString(),
+  }));
+}
+
+/**
+ * Get file content at a specific commit.
+ */
+export async function getFileAtCommit(
+  owner: string,
+  repo: string,
+  filePath: string,
+  commitSha: string,
+): Promise<DocumentContent> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
+
+  // Get the commit's tree
+  const { data: commit } = await octokit.git.getCommit({
+    owner,
+    repo,
+    commit_sha: commitSha,
+  });
+
+  // Get the tree recursively
+  const { data: tree } = await octokit.git.getTree({
+    owner,
+    repo,
+    tree_sha: commit.tree.sha,
+    recursive: "true",
+  });
+
+  // Find the file in the tree
+  const file = tree.tree.find((item) => item.path === filePath);
+  if (!file || !file.sha) {
+    throw new Error(`File "${filePath}" not found at commit ${commitSha}`);
+  }
+
+  // Get the blob content
+  const { data: blob } = await octokit.git.getBlob({
+    owner,
+    repo,
+    file_sha: file.sha,
+  });
+
+  const content = Buffer.from(blob.content, "base64").toString("utf-8");
+
+  return {
+    content,
+    sha: file.sha,
+  };
+}
+
+// ============================================================================
+// Multi-file Commit Operations
+// ============================================================================
+
+/**
+ * Get the SHA of a file if it exists.
+ */
+export async function getFileSha(
+  owner: string,
+  repo: string,
+  filePath: string,
   branch: string,
 ): Promise<string | null> {
-  const octokit = new Octokit({ auth: accessToken });
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
 
   try {
     const { data } = await octokit.repos.getContent({
       owner,
       repo,
-      path,
+      path: filePath,
       ref: branch,
     });
 
@@ -182,40 +497,35 @@ export async function getFileSha(
 }
 
 /**
- * Create or update a file in a repository
+ * Commit a single file.
  */
 export async function commitFile(
-  accessToken: string,
   owner: string,
   repo: string,
-  path: string,
+  filePath: string,
   content: string,
   message: string,
   branch: string = "main",
-): Promise<CommitFileResult | null> {
-  const octokit = new Octokit({ auth: accessToken });
+): Promise<CommitResult | null> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
 
   try {
-    // Check if file exists to get SHA for update
-    const existingSha = await getFileSha(
-      accessToken,
-      owner,
-      repo,
-      path,
-      branch,
-    );
+    const existingSha = await getFileSha(owner, repo, filePath, branch);
 
     const { data } = await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
-      path,
+      path: filePath,
       message,
       content: Buffer.from(content).toString("base64"),
       branch,
       ...(existingSha ? { sha: existingSha } : {}),
     });
 
-    console.log(`[github-app] Committed file: ${path} to ${owner}/${repo}`);
+    console.log(`[github-app] Committed file: ${filePath} to ${owner}/${repo}`);
     return {
       sha: data.commit.sha!,
       commitUrl: data.commit.html_url!,
@@ -227,17 +537,19 @@ export async function commitFile(
 }
 
 /**
- * Commit multiple files in a single commit using the Git Data API
+ * Commit multiple files in a single commit using the Git Data API.
  */
 export async function commitMultipleFiles(
-  accessToken: string,
   owner: string,
   repo: string,
   files: Array<{ path: string; content: string }>,
   message: string,
   branch: string = "main",
-): Promise<CommitFileResult | null> {
-  const octokit = new Octokit({ auth: accessToken });
+): Promise<CommitResult | null> {
+  const octokit = await getOctokitForOwner(owner);
+  if (!octokit) {
+    throw new Error(`GitHub App not installed for ${owner}`);
+  }
 
   try {
     // Get the current reference
@@ -312,4 +624,21 @@ export async function commitMultipleFiles(
     console.error("[github-app] Error committing multiple files:", error);
     return null;
   }
+}
+
+// ============================================================================
+// Helper: Check if GitHub App is installed for a repo
+// ============================================================================
+
+export async function isAppInstalled(owner: string): Promise<boolean> {
+  const installationId = await getInstallationId(owner);
+  return installationId !== null;
+}
+
+/**
+ * Get the installation URL for users who need to install the app.
+ */
+export function getInstallUrl(): string {
+  const appSlug = process.env.GITHUB_APP_SLUG || "hotpress-app";
+  return `https://github.com/apps/${appSlug}/installations/new`;
 }

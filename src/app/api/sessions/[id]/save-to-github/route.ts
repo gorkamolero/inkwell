@@ -1,5 +1,4 @@
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
-// $generateHtmlFromNodes removed - unused
 import { createHeadlessEditor } from "@lexical/headless";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
@@ -11,10 +10,16 @@ import { z } from "zod";
 import {
   ApiError,
   type AuthContext,
+  getGitHubAccessToken,
   validateBody,
   withAuth,
 } from "@/lib/api-utils";
-import { commitMultipleFiles, createRepository } from "@/lib/github-app";
+import {
+  commitMultipleFiles,
+  createRepository,
+  isAppInstalled,
+  getInstallUrl,
+} from "@/lib/github-app";
 import {
   getSessionById,
   getSessionIdFromCookie,
@@ -142,13 +147,7 @@ async function saveToGitHubHandler(
   request: NextRequest,
   context: AuthContext & { sessionId: string },
 ): Promise<NextResponse> {
-  const { sessionId, accessToken } = context;
-
-  if (!accessToken) {
-    throw ApiError.forbidden(
-      "GitHub is not connected. Please sign in with GitHub to save.",
-    );
-  }
+  const { sessionId, userId } = context;
 
   const body = await validateBody(request, SaveToGitHubSchema);
 
@@ -179,6 +178,14 @@ async function saveToGitHubHandler(
       throw ApiError.badRequest("repoName is required when createRepo is true");
     }
 
+    // Creating repos still requires OAuth token
+    const accessToken = await getGitHubAccessToken(userId);
+    if (!accessToken) {
+      throw ApiError.forbidden(
+        "GitHub not connected. Please sign in with GitHub to create repositories.",
+      );
+    }
+
     const created = await createRepository(
       accessToken,
       body.repoName,
@@ -187,12 +194,17 @@ async function saveToGitHubHandler(
     );
 
     if (!created) {
-      throw ApiError.internal("Failed to create repository");
+      throw ApiError.internal(
+        "Failed to create repository. You may need to grant additional permissions.",
+      );
     }
 
     owner = created.owner;
     repoName = created.repo;
     branch = created.defaultBranch;
+
+    // Note: User will need to install the GitHub App on the new repo
+    // to be able to commit to it in the future
   } else {
     if (!body.repo) {
       throw ApiError.badRequest(
@@ -203,6 +215,20 @@ async function saveToGitHubHandler(
     const [o, r] = body.repo.split("/");
     owner = o;
     repoName = r;
+
+    // Check if GitHub App is installed for existing repos
+    const installed = await isAppInstalled(owner);
+    if (!installed) {
+      return NextResponse.json(
+        {
+          error: "GitHub App not installed",
+          needsInstall: true,
+          installUrl: getInstallUrl(),
+          message: `Please install the Hotpress GitHub App on the ${owner} account to save to this repository.`,
+        },
+        { status: 403 },
+      );
+    }
   }
 
   // Convert content to markdown
@@ -223,9 +249,8 @@ async function saveToGitHubHandler(
     body.commitMessage ||
     `Update from Hotpress: ${session.title || "Untitled"}`;
 
-  // Commit files
+  // Commit files using GitHub App
   const result = await commitMultipleFiles(
-    accessToken,
     owner,
     repoName,
     files,
