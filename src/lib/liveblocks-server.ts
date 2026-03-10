@@ -136,3 +136,30 @@ export async function injectMarkdownIntoLiveblocksRoom(
 
   return { blockCount: blocks.length };
 }
+
+export async function resetLiveblocksRoomWithMarkdown(
+  roomId: string,
+  markdown: string,
+): Promise<{ blockCount: number }> {
+  const liveblocks = getLiveblocks();
+
+  try {
+    await liveblocks.deleteRoom(roomId);
+  } catch {
+    // Room may not exist yet.
+  }
+
+  await liveblocks.createRoom(roomId, {
+    defaultAccesses: ["room:write"],
+  });
+
+  if (!markdown.trim()) {
+    return { blockCount: 0 };
+  }
+
+  const blocks = parseMarkdown(markdown);
+  const yjsUpdate = blocksToLexicalYjs(blocks);
+  await liveblocks.sendYjsBinaryUpdate(roomId, yjsUpdate);
+
+  return { blockCount: blocks.length };
+}

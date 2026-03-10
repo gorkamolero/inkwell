@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { Octokit } from "@octokit/rest";
 import { notFound, unstable_rethrow } from "next/navigation";
 import { auth } from "@/lib/auth";
 import {
@@ -8,9 +9,12 @@ import {
   projects,
   writingSessions,
 } from "@/lib/db";
-import { markdownToLexical } from "@/lib/editor-utils";
+import { isEditorStateEmpty, markdownToLexical } from "@/lib/editor-utils";
 import { getDocument, isAppInstalled } from "@/lib/github-app";
-import { injectMarkdownIntoLiveblocksRoom } from "@/lib/liveblocks-server";
+import {
+  injectMarkdownIntoLiveblocksRoom,
+  resetLiveblocksRoomWithMarkdown,
+} from "@/lib/liveblocks-server";
 import { createSession, createShareLink, updateSession } from "@/lib/session";
 import { SharedSessionView } from "../../../s/[slug]/SharedSessionView";
 
@@ -118,33 +122,62 @@ async function loadInitialDocumentContent(params: {
   }
 
   const [owner, repo] = params.githubRepo.split("/");
-  const installed = await isAppInstalled(owner);
 
-  if (!installed) {
+  try {
+    const installed = await isAppInstalled(owner);
+
+    if (installed) {
+      const document = await getDocument(
+        owner,
+        repo,
+        params.path,
+        params.githubBranch || "main",
+      );
+
+      return {
+        markdown: document.content,
+        lastGithubSha: document.sha,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to load GitHub App document for shared session:", error);
+  }
+
+  try {
+    const octokit = new Octokit();
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: params.path,
+      ref: params.githubBranch || "main",
+    });
+
+    if (Array.isArray(data) || data.type !== "file" || !("content" in data)) {
+      throw new Error("Expected file content, received non-file GitHub object");
+    }
+
+    return {
+      markdown: Buffer.from(data.content, "base64").toString("utf8"),
+      lastGithubSha: data.sha,
+    };
+  } catch (error) {
+    console.error("Failed to load public GitHub document for shared session:", error);
     return {
       markdown: "",
       lastGithubSha: null,
     };
   }
+}
+
+function sessionContentIsEmpty(content: string | null): boolean {
+  if (!content) {
+    return true;
+  }
 
   try {
-    const document = await getDocument(
-      owner,
-      repo,
-      params.path,
-      params.githubBranch || "main",
-    );
-
-    return {
-      markdown: document.content,
-      lastGithubSha: document.sha,
-    };
-  } catch (error) {
-    console.error("Failed to load GitHub document for shared session:", error);
-    return {
-      markdown: "",
-      lastGithubSha: null,
-    };
+    return isEditorStateEmpty(JSON.parse(content));
+  } catch {
+    return content.trim().length === 0;
   }
 }
 
@@ -195,6 +228,16 @@ export default async function EditorPage({ params }: EditorPageProps) {
         draftContent: document.draftContent,
       });
 
+      if (
+        hasGitHubBackedSource(project.githubRepo) &&
+        !document.draftContent &&
+        !initialContent.markdown.trim()
+      ) {
+        throw new Error(
+          `Unable to load repo document content for ${project.githubRepo}/${document.path}`,
+        );
+      }
+
       const createdSession = await createSession({
         title:
           document.title ||
@@ -227,6 +270,41 @@ export default async function EditorPage({ params }: EditorPageProps) {
     } else if (!projectDocSession.shareSlug) {
       projectDocSession =
         (await createShareLink(projectDocSession.id)) ?? projectDocSession;
+    }
+
+    if (
+      sessionContentIsEmpty(projectDocSession.content) &&
+      hasGitHubBackedSource(project.githubRepo) &&
+      !document.draftContent
+    ) {
+      const recoveredContent = await loadInitialDocumentContent({
+        githubRepo: project.githubRepo,
+        githubBranch: project.githubBranch,
+        path: document.path,
+        draftContent: document.draftContent,
+      });
+
+      if (recoveredContent.markdown.trim()) {
+        const recoveredSession = await updateSession(projectDocSession.id, {
+          title:
+            document.title ||
+            document.path.split("/").pop()?.replace(/\.md$/, "") ||
+            projectDocSession.title,
+          content: JSON.stringify(markdownToLexical(recoveredContent.markdown)),
+          githubRepo: sourceRepo,
+          githubPath: sourcePath,
+          lastGithubSha:
+            document.lastCommitSha ?? recoveredContent.lastGithubSha ?? null,
+        });
+
+        if (recoveredSession) {
+          await resetLiveblocksRoomWithMarkdown(
+            recoveredSession.id,
+            recoveredContent.markdown,
+          );
+          projectDocSession = recoveredSession;
+        }
+      }
     }
 
     let canCommitToGitHub = false;
