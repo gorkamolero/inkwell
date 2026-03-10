@@ -5,10 +5,12 @@ import {
   CreditCard,
   Github,
   Mail,
+  ShieldAlert,
   User,
 } from "lucide-react";
 import { Suspense } from "react";
 import { BillingSection } from "@/components/layout/billing-section";
+import { RecoveryTools } from "@/components/layout/recovery-tools";
 import { SettingsForm } from "@/components/layout/settings-form";
 import { auth } from "@/lib/auth";
 import { db, users } from "@/lib/db";
@@ -178,6 +180,14 @@ export default async function SettingsPage() {
               </button>
             </div>
           </div>
+        </section>
+
+        <section className="border-3 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="mb-6 flex items-center gap-2">
+            <ShieldAlert className="h-6 w-6" />
+            <h2 className="text-xl font-black text-black">Recovery</h2>
+          </div>
+          <RecoveryTools />
         </section>
       </div>
     </div>
