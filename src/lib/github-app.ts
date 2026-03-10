@@ -44,9 +44,16 @@ export interface CommitResult {
 
 // Read private key from file
 function getPrivateKey(): string {
+  const inlineKey = process.env.GITHUB_APP_PRIVATE_KEY;
+  if (inlineKey) {
+    return inlineKey.replace(/\\n/g, "\n").trim();
+  }
+
   const keyPath = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
   if (!keyPath) {
-    throw new Error("GITHUB_APP_PRIVATE_KEY_PATH not set");
+    throw new Error(
+      "GITHUB_APP_PRIVATE_KEY or GITHUB_APP_PRIVATE_KEY_PATH not set",
+    );
   }
 
   const absolutePath = path.resolve(process.cwd(), keyPath);
