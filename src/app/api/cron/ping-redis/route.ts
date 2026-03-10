@@ -13,8 +13,8 @@ import { pingRedis } from "@/lib/redis-ping";
  */
 export async function GET() {
   const headersList = await headers();
-  const cronSignature = headersList.get("x-vercel-cron-signature");
-  const expectedSecret = process.env.CRON_SECRET;
+  const cronSignature = headersList.get("x-vercel-cron-signature")?.trim();
+  const expectedSecret = process.env.CRON_SECRET?.trim();
 
   // If CRON_SECRET is set, validate the signature
   if (expectedSecret) {
