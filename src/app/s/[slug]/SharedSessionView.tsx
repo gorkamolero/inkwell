@@ -35,13 +35,17 @@ interface SessionData {
 
 interface SharedSessionViewProps {
   session: SessionData;
+  canCommitToGitHub?: boolean;
 }
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
-export function SharedSessionView({ session }: SharedSessionViewProps) {
+export function SharedSessionView({
+  session,
+  canCommitToGitHub = false,
+}: SharedSessionViewProps) {
   const [copied, setCopied] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showFormat, setShowFormat] = useState(false);
@@ -127,6 +131,7 @@ export function SharedSessionView({ session }: SharedSessionViewProps) {
           roomId={session.id}
           sessionTitle={session.title}
           isAuthenticated={isAuthenticated}
+          canCommitToGitHub={canCommitToGitHub}
           onCopyLink={handleCopyLink}
           copied={copied}
           onShowTemplates={() => setShowTemplates(true)}

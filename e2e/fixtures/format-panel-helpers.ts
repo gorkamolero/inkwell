@@ -2,40 +2,23 @@
  * Format Panel Test Helpers
  *
  * Helpers for testing the format panel on shared session pages.
- * The format panel only exists on /s/[slug] pages, not the homepage.
- *
- * Uses the pre-existing test session from CLAUDE.md:
- * - Slug: <TEST_SLUG>
- * - This session has a working Liveblocks room already set up
+ * The format panel only exists on /s/[slug] pages.
  */
 
 import { Page, expect } from "@playwright/test";
 import { mockAuthSession } from "../utils/auth-helpers";
 import { TEST_USERS } from "./test-data";
-
-/**
- * Pre-existing test session that has a working Liveblocks room.
- * Creating new sessions dynamically takes too long for Liveblocks to connect.
- */
-export const TEST_SESSION_SLUG = "<TEST_SLUG>";
+import { createSharedSessionViaApi } from "./liveblocks-helpers";
 
 /**
  * Navigate to a shared session page and open the format panel.
- * Uses the pre-existing test session for reliable Liveblocks connection.
  */
 export async function setupFormatPanelTest(page: Page): Promise<string> {
-  // Mock auth session first - required to see Customize button
+  const { shareSlug } = await createSharedSessionViaApi(page);
+
   await mockAuthSession(page, TEST_USERS.owner);
-  
-  // Navigate directly to the pre-existing test session
-  // This session already has a Liveblocks room, avoiding connection delays
-  await page.goto(`/s/${TEST_SESSION_SLUG}`);
+  await page.goto(`/s/${shareSlug}`);
 
-  // Wait for the Liveblocks connection - indicated by "Live" badge
-  // Use exact match to avoid matching content with "live" in it (e.g. "alive")
-  await expect(page.getByText("Live", { exact: true })).toBeVisible({ timeout: 30000 });
-
-  // Now wait for the editor textbox to be interactive
   await expect(
     page.getByRole("textbox", { name: /editor/i })
   ).toBeVisible({ timeout: 10000 });
@@ -48,7 +31,7 @@ export async function setupFormatPanelTest(page: Page): Promise<string> {
   // Wait for format panel to be visible
   await expect(page.getByText("Format Settings")).toBeVisible({ timeout: 5000 });
 
-  return TEST_SESSION_SLUG;
+  return shareSlug;
 }
 
 /**

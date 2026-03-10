@@ -9,6 +9,7 @@ import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { TestUser, TEST_USERS } from "./test-data";
 
 const LIVEBLOCKS_BASE_URL = "https://api.liveblocks.io/v2";
+const APP_BASE_URL = "http://localhost:3847";
 
 export interface CollaborationContext {
   browser: Browser;
@@ -78,29 +79,68 @@ export async function setupCollaborationTest(
 export async function createSharedSession(
   page: Page
 ): Promise<{ url: string; shareSlug: string }> {
-  // Navigate to home to create a new session
   await page.goto("/");
-
-  // Wait for editor to load
   await page.waitForSelector('[role="textbox"]', { timeout: 15000 });
 
-  // Click share button
-  await page.getByRole("button", { name: /share/i }).click();
+  await page.getByRole("button", { name: /go fullscreen/i }).click();
+  await page.waitForURL(/\/s\/.+/, { timeout: 15000 });
 
-  // Wait for share dialog and get the share URL
-  const shareInput = page.locator('input[readonly]').first();
-  await shareInput.waitFor({ state: "visible", timeout: 5000 });
-
-  const shareUrl = await shareInput.inputValue();
+  const shareUrl = page.url();
   const shareSlug = shareUrl.split("/s/")[1] ?? "";
 
-  // Close the share dialog
-  const closeButton = page.getByRole("button", { name: /close|done|×/i });
-  if (await closeButton.isVisible()) {
-    await closeButton.click();
+  await page.waitForSelector('[role="textbox"]', { timeout: 15000 });
+
+  return { url: shareUrl, shareSlug };
+}
+
+/**
+ * Create a shared session via API and navigate directly to the shared page.
+ * Useful for tests that need a valid shared session but are not verifying
+ * the homepage editor/fullscreen flow itself.
+ */
+export async function createSharedSessionViaApi(
+  page: Page
+): Promise<{ sessionId: string; url: string; shareSlug: string }> {
+  const createResponse = await page.context().request.post(
+    `${APP_BASE_URL}/api/sessions`,
+    {
+      data: { type: "book" },
+    }
+  );
+
+  if (!createResponse.ok()) {
+    throw new Error(`Failed to create session: ${createResponse.status()}`);
   }
 
-  return { url: `/s/${shareSlug}`, shareSlug };
+  const createData = (await createResponse.json()) as {
+    session: { id: string };
+  };
+
+  const shareResponse = await page.context().request.post(
+    `${APP_BASE_URL}/api/sessions/${createData.session.id}/share`,
+    {
+      data: {},
+    }
+  );
+
+  if (!shareResponse.ok()) {
+    throw new Error(`Failed to create share link: ${shareResponse.status()}`);
+  }
+
+  const shareData = (await shareResponse.json()) as {
+    shareSlug: string;
+    shareUrl: string;
+  };
+
+  await page.goto(shareData.shareUrl);
+  await page.waitForURL(/\/s\/.+/, { timeout: 15000 });
+  await page.waitForSelector('[role="textbox"]', { timeout: 15000 });
+
+  return {
+    sessionId: createData.session.id,
+    url: shareData.shareUrl,
+    shareSlug: shareData.shareSlug,
+  };
 }
 
 /**
@@ -184,9 +224,13 @@ export async function waitForLiveblocksConnection(
   page: Page,
   timeout: number = 10000
 ): Promise<void> {
-  // Wait for "Live" indicator or similar connection status
+  await page.getByRole("textbox", { name: /editor/i }).waitFor({
+    state: "visible",
+    timeout,
+  });
   await page
-    .getByText(/live|connected/i)
+    .getByText(/live|connecting|collaborative/i)
+    .first()
     .waitFor({ state: "visible", timeout });
 }
 

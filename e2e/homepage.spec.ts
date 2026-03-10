@@ -83,7 +83,7 @@ test.describe("Homepage", () => {
     await expect(page.getByRole("button", { name: /book/i })).toBeVisible();
   });
 
-  test("displays share button", async ({ page }) => {
+  test("displays fullscreen button", async ({ page }) => {
     await page.goto("/");
 
     // Wait for editor to load
@@ -91,8 +91,9 @@ test.describe("Homepage", () => {
       timeout: 15000,
     });
 
-    // Share button should be visible
-    await expect(page.getByRole("button", { name: /share/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /go fullscreen/i })
+    ).toBeVisible();
   });
 
   test("displays marketing sections", async ({ page }) => {

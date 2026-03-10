@@ -292,6 +292,13 @@ export class EditorHelper {
     return (await this.editor.textContent()) ?? "";
   }
 
+  /**
+   * Backwards-compatible alias used by older specs.
+   */
+  async getContent(): Promise<string> {
+    return this.getTextContent();
+  }
+
   // ============================================================================
   // Link Helpers
   // ============================================================================
@@ -343,17 +350,15 @@ export class EditorHelper {
    * Paste text from clipboard (simulates Ctrl+V with text)
    */
   async pasteText(text: string): Promise<void> {
+    await this.page.context().grantPermissions([
+      "clipboard-read",
+      "clipboard-write",
+    ]);
     await this.focus();
     await this.page.evaluate(async (textToPaste) => {
-      const clipboardData = new DataTransfer();
-      clipboardData.setData("text/plain", textToPaste);
-      const event = new ClipboardEvent("paste", {
-        clipboardData,
-        bubbles: true,
-        cancelable: true,
-      });
-      document.activeElement?.dispatchEvent(event);
+      await navigator.clipboard.writeText(textToPaste);
     }, text);
+    await this.page.keyboard.press("ControlOrMeta+v");
   }
 }
 

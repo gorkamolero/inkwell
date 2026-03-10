@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { TEST_SESSION_SLUG } from "../fixtures/format-panel-helpers";
+import {
+  createSharedSessionViaApi,
+  waitForLiveblocksConnection,
+} from "../fixtures/liveblocks-helpers";
 
 /**
  * Presence Feature Tests
@@ -8,17 +11,14 @@ import { TEST_SESSION_SLUG } from "../fixtures/format-panel-helpers";
  */
 test.describe("Presence Indicators", () => {
   test("shows Live badge when connected", async ({ page }) => {
-    await page.goto(`/s/${TEST_SESSION_SLUG}`);
-
-    // Wait for Liveblocks connection
-    await expect(page.getByText("Live", { exact: true })).toBeVisible({ timeout: 30000 });
+    await createSharedSessionViaApi(page);
+    await waitForLiveblocksConnection(page, 30000);
+    await expect(page.getByText(/live|collaborative/i).first()).toBeVisible();
   });
 
   test("editor is interactive after connection", async ({ page }) => {
-    await page.goto(`/s/${TEST_SESSION_SLUG}`);
-
-    // Wait for connection
-    await expect(page.getByText("Live", { exact: true })).toBeVisible({ timeout: 30000 });
+    await createSharedSessionViaApi(page);
+    await waitForLiveblocksConnection(page, 30000);
 
     // Editor should be interactive
     const editor = page.getByRole("textbox", { name: /editor/i });

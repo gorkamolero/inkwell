@@ -255,6 +255,57 @@ function WordCountPlugin({ onWordCountChange }: WordCountPluginProps) {
   return null;
 }
 
+interface AutoSavePluginProps {
+  sessionId: string;
+}
+
+function AutoSavePlugin({ sessionId }: AutoSavePluginProps) {
+  const [editor] = useLexicalComposerContext();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedRef = useRef<string>("");
+
+  useEffect(() => {
+    const removeListener = editor.registerUpdateListener(({ editorState }) => {
+      const serialized = JSON.stringify(editorState.toJSON());
+
+      if (serialized === lastSavedRef.current) {
+        return;
+      }
+
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/sessions/${sessionId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: serialized }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save collaborative session");
+          }
+
+          lastSavedRef.current = serialized;
+        } catch (error) {
+          console.error("Collaborative auto-save failed:", error);
+        }
+      }, 1000);
+    });
+
+    return () => {
+      removeListener();
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [editor, sessionId]);
+
+  return null;
+}
+
 // ============================================================================
 // Editor Ready Status
 // ============================================================================
@@ -710,6 +761,7 @@ interface CollaborativeEditorInnerProps {
   roomId: string;
   sessionTitle: string | null;
   isAuthenticated: boolean | null;
+  canCommitToGitHub: boolean;
   onCopyLink: () => void;
   copied: boolean;
   onShowTemplates: () => void;
@@ -721,6 +773,7 @@ function CollaborativeEditorInner({
   roomId,
   sessionTitle,
   isAuthenticated,
+  canCommitToGitHub,
   onCopyLink,
   copied,
   onShowTemplates,
@@ -731,6 +784,7 @@ function CollaborativeEditorInner({
   const [showHistory, setShowHistory] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
   const [showAi, setShowAi] = useState(false);
+  const [isCommitting, setIsCommitting] = useState(false);
   const { threads } = useThreads();
 
   // Create editor config with Liveblocks
@@ -754,6 +808,31 @@ function CollaborativeEditorInner({
   });
 
   const threadCount = threads?.length ?? 0;
+
+  const handleCommitToGitHub = async () => {
+    if (isCommitting) return;
+
+    setIsCommitting(true);
+    try {
+      const response = await fetch(`/api/sessions/${roomId}/commit`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(data?.error || "Failed to commit to GitHub");
+      }
+    } catch (error) {
+      console.error("GitHub commit failed:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to commit to GitHub",
+      );
+    } finally {
+      setIsCommitting(false);
+    }
+  };
 
   return (
     <div className="flex h-full">
@@ -846,6 +925,25 @@ function CollaborativeEditorInner({
 
               {/* Status indicator */}
               <EditorReadyIndicator />
+
+              {canCommitToGitHub && (
+                <button
+                  type="button"
+                  onClick={handleCommitToGitHub}
+                  disabled={isCommitting}
+                  className="flex h-8 items-center gap-1.5 border-2 border-black bg-green-400 px-3 font-bold text-sm text-black transition-all hover:bg-green-300 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+                  title="Commit changes to GitHub"
+                >
+                  {isCommitting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                  <span className="hidden md:inline">
+                    {isCommitting ? "Committing..." : "Commit"}
+                  </span>
+                </button>
+              )}
               
               {/* Divider */}
               <div className="w-px h-6 bg-gray-300 mx-1" />
@@ -926,6 +1024,8 @@ function CollaborativeEditorInner({
             </div>
           </div>
 
+          <AutoSavePlugin sessionId={roomId} />
+
           {/* Status bar - FIXED */}
           <div className="flex items-center justify-between border-t-3 border-black bg-gray-50 px-4 py-3 flex-shrink-0">
             <span className="flex items-center gap-1.5 text-sm text-gray-600">
@@ -998,6 +1098,7 @@ export interface CollaborativeEditorProps {
   roomId: string;
   sessionTitle?: string | null;
   isAuthenticated: boolean | null;
+  canCommitToGitHub?: boolean;
   onCopyLink: () => void;
   copied: boolean;
   onShowTemplates: () => void;
@@ -1009,6 +1110,7 @@ export function CollaborativeEditor({
   roomId,
   sessionTitle,
   isAuthenticated,
+  canCommitToGitHub = false,
   onCopyLink,
   copied,
   onShowTemplates,
@@ -1029,6 +1131,7 @@ export function CollaborativeEditor({
           roomId={roomId}
           sessionTitle={sessionTitle ?? null}
           isAuthenticated={isAuthenticated}
+          canCommitToGitHub={canCommitToGitHub}
           onCopyLink={onCopyLink}
           copied={copied}
           onShowTemplates={onShowTemplates}

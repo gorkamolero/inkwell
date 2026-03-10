@@ -53,6 +53,13 @@ test.describe("Public Route Access", () => {
     await expect(page).not.toHaveURL(/\/login/);
   });
 
+  test("project document urls are accessible without auth", async ({ page }) => {
+    await mockUnauthenticated(page);
+    await page.goto("/test-book-project/test-doc-001");
+
+    await expect(page).not.toHaveURL(/\/login/);
+  });
+
   test("login page is accessible without auth", async ({ page }) => {
     await mockUnauthenticated(page);
     await page.goto("/login");

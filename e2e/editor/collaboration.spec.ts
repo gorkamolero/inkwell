@@ -1,5 +1,9 @@
 import { test, expect, chromium, BrowserContext, Page } from "@playwright/test";
 import { createEditorHelper } from "../utils/editor-helpers";
+import {
+  createSharedSession,
+  waitForLiveblocksConnection,
+} from "../fixtures/liveblocks-helpers";
 
 /**
  * Real-Time Collaboration Tests
@@ -10,29 +14,8 @@ import { createEditorHelper } from "../utils/editor-helpers";
 
 // Helper to create a share link and return the URL
 async function createAndShareSession(page: Page): Promise<string> {
-  await page.goto("/");
-
-  // Wait for editor
-  await expect(
-    page.getByRole("textbox", { name: /editor/i })
-  ).toBeVisible({ timeout: 15000 });
-
-  // Open share dialog
-  await page.getByRole("button", { name: /share/i }).click();
-
-  // Create share link
-  await page.getByRole("button", { name: /create share link/i }).click();
-
-  // Wait for share URL
-  const shareInput = page.locator("input[readonly]");
-  await expect(shareInput).toBeVisible({ timeout: 10000 });
-
-  const shareUrl = await shareInput.inputValue();
-
-  // Close dialog
-  await page.getByRole("button", { name: /done/i }).click();
-
-  return shareUrl;
+  const { url } = await createSharedSession(page);
+  return url;
 }
 
 test.describe("Real-Time Collaboration", () => {
@@ -69,7 +52,7 @@ test.describe("Real-Time Collaboration", () => {
     await expect(
       pageA.getByRole("textbox", { name: /editor/i })
     ).toBeVisible({ timeout: 15000 });
-    await expect(pageA.getByText(/live/i)).toBeVisible({ timeout: 10000 });
+    await waitForLiveblocksConnection(pageA, 15000);
 
     // User B joins via share link
     await pageB.goto(shareUrl);
@@ -78,9 +61,7 @@ test.describe("Real-Time Collaboration", () => {
     await expect(
       pageB.getByRole("textbox", { name: /editor/i })
     ).toBeVisible({ timeout: 15000 });
-
-    // Both should show "Live" status (Liveblocks connected)
-    await expect(pageB.getByText(/live/i)).toBeVisible({ timeout: 10000 });
+    await waitForLiveblocksConnection(pageB, 15000);
 
     // Wait for both to connect
     await pageA.waitForTimeout(2000);
@@ -138,9 +119,7 @@ test.describe("Shared Session Access", () => {
       await expect(
         anonPage.getByRole("textbox", { name: /editor/i })
       ).toBeVisible({ timeout: 15000 });
-
-      // Should show Live status
-      await expect(anonPage.getByText(/live/i)).toBeVisible({ timeout: 10000 });
+      await waitForLiveblocksConnection(anonPage, 15000);
     } finally {
       await anonContext.close();
       await browser.close();
