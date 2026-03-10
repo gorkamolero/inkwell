@@ -192,6 +192,26 @@ export const sessionCollaborators = pgTable(
   ],
 );
 
+export const writingSessionRevisions = pgTable(
+  "writing_session_revisions",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => writingSessions.id, { onDelete: "cascade" }),
+    content: text("content"),
+    source: text("source").notNull().default("update"),
+    actorUserId: text("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("writing_session_revisions_session_idx").on(table.sessionId),
+    index("writing_session_revisions_created_idx").on(table.createdAt),
+  ],
+);
+
 export const liveblocksRooms = pgTable("liveblocks_rooms", {
   id: text("id").primaryKey(),
   sessionId: text("session_id").references(() => writingSessions.id, {
@@ -211,6 +231,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   projects: many(projects),
   collaborations: many(projectCollaborators),
   writingSessions: many(writingSessions),
+  writingSessionRevisions: many(writingSessionRevisions),
   sessionCollaborations: many(sessionCollaborators),
   subscription: one(subscriptions, {
     fields: [users.id],
@@ -318,6 +339,20 @@ export const liveblocksRoomsRelations = relations(
   }),
 );
 
+export const writingSessionRevisionsRelations = relations(
+  writingSessionRevisions,
+  ({ one }) => ({
+    session: one(writingSessions, {
+      fields: [writingSessionRevisions.sessionId],
+      references: [writingSessions.id],
+    }),
+    actorUser: one(users, {
+      fields: [writingSessionRevisions.actorUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -347,6 +382,8 @@ export type ProjectCollaborator = typeof projectCollaborators.$inferSelect;
 export type NewProjectCollaborator = typeof projectCollaborators.$inferInsert;
 export type SessionCollaborator = typeof sessionCollaborators.$inferSelect;
 export type NewSessionCollaborator = typeof sessionCollaborators.$inferInsert;
+export type WritingSessionRevision = typeof writingSessionRevisions.$inferSelect;
+export type NewWritingSessionRevision = typeof writingSessionRevisions.$inferInsert;
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;

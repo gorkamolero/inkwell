@@ -11,6 +11,7 @@ import {
   getSessionIdFromCookie,
   updateSession,
 } from "@/lib/session";
+import { isEditorStateEmpty } from "@/lib/editor-utils";
 import { formatSessionResponse, type WritingSessionResponse } from "../route";
 
 // ============================================================================
@@ -38,6 +39,14 @@ export interface UpdateSessionResponse {
 export interface DeleteSessionResponse {
   success: boolean;
   message: string;
+}
+
+function contentIsEmpty(content: string): boolean {
+  try {
+    return isEditorStateEmpty(JSON.parse(content));
+  } catch {
+    return content.trim().length === 0;
+  }
 }
 
 // ============================================================================
@@ -113,10 +122,25 @@ export async function PATCH(
       );
     }
 
+    if (
+      body.content !== undefined &&
+      session.githubRepo &&
+      session.githubPath &&
+      session.content &&
+      !contentIsEmpty(session.content) &&
+      contentIsEmpty(body.content)
+    ) {
+      throw ApiError.conflict(
+        "Refusing to replace non-empty repo-backed content with an empty editor state",
+      );
+    }
+
     const updated = await updateSession(id, {
       title: body.title,
       type: body.type as ContentType | undefined,
       content: body.content,
+      snapshotSource: "session-patch",
+      snapshotActorUserId: context.userId ?? null,
     });
 
     if (!updated) {

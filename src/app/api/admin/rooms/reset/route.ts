@@ -2,6 +2,7 @@ import { Liveblocks } from "@liveblocks/node";
 import { type NextRequest, NextResponse } from "next/server";
 import * as Y from "yjs";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 
 /**
  * POST /api/admin/rooms/reset
@@ -26,6 +27,14 @@ const ResetRoomSchema = z.object({
   id: z.string().min(1),
   content: z.string().optional(),
 });
+
+async function requireAuthenticatedAdmin() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
+}
 
 interface BlockNode {
   type: "paragraph" | "heading" | "quote";
@@ -116,6 +125,9 @@ function blocksToLexicalYjs(blocks: BlockNode[]): Uint8Array {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuthenticatedAdmin();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { id, content } = ResetRoomSchema.parse(body);

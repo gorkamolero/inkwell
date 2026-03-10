@@ -1,6 +1,7 @@
 import { Liveblocks } from "@liveblocks/node";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 
 /**
  * Admin API for Liveblocks room management
@@ -28,8 +29,19 @@ const CreateRoomSchema = z.object({
   defaultAccesses: z.array(z.string()).optional(),
 });
 
+async function requireAuthenticatedAdmin() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
+}
+
 // GET - Get room info
 export async function GET(request: NextRequest) {
+  const authError = await requireAuthenticatedAdmin();
+  if (authError) return authError;
+
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {
@@ -50,6 +62,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create room
 export async function POST(request: NextRequest) {
+  const authError = await requireAuthenticatedAdmin();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { id } = CreateRoomSchema.parse(body);
@@ -82,6 +97,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Delete room
 export async function DELETE(request: NextRequest) {
+  const authError = await requireAuthenticatedAdmin();
+  if (authError) return authError;
+
   const id = request.nextUrl.searchParams.get("id");
 
   if (!id) {

@@ -11,9 +11,11 @@ import { cookies } from "next/headers";
 import {
   db,
   type NewWritingSession,
+  type NewWritingSessionRevision,
   type WritingSession,
   writingSessions,
   sessionCollaborators,
+  writingSessionRevisions,
 } from "./db";
 import {
   type ContentType,
@@ -154,9 +156,16 @@ export async function updateSession(
     githubRepo?: string | null;
     githubPath?: string | null;
     lastGithubSha?: string | null;
+    snapshotSource?: string;
+    snapshotActorUserId?: string | null;
   },
 ): Promise<WritingSession | null> {
   const database = requireDb();
+  const existing = await getSessionById(id);
+
+  if (!existing) {
+    return null;
+  }
 
   const updateData: Partial<NewWritingSession> = {
     updatedAt: new Date(),
@@ -173,6 +182,18 @@ export async function updateSession(
       lastGithubSha: data.lastGithubSha,
     }),
   };
+
+  if (data.content !== undefined && data.content !== existing.content) {
+    const revision: NewWritingSessionRevision = {
+      id: createId(),
+      sessionId: id,
+      content: existing.content,
+      source: data.snapshotSource ?? "update",
+      actorUserId: data.snapshotActorUserId ?? null,
+    };
+
+    await database.insert(writingSessionRevisions).values(revision);
+  }
 
   const [updated] = await database
     .update(writingSessions)

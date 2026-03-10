@@ -3,7 +3,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import * as Y from "yjs";
 import { z } from "zod";
 import { ApiError, validateBody } from "@/lib/api-utils";
-import { getSessionById } from "@/lib/session";
+import { auth } from "@/lib/auth";
+import {
+  canDeleteSession,
+  getSessionById,
+  getSessionIdFromCookie,
+} from "@/lib/session";
 
 /**
  * POST /api/sessions/[id]/inject-content
@@ -169,10 +174,24 @@ export async function POST(
     const { id } = await params;
     const body = await validateBody(request, InjectContentSchema);
 
-    // Verify session exists
-    const session = await getSessionById(id);
+    const [session, authSession, cookieSessionId] = await Promise.all([
+      getSessionById(id),
+      auth(),
+      getSessionIdFromCookie(),
+    ]);
     if (!session) {
       throw ApiError.notFound("Session not found");
+    }
+
+    if (
+      !canDeleteSession(session, {
+        userId: authSession?.user?.id,
+        cookieSessionId,
+      })
+    ) {
+      throw ApiError.forbidden(
+        "You don't have permission to replace this session's room content",
+      );
     }
 
     const liveblocks = getLiveblocks();
@@ -222,9 +241,25 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const session = await getSessionById(id);
+    const [session, authSession, cookieSessionId] = await Promise.all([
+      getSessionById(id),
+      auth(),
+      getSessionIdFromCookie(),
+    ]);
+
     if (!session) {
       throw ApiError.notFound("Session not found");
+    }
+
+    if (
+      !canDeleteSession(session, {
+        userId: authSession?.user?.id,
+        cookieSessionId,
+      })
+    ) {
+      throw ApiError.forbidden(
+        "You don't have permission to clear this session's room",
+      );
     }
 
     const liveblocks = getLiveblocks();
