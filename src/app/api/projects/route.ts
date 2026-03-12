@@ -10,6 +10,7 @@ import {
   validateBody,
   withAuth,
 } from "@/lib/api-utils";
+import { ensureUniqueProjectPublicSlug } from "@/lib/document-routing";
 import { db, projectCollaborators, projects } from "@/lib/db";
 import {
   createRepository,
@@ -113,6 +114,7 @@ async function listProjectsHandler(
     id: p.id,
     name: p.name,
     slug: p.slug,
+    publicSlug: p.publicSlug,
     description: p.description,
     githubRepo: p.githubRepo,
     githubBranch: p.githubBranch,
@@ -131,6 +133,7 @@ async function listProjectsHandler(
     id: p.id,
     name: p.name,
     slug: p.slug,
+    publicSlug: p.publicSlug,
     description: p.description,
     githubRepo: p.githubRepo,
     githubBranch: p.githubBranch,
@@ -179,13 +182,15 @@ async function createProjectHandler(
 
   // Check if slug already exists for this user
   const existingProject = await db.query.projects.findFirst({
-    where: eq(projects.slug, slug),
+    where: and(eq(projects.slug, slug), eq(projects.userId, userId)),
   });
 
-  if (existingProject && existingProject.userId === userId) {
+  if (existingProject) {
     // Append a random suffix if slug exists
     slug = `${slug}-${generateId().slice(0, 8)}`;
   }
+
+  const publicSlug = await ensureUniqueProjectPublicSlug({ value: slug });
 
   const projectId = generateId();
   const now = new Date();
@@ -257,6 +262,7 @@ async function createProjectHandler(
       id: projectId,
       name: body.name,
       slug,
+      publicSlug,
       description: body.description ?? null,
       githubRepo,
       githubBranch: githubBranch ?? "main",

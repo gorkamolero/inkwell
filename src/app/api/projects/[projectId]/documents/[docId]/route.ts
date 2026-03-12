@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -8,6 +8,10 @@ import {
   withProject,
 } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
+import {
+  ensureUniqueDocumentSlug,
+  getDocumentByIdentifier,
+} from "@/lib/document-routing";
 import { countWords, extractTitle } from "@/lib/editor-utils";
 import {
   deleteDocument,
@@ -15,6 +19,7 @@ import {
   isAppInstalled,
   saveDocument,
 } from "@/lib/github-app";
+import { buildPublicDocumentPath, buildPublicDocumentUrl } from "@/lib/urls";
 
 // ============================================================================
 // Schemas
@@ -26,43 +31,13 @@ const updateDocumentSchema = z.object({
   message: z.string().max(200).optional(),
 });
 
+const updateDocumentSlugSchema = z.object({
+  slug: z.string().trim().min(1, "URL slug is required").max(120),
+});
+
 const deleteDocumentSchema = z.object({
   sha: z.string().min(1, "SHA is required"),
 });
-
-// ============================================================================
-// Helper: Get document by ID or path
-// ============================================================================
-
-async function getDocumentRecord(projectId: string, docId: string) {
-  if (!db) {
-    throw ApiError.internal("Database not configured");
-  }
-
-  // docId could be either the document ID or the URL-encoded path
-  const document = await db.query.documents.findFirst({
-    where: eq(documents.id, docId),
-  });
-
-  if (document && document.projectId === projectId) {
-    return document;
-  }
-
-  // Try finding by path (URL-decoded)
-  const decodedPath = decodeURIComponent(docId);
-  const docByPath = await db.query.documents.findFirst({
-    where: and(
-      eq(documents.projectId, projectId),
-      eq(documents.path, decodedPath),
-    ),
-  });
-
-  if (docByPath) {
-    return docByPath;
-  }
-
-  throw ApiError.notFound("Document not found");
-}
 
 // ============================================================================
 // Route context type with docId
@@ -77,7 +52,7 @@ interface DocRouteContext {
 // ============================================================================
 
 async function getDocumentHandler(
-  _request: NextRequest,
+  request: NextRequest,
   context: ProjectContext,
   docId: string,
 ) {
@@ -87,7 +62,10 @@ async function getDocumentHandler(
     throw ApiError.internal("Database not configured");
   }
 
-  const document = await getDocumentRecord(project.id, docId);
+  const document = await getDocumentByIdentifier(project.id, docId);
+  if (!document) {
+    throw ApiError.notFound("Document not found");
+  }
 
   // If project has a GitHub repo, fetch content using GitHub App
   if (project.githubRepo) {
@@ -100,10 +78,17 @@ async function getDocumentHandler(
       return NextResponse.json({
         document: {
           id: document.id,
+          slug: document.slug,
           path: document.path,
           title: document.title,
           wordCount: document.wordCount,
           lastSyncedAt: document.lastSyncedAt,
+          publicPath: buildPublicDocumentPath(project, document),
+          publicUrl: buildPublicDocumentUrl(
+            request.nextUrl.origin,
+            project,
+            document,
+          ),
         },
         content: null as string | null,
         sha: null as string | null,
@@ -113,15 +98,27 @@ async function getDocumentHandler(
     }
 
     try {
-      const documentData = await getDocument(owner, repo, document.path, branch);
+      const documentData = await getDocument(
+        owner,
+        repo,
+        document.path,
+        branch,
+      );
 
       return NextResponse.json({
         document: {
           id: document.id,
+          slug: document.slug,
           path: document.path,
           title: document.title,
           wordCount: document.wordCount,
           lastSyncedAt: document.lastSyncedAt,
+          publicPath: buildPublicDocumentPath(project, document),
+          publicUrl: buildPublicDocumentUrl(
+            request.nextUrl.origin,
+            project,
+            document,
+          ),
         },
         content: documentData.content,
         sha: documentData.sha,
@@ -136,10 +133,17 @@ async function getDocumentHandler(
   return NextResponse.json({
     document: {
       id: document.id,
+      slug: document.slug,
       path: document.path,
       title: document.title,
       wordCount: document.wordCount,
       lastSyncedAt: document.lastSyncedAt,
+      publicPath: buildPublicDocumentPath(project, document),
+      publicUrl: buildPublicDocumentUrl(
+        request.nextUrl.origin,
+        project,
+        document,
+      ),
     },
     content: null as string | null,
     sha: null as string | null,
@@ -183,7 +187,10 @@ async function saveDocumentHandler(
     );
   }
 
-  const document = await getDocumentRecord(project.id, docId);
+  const document = await getDocumentByIdentifier(project.id, docId);
+  if (!document) {
+    throw ApiError.notFound("Document not found");
+  }
   const body = await validateBody(request, updateDocumentSchema);
 
   try {
@@ -234,6 +241,101 @@ async function saveDocumentHandler(
 }
 
 // ============================================================================
+// PATCH /api/projects/[projectId]/documents/[docId] - Update document URL slug
+// ============================================================================
+
+async function updateDocumentSlugHandler(
+  request: NextRequest,
+  context: ProjectContext,
+  docId: string,
+) {
+  const { project, role, isOwner } = context;
+
+  if (!db) {
+    throw ApiError.internal("Database not configured");
+  }
+
+  if (!isOwner && role !== "editor" && role !== "admin") {
+    throw ApiError.forbidden(
+      "You need editor permissions to update document URLs",
+    );
+  }
+
+  const document = await getDocumentByIdentifier(project.id, docId);
+  if (!document) {
+    throw ApiError.notFound("Document not found");
+  }
+
+  const body = await validateBody(request, updateDocumentSlugSchema);
+  const slug = await ensureUniqueDocumentSlug({
+    excludeDocumentId: document.id,
+    projectId: project.id,
+    value: body.slug,
+  });
+
+  if (slug === document.slug) {
+    return NextResponse.json({
+      document: {
+        id: document.id,
+        slug: document.slug,
+        path: document.path,
+        title: document.title,
+        wordCount: document.wordCount,
+        lastSyncedAt: document.lastSyncedAt,
+        publicPath: buildPublicDocumentPath(project, document),
+        publicUrl: buildPublicDocumentUrl(
+          request.nextUrl.origin,
+          project,
+          document,
+        ),
+      },
+      publicPath: buildPublicDocumentPath(project, document),
+      publicUrl: buildPublicDocumentUrl(
+        request.nextUrl.origin,
+        project,
+        document,
+      ),
+    });
+  }
+
+  const [updatedDocument] = await db
+    .update(documents)
+    .set({
+      slug,
+      updatedAt: new Date(),
+    })
+    .where(eq(documents.id, document.id))
+    .returning();
+
+  if (!updatedDocument) {
+    throw ApiError.internal("Failed to update document URL");
+  }
+
+  return NextResponse.json({
+    document: {
+      id: updatedDocument.id,
+      slug: updatedDocument.slug,
+      path: updatedDocument.path,
+      title: updatedDocument.title,
+      wordCount: updatedDocument.wordCount,
+      lastSyncedAt: updatedDocument.lastSyncedAt,
+      publicPath: buildPublicDocumentPath(project, updatedDocument),
+      publicUrl: buildPublicDocumentUrl(
+        request.nextUrl.origin,
+        project,
+        updatedDocument,
+      ),
+    },
+    publicPath: buildPublicDocumentPath(project, updatedDocument),
+    publicUrl: buildPublicDocumentUrl(
+      request.nextUrl.origin,
+      project,
+      updatedDocument,
+    ),
+  });
+}
+
+// ============================================================================
 // DELETE /api/projects/[projectId]/documents/[docId] - Delete document
 // ============================================================================
 
@@ -253,7 +355,10 @@ async function deleteDocumentHandler(
     throw ApiError.forbidden("Only the project owner can delete documents");
   }
 
-  const document = await getDocumentRecord(project.id, docId);
+  const document = await getDocumentByIdentifier(project.id, docId);
+  if (!document) {
+    throw ApiError.notFound("Document not found");
+  }
   const body = await validateBody(request, deleteDocumentSchema);
 
   // Delete from GitHub if repo is connected
@@ -298,6 +403,20 @@ export async function PUT(request: NextRequest, routeContext: DocRouteContext) {
 
   const handler = withProject(
     (req, ctx) => saveDocumentHandler(req, ctx, docId),
+    { minRole: "editor" },
+  );
+
+  return handler(request, { params: Promise.resolve({ projectId }) });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  routeContext: DocRouteContext,
+) {
+  const { projectId, docId } = await routeContext.params;
+
+  const handler = withProject(
+    (req, ctx) => updateDocumentSlugHandler(req, ctx, docId),
     { minRole: "editor" },
   );
 

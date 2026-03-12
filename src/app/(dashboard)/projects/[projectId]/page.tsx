@@ -13,9 +13,11 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DocumentUrlActions } from "@/components/dashboard/DocumentUrlActions";
 import { SyncButton } from "@/components/dashboard/SyncButton";
 import { auth } from "@/lib/auth";
 import { db, projectCollaborators, projects } from "@/lib/db";
+import { buildPublicDocumentPath, buildPublicDocumentUrl } from "@/lib/urls";
 import { cn } from "@/lib/utils";
 
 interface ProjectPageProps {
@@ -164,9 +166,11 @@ interface DocumentsTabProps {
   project: {
     id: string;
     slug: string;
+    publicSlug: string;
     githubRepo: string | null;
     documents: Array<{
       id: string;
+      slug: string;
       path: string;
       title: string | null;
       wordCount: number | null;
@@ -204,25 +208,27 @@ function DocumentsTab({ project }: DocumentsTabProps) {
     <div className="border-3 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       {/* Table Header */}
       <div className="grid grid-cols-12 gap-4 border-b-3 border-black bg-gray-100 px-4 py-3 text-xs font-bold uppercase tracking-wider text-gray-700">
-        <div className="col-span-6">Document</div>
+        <div className="col-span-4">Document</div>
         <div className="col-span-2">Words</div>
         <div className="col-span-3">Last Updated</div>
-        <div className="col-span-1"></div>
+        <div className="col-span-3 text-right">URL</div>
       </div>
 
       {/* Table Body */}
       <div className="divide-y-2 divide-gray-100">
         {project.documents.map((doc) => (
-          <Link
+          <div
             key={doc.id}
-            href={`/${project.slug}/${doc.id}`}
             className="grid grid-cols-12 items-center gap-4 px-4 py-4 transition-colors hover:bg-gray-50"
           >
-            <div className="col-span-6 flex items-center gap-3">
+            <div className="col-span-4 flex items-center gap-3">
               <FileText className="h-5 w-5 text-gray-400" />
-              <span className="font-bold text-black">
+              <Link
+                href={buildPublicDocumentPath(project, doc)}
+                className="font-bold text-black hover:underline"
+              >
                 {doc.title ?? getFilename(doc.path)}
-              </span>
+              </Link>
             </div>
             <div className="col-span-2 text-sm text-gray-600">
               {doc.wordCount ? `${doc.wordCount.toLocaleString()} words` : "-"}
@@ -230,10 +236,15 @@ function DocumentsTab({ project }: DocumentsTabProps) {
             <div className="col-span-3 text-sm text-gray-500">
               {formatDate(doc.updatedAt)}
             </div>
-            <div className="col-span-1 text-right">
-              <Edit3 className="inline-block h-4 w-4 text-gray-400" />
+            <div className="col-span-3 text-right">
+              <DocumentUrlActions
+                documentId={doc.id}
+                initialSlug={doc.slug}
+                projectId={project.id}
+                projectPublicSlug={project.publicSlug}
+              />
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 
@@ -269,7 +280,10 @@ async function CollaboratorsTab({ projectId }: { projectId: string }) {
     <div className="border-3 border-black bg-white p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-black text-black">Collaborators</h2>
-        <button type="button" className="flex items-center gap-2 border-3 border-black bg-brutal-yellow px-4 py-2 font-bold text-black transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+        <button
+          type="button"
+          className="flex items-center gap-2 border-3 border-black bg-brutal-yellow px-4 py-2 font-bold text-black transition-all hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+        >
           <Plus className="h-4 w-4" strokeWidth={3} />
           Invite
         </button>
@@ -316,6 +330,7 @@ interface SettingsTabProps {
     id: string;
     name: string;
     slug: string;
+    publicSlug: string;
     description: string | null;
     githubRepo: string | null;
     githubBranch: string | null;
@@ -325,6 +340,11 @@ interface SettingsTabProps {
 }
 
 function SettingsTab({ project }: SettingsTabProps) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://hotpress.app";
+  const exampleDocumentUrl = buildPublicDocumentUrl(baseUrl, project, {
+    slug: "chapter-1",
+  });
+
   return (
     <div className="space-y-6">
       {/* General Settings */}
@@ -345,6 +365,22 @@ function SettingsTab({ project }: SettingsTabProps) {
             </div>
             <div className="col-span-2 font-mono text-sm text-gray-600">
               {project.slug}
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4 border-b-2 border-gray-100 pb-4">
+            <div className="text-sm font-bold uppercase tracking-wider text-gray-500">
+              Public URL Base
+            </div>
+            <div className="col-span-2 font-mono text-sm text-gray-600">
+              /{project.publicSlug}/...
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4 border-b-2 border-gray-100 pb-4">
+            <div className="text-sm font-bold uppercase tracking-wider text-gray-500">
+              Example URL
+            </div>
+            <div className="col-span-2 break-all font-mono text-sm text-gray-600">
+              {exampleDocumentUrl}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4 border-b-2 border-gray-100 pb-4">

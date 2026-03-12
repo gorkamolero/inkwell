@@ -1,14 +1,18 @@
 import { and, eq } from "drizzle-orm";
 import { Octokit } from "@octokit/rest";
-import { notFound, unstable_rethrow } from "next/navigation";
+import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { auth } from "@/lib/auth";
 import {
   db,
-  documents,
   projectCollaborators,
   projects,
   writingSessions,
 } from "@/lib/db";
+import {
+  findProjectByRouteSegment,
+  getDocumentById,
+  getDocumentByIdentifier,
+} from "@/lib/document-routing";
 import { isEditorStateEmpty, markdownToLexical } from "@/lib/editor-utils";
 import { getDocument, isAppInstalled } from "@/lib/github-app";
 import {
@@ -16,6 +20,7 @@ import {
   resetLiveblocksRoomWithMarkdown,
 } from "@/lib/liveblocks-server";
 import { createSession, createShareLink, updateSession } from "@/lib/session";
+import { buildPublicDocumentPath } from "@/lib/urls";
 import { SharedSessionView } from "../../../s/[slug]/SharedSessionView";
 
 interface EditorPageProps {
@@ -190,20 +195,26 @@ export default async function EditorPage({ params }: EditorPageProps) {
       notFound();
     }
 
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.slug, projectId),
-    });
+    let project = await findProjectByRouteSegment(projectId);
+    let document = project ? await getDocumentByIdentifier(project.id, docId) : null;
 
-    if (!project) {
+    if (!document) {
+      const legacyDocument = await getDocumentById(docId);
+      if (legacyDocument) {
+        document = legacyDocument;
+        project = await db.query.projects.findFirst({
+          where: eq(projects.id, legacyDocument.projectId),
+        });
+      }
+    }
+
+    if (!project || !document) {
       notFound();
     }
 
-    const document = await db.query.documents.findFirst({
-      where: and(eq(documents.id, docId), eq(documents.projectId, project.id)),
-    });
-
-    if (!document) {
-      notFound();
+    const canonicalPath = buildPublicDocumentPath(project, document);
+    if (`/${projectId}/${docId}` !== canonicalPath) {
+      redirect(canonicalPath);
     }
 
     const { sourceRepo, sourcePath } = getSessionSourceKeys(

@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { generateId } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { db, documents, projects } from "@/lib/db";
+import { ensureUniqueDocumentSlug } from "@/lib/document-routing";
 import { getInstallationId, getInstallationOctokit } from "@/lib/github-app";
 
 export const dynamic = "force-dynamic";
@@ -113,18 +114,29 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
     // Create new documents
     const now = new Date();
-    const newDocs = mdFiles
-      .filter((item) => !existingPaths.has(item.path!))
-      .map((item) => ({
+    const newDocs = [];
+
+    for (const item of mdFiles) {
+      if (!item.path || existingPaths.has(item.path)) {
+        continue;
+      }
+
+      newDocs.push({
         id: generateId(),
         projectId: project.id,
-        path: item.path!,
-        title: extractTitle(item.path!),
+        slug: await ensureUniqueDocumentSlug({
+          projectId: project.id,
+          path: item.path,
+          title: extractTitle(item.path),
+        }),
+        path: item.path,
+        title: extractTitle(item.path),
         lastSyncedAt: now,
         wordCount: null,
         createdAt: now,
         updatedAt: now,
-      }));
+      });
+    }
 
     if (newDocs.length > 0) {
       await db.insert(documents).values(newDocs);

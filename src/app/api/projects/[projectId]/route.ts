@@ -9,6 +9,7 @@ import {
   withProject,
 } from "@/lib/api-utils";
 import { db, documents, projectCollaborators, projects } from "@/lib/db";
+import { buildPublicDocumentPath, buildPublicDocumentUrl } from "@/lib/urls";
 
 // ============================================================================
 // Schemas
@@ -36,7 +37,7 @@ const updateProjectSchema = z.object({
 // ============================================================================
 
 async function getProjectHandler(
-  _request: NextRequest,
+  request: NextRequest,
   { project, role, isOwner }: ProjectContext,
 ) {
   if (!db) {
@@ -48,6 +49,7 @@ async function getProjectHandler(
     where: eq(documents.projectId, project.id),
     columns: {
       id: true,
+      slug: true,
       path: true,
       title: true,
       wordCount: true,
@@ -98,6 +100,7 @@ async function getProjectHandler(
       id: project.id,
       name: project.name,
       slug: project.slug,
+      publicSlug: project.publicSlug,
       description: project.description,
       githubRepo: project.githubRepo,
       githubBranch: project.githubBranch,
@@ -108,7 +111,15 @@ async function getProjectHandler(
       role,
       isOwner,
     },
-    documents: projectDocuments,
+    documents: projectDocuments.map((document) => ({
+      ...document,
+      publicPath: buildPublicDocumentPath(project, document),
+      publicUrl: buildPublicDocumentUrl(
+        request.nextUrl.origin,
+        project,
+        document,
+      ),
+    })),
     collaborators,
     stats: {
       documentCount: projectDocuments.length,

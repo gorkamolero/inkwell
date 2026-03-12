@@ -9,6 +9,7 @@ import {
   withProject,
 } from "@/lib/api-utils";
 import { db, documents } from "@/lib/db";
+import { ensureUniqueDocumentSlug } from "@/lib/document-routing";
 import {
   isAppInstalled,
   listDocuments,
@@ -16,6 +17,7 @@ import {
   saveDocument,
 } from "@/lib/github-app";
 import { canAddDocument } from "@/lib/subscription";
+import { buildPublicDocumentPath, buildPublicDocumentUrl } from "@/lib/urls";
 
 // ============================================================================
 // Schemas
@@ -36,7 +38,7 @@ const createDocumentSchema = z.object({
 // ============================================================================
 
 async function listDocumentsHandler(
-  _request: NextRequest,
+  request: NextRequest,
   { project }: ProjectContext,
 ) {
   if (!db) {
@@ -48,6 +50,7 @@ async function listDocumentsHandler(
     where: eq(documents.projectId, project.id),
     columns: {
       id: true,
+      slug: true,
       path: true,
       title: true,
       wordCount: true,
@@ -70,6 +73,12 @@ async function listDocumentsHandler(
       return NextResponse.json({
         documents: localDocs.map((doc) => ({
           ...doc,
+          publicPath: buildPublicDocumentPath(project, doc),
+          publicUrl: buildPublicDocumentUrl(
+            request.nextUrl.origin,
+            project,
+            doc,
+          ),
           existsOnGitHub: false,
         })),
         needsInstall: true,
@@ -97,9 +106,15 @@ async function listDocumentsHandler(
         if (!localDocPaths.has(ghDoc.path)) {
           // Insert new document into local database
           const docId = generateId();
+          const slug = await ensureUniqueDocumentSlug({
+            projectId: project.id,
+            path: ghDoc.path,
+            title: ghDoc.name.replace(/\.md$/, ""),
+          });
           await db.insert(documents).values({
             id: docId,
             projectId: project.id,
+            slug,
             path: ghDoc.path,
             title: ghDoc.name.replace(/\.md$/, ""),
             lastSyncedAt: now,
@@ -114,6 +129,7 @@ async function listDocumentsHandler(
         where: eq(documents.projectId, project.id),
         columns: {
           id: true,
+          slug: true,
           path: true,
           title: true,
           wordCount: true,
@@ -128,6 +144,12 @@ async function listDocumentsHandler(
         const ghDoc = githubDocs.find((g) => g.path === doc.path);
         return {
           ...doc,
+          publicPath: buildPublicDocumentPath(project, doc),
+          publicUrl: buildPublicDocumentUrl(
+            request.nextUrl.origin,
+            project,
+            doc,
+          ),
           sha: ghDoc?.sha,
           existsOnGitHub: !!ghDoc,
         };
@@ -140,6 +162,12 @@ async function listDocumentsHandler(
       return NextResponse.json({
         documents: localDocs.map((doc) => ({
           ...doc,
+          publicPath: buildPublicDocumentPath(project, doc),
+          publicUrl: buildPublicDocumentUrl(
+            request.nextUrl.origin,
+            project,
+            doc,
+          ),
           existsOnGitHub: false,
         })),
         warning: "Failed to sync with GitHub",
@@ -151,6 +179,8 @@ async function listDocumentsHandler(
   return NextResponse.json({
     documents: localDocs.map((doc) => ({
       ...doc,
+      publicPath: buildPublicDocumentPath(project, doc),
+      publicUrl: buildPublicDocumentUrl(request.nextUrl.origin, project, doc),
       existsOnGitHub: false,
     })),
   });
@@ -205,8 +235,7 @@ async function createDocumentHandler(
   const content = body.content || `# ${body.title || "New Document"}\n`;
 
   const hasValidGitHubRepo =
-    project.githubRepo &&
-    project.githubRepo.includes("/") &&
+    project.githubRepo?.includes("/") &&
     !project.githubRepo.startsWith("__NEW__");
 
   if (hasValidGitHubRepo) {
@@ -240,12 +269,18 @@ async function createDocumentHandler(
   // Create document in local database
   const docId = generateId();
   const now = new Date();
+  const slug = await ensureUniqueDocumentSlug({
+    projectId: project.id,
+    path: fullPath,
+    title: body.title || fullPath.split("/").pop()?.replace(/\.md$/, ""),
+  });
 
   const [newDocument] = await db
     .insert(documents)
     .values({
       id: docId,
       projectId: project.id,
+      slug,
       path: fullPath,
       title: body.title || fullPath.split("/").pop()?.replace(/\.md$/, ""),
       wordCount: content.split(/\s+/).filter(Boolean).length,
@@ -262,7 +297,19 @@ async function createDocumentHandler(
         ...newDocument,
         sha,
         existsOnGitHub: !!sha,
+        publicPath: buildPublicDocumentPath(project, newDocument),
+        publicUrl: buildPublicDocumentUrl(
+          request.nextUrl.origin,
+          project,
+          newDocument,
+        ),
       },
+      publicPath: buildPublicDocumentPath(project, newDocument),
+      publicUrl: buildPublicDocumentUrl(
+        request.nextUrl.origin,
+        project,
+        newDocument,
+      ),
     },
     { status: 201 },
   );

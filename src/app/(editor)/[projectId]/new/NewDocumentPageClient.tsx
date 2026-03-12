@@ -44,8 +44,8 @@ export default function NewDocumentPageClient({
         throw new Error(data.error || "Failed to create document");
       }
 
-      const { document } = await response.json();
-      router.push(`/${projectId}/${document.id}`);
+      const { document, publicPath } = await response.json();
+      router.push(publicPath || `/${projectId}/${document.id}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create document",

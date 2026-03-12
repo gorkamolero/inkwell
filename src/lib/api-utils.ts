@@ -4,6 +4,7 @@ import { type ZodSchema, z } from "zod";
 import { auth } from "@/lib/auth";
 import { accounts, db, projectCollaborators, projects } from "@/lib/db";
 import type { CollaboratorRole, Project } from "@/lib/db/schema";
+export { generateSlug } from "@/lib/slugs";
 
 // ============================================================================
 // ApiError Class
@@ -206,7 +207,11 @@ export function withProject(
 
       // Fetch the project by ID or slug
       const project = await db.query.projects.findFirst({
-        where: or(eq(projects.id, projectId), eq(projects.slug, projectId)),
+        where: or(
+          eq(projects.id, projectId),
+          eq(projects.slug, projectId),
+          eq(projects.publicSlug, projectId),
+        ),
       });
 
       if (!project) {
@@ -221,7 +226,7 @@ export function withProject(
         // Check if user is a collaborator
         const collaboration = await db.query.projectCollaborators.findFirst({
           where: and(
-            eq(projectCollaborators.projectId, projectId),
+            eq(projectCollaborators.projectId, project.id),
             eq(projectCollaborators.userId, session.user.id),
           ),
         });
@@ -420,16 +425,4 @@ export function requireDatabase(): NonNullable<typeof db> {
  */
 export function generateId(): string {
   return crypto.randomUUID();
-}
-
-/**
- * Generates a URL-safe slug from a string.
- */
-export function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }

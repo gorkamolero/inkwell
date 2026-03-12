@@ -30,6 +30,7 @@ export interface ProjectWithDocuments {
   name: string;
   description: string | null;
   slug: string;
+  publicSlug: string;
   isPublic: boolean | null;
   githubRepo: string | null;
   githubBranch: string | null;
@@ -42,6 +43,7 @@ export interface ProjectWithDocuments {
 // Document tree node for sidebar navigation
 export interface DocumentTreeNode {
   id: string;
+  slug: string;
   title: string | null;
   path: string;
   wordCount: number | null;

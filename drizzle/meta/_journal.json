@@ -36,6 +36,20 @@
       "when": 1768927125749,
       "tag": "0004_aromatic_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768927125750,
+      "tag": "0005_calm_carnage",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768927125751,
+      "tag": "0006_sturdy_public_slugs",
+      "breakpoints": true
     }
   ]
 }

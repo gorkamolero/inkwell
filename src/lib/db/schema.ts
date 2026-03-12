@@ -65,6 +65,7 @@ export const projects = pgTable(
     id: text("id").primaryKey(), // CUID
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    publicSlug: text("public_slug").notNull().unique(),
     description: text("description"),
     githubRepo: text("github_repo"), // owner/repo format
     githubBranch: text("github_branch").default("main"),
@@ -97,6 +98,7 @@ export const documents = pgTable("documents", {
   projectId: text("project_id")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
+  slug: text("slug").notNull(),
   path: text("path").notNull(),
   title: text("title"),
   draftContent: text("draft_content"), // Local draft, not yet committed
@@ -105,7 +107,9 @@ export const documents = pgTable("documents", {
   wordCount: integer("word_count"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-});
+}, (table) => [
+  unique("documents_project_slug_unique").on(table.projectId, table.slug),
+]);
 
 export const subscriptions = pgTable("subscriptions", {
   id: text("id").primaryKey(),
