@@ -1,13 +1,9 @@
-import { and, eq } from "drizzle-orm";
 import { Octokit } from "@octokit/rest";
+import { and, eq } from "drizzle-orm";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { auth } from "@/lib/auth";
-import {
-  db,
-  projectCollaborators,
-  projects,
-  writingSessions,
-} from "@/lib/db";
+import { db, projectCollaborators, writingSessions } from "@/lib/db";
+import { getProjectByIdCompat } from "@/lib/db/compat";
 import {
   findProjectByRouteSegment,
   getDocumentById,
@@ -54,16 +50,21 @@ function RepoDocError({
         </h1>
 
         <p className="mb-6 text-gray-700">
-          The shared repo document route threw an exception while loading this page.
+          The shared repo document route threw an exception while loading this
+          page.
         </p>
 
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
           <div className="border-2 border-black bg-gray-50 p-3">
-            <div className="text-xs font-bold uppercase text-gray-500">Project</div>
+            <div className="text-xs font-bold uppercase text-gray-500">
+              Project
+            </div>
             <div className="font-mono text-sm text-black">{projectId}</div>
           </div>
           <div className="border-2 border-black bg-gray-50 p-3">
-            <div className="text-xs font-bold uppercase text-gray-500">Document</div>
+            <div className="text-xs font-bold uppercase text-gray-500">
+              Document
+            </div>
             <div className="font-mono text-sm text-black">{docId}</div>
           </div>
         </div>
@@ -72,19 +73,19 @@ function RepoDocError({
           <div className="mb-2 text-xs font-bold uppercase text-gray-300">
             Exception Message
           </div>
-          <pre className="whitespace-pre-wrap break-words font-mono">{message}</pre>
+          <pre className="whitespace-pre-wrap break-words font-mono">
+            {message}
+          </pre>
         </div>
       </div>
     </div>
   );
 }
 
-function hasGitHubBackedSource(githubRepo: string | null): githubRepo is string {
-  return !!(
-    githubRepo &&
-    githubRepo.includes("/") &&
-    !githubRepo.startsWith("__NEW__")
-  );
+function hasGitHubBackedSource(
+  githubRepo: string | null,
+): githubRepo is string {
+  return !!(githubRepo?.includes("/") && !githubRepo.startsWith("__NEW__"));
 }
 
 function getSessionSourceKeys(
@@ -145,7 +146,10 @@ async function loadInitialDocumentContent(params: {
       };
     }
   } catch (error) {
-    console.error("Failed to load GitHub App document for shared session:", error);
+    console.error(
+      "Failed to load GitHub App document for shared session:",
+      error,
+    );
   }
 
   try {
@@ -166,7 +170,10 @@ async function loadInitialDocumentContent(params: {
       lastGithubSha: data.sha,
     };
   } catch (error) {
-    console.error("Failed to load public GitHub document for shared session:", error);
+    console.error(
+      "Failed to load public GitHub document for shared session:",
+      error,
+    );
     return {
       markdown: "",
       lastGithubSha: null,
@@ -196,15 +203,15 @@ export default async function EditorPage({ params }: EditorPageProps) {
     }
 
     let project = await findProjectByRouteSegment(projectId);
-    let document = project ? await getDocumentByIdentifier(project.id, docId) : null;
+    let document = project
+      ? await getDocumentByIdentifier(project.id, docId)
+      : null;
 
     if (!document) {
       const legacyDocument = await getDocumentById(docId);
       if (legacyDocument) {
         document = legacyDocument;
-        project = await db.query.projects.findFirst({
-          where: eq(projects.id, legacyDocument.projectId),
-        });
+        project = await getProjectByIdCompat(legacyDocument.projectId);
       }
     }
 
@@ -261,10 +268,9 @@ export default async function EditorPage({ params }: EditorPageProps) {
       const updatedSession = await updateSession(createdSession.id, {
         githubRepo: sourceRepo,
         githubPath: sourcePath,
-        lastGithubSha:
-          hasGitHubBackedSource(project.githubRepo)
-            ? document.lastCommitSha ?? initialContent.lastGithubSha
-            : null,
+        lastGithubSha: hasGitHubBackedSource(project.githubRepo)
+          ? (document.lastCommitSha ?? initialContent.lastGithubSha)
+          : null,
       });
 
       if (!updatedSession) {
@@ -341,7 +347,10 @@ export default async function EditorPage({ params }: EditorPageProps) {
       title: projectDocSession.title,
       type: projectDocSession.type ?? "book",
       content: projectDocSession.content,
-      formatConfig: projectDocSession.formatConfig as Record<string, unknown> | null,
+      formatConfig: projectDocSession.formatConfig as Record<
+        string,
+        unknown
+      > | null,
       passwordProtected: !!projectDocSession.passwordHash,
       createdAt: projectDocSession.createdAt.toISOString(),
       updatedAt: projectDocSession.updatedAt.toISOString(),
@@ -355,7 +364,11 @@ export default async function EditorPage({ params }: EditorPageProps) {
     );
   } catch (error) {
     unstable_rethrow(error);
-    console.error("[repo-doc-page] failed to load", { projectId, docId, error });
+    console.error("[repo-doc-page] failed to load", {
+      projectId,
+      docId,
+      error,
+    });
     return <RepoDocError projectId={projectId} docId={docId} error={error} />;
   }
 }

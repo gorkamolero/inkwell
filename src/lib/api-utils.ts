@@ -1,9 +1,11 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { type ZodSchema, z } from "zod";
 import { auth } from "@/lib/auth";
-import { accounts, db, projectCollaborators, projects } from "@/lib/db";
+import { accounts, db, projectCollaborators } from "@/lib/db";
+import { getProjectByIdentifierCompat } from "@/lib/db/compat";
 import type { CollaboratorRole, Project } from "@/lib/db/schema";
+
 export { generateSlug } from "@/lib/slugs";
 
 // ============================================================================
@@ -205,14 +207,7 @@ export function withProject(
         throw ApiError.internal("Database not configured");
       }
 
-      // Fetch the project by ID or slug
-      const project = await db.query.projects.findFirst({
-        where: or(
-          eq(projects.id, projectId),
-          eq(projects.slug, projectId),
-          eq(projects.publicSlug, projectId),
-        ),
-      });
+      const project = await getProjectByIdentifierCompat(projectId);
 
       if (!project) {
         throw ApiError.notFound("Project not found");

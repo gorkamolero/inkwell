@@ -1,6 +1,11 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ApiError } from "@/lib/api-utils";
 import { db, documents, projects } from "@/lib/db";
+import {
+  findProjectByRouteSegmentCompat,
+  getDocumentByIdCompat,
+  getDocumentByIdentifierCompat,
+} from "@/lib/db/compat";
 import {
   addNumericSlugSuffix,
   generateDocumentSlug,
@@ -8,65 +13,18 @@ import {
 } from "@/lib/slugs";
 
 export async function findProjectByRouteSegment(routeSegment: string) {
-  if (!db) {
-    throw ApiError.internal("Database not configured");
-  }
-
-  const byPublicSlug = await db.query.projects.findFirst({
-    where: eq(projects.publicSlug, routeSegment),
-  });
-  if (byPublicSlug) {
-    return byPublicSlug;
-  }
-
-  const byInternalSlug = await db.query.projects.findFirst({
-    where: eq(projects.slug, routeSegment),
-  });
-  if (byInternalSlug) {
-    return byInternalSlug;
-  }
-
-  return db.query.projects.findFirst({
-    where: eq(projects.id, routeSegment),
-  });
+  return findProjectByRouteSegmentCompat(routeSegment);
 }
 
 export async function getDocumentByIdentifier(
   projectId: string,
   identifier: string,
 ) {
-  if (!db) {
-    throw ApiError.internal("Database not configured");
-  }
-
-  const document = await db.query.documents.findFirst({
-    where: and(
-      eq(documents.projectId, projectId),
-      or(eq(documents.id, identifier), eq(documents.slug, identifier)),
-    ),
-  });
-
-  if (document) {
-    return document;
-  }
-
-  const decodedPath = decodeURIComponent(identifier);
-  return db.query.documents.findFirst({
-    where: and(
-      eq(documents.projectId, projectId),
-      eq(documents.path, decodedPath),
-    ),
-  });
+  return getDocumentByIdentifierCompat(projectId, identifier);
 }
 
 export async function getDocumentById(documentId: string) {
-  if (!db) {
-    throw ApiError.internal("Database not configured");
-  }
-
-  return db.query.documents.findFirst({
-    where: eq(documents.id, documentId),
-  });
+  return getDocumentByIdCompat(documentId);
 }
 
 export async function ensureUniqueProjectPublicSlug(params: {
