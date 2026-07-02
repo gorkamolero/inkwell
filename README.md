@@ -138,6 +138,7 @@ Open [http://localhost:3000](http://localhost:3000)
 | `NEXT_PUBLIC_STRIPE_PRICE_CREATOR_BOOK` | Stripe Price ID for Creator tier |
 | `NEXT_PUBLIC_STRIPE_PRICE_PRO_ANNUAL` | Stripe Price ID for Pro tier |
 | `LIVEBLOCKS_SECRET_KEY` | Liveblocks secret key |
+| `ADMIN_USER_IDS` | Comma-separated user ids (`users.id`) allowed to call `/api/admin/*`. Unset or empty = no admins (fail closed) |
 
 ### Scripts
 

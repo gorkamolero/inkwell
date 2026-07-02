@@ -1,6 +1,7 @@
 import { Liveblocks } from "@liveblocks/node";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { isAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 
 /**
@@ -33,6 +34,9 @@ async function requireAuthenticatedAdmin() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!isAdmin(session)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;
 }

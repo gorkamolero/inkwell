@@ -1,4 +1,4 @@
-import { eq, like } from "drizzle-orm";
+import { like } from "drizzle-orm";
 import { Octokit } from "@octokit/rest";
 import { createEditor } from "lexical";
 import { $convertFromMarkdownString, TRANSFORMERS } from "@lexical/markdown";
@@ -8,6 +8,7 @@ import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { type NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin";
 import { ApiError } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { db, writingSessions } from "@/lib/db";
@@ -87,9 +88,7 @@ async function fetchPublicRepoContent(repoFullName: string, repoPath: string) {
 export async function POST(_request: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      throw ApiError.unauthorized();
-    }
+    requireAdmin(session);
 
     if (!db) {
       throw ApiError.internal("Database not configured");
