@@ -42,3 +42,4 @@ next-env.d.ts
 github-app-private-key.pem
 .env*.local
 test-results/
+playwright-report/

@@ -71,8 +71,8 @@ curl -X POST http://localhost:3000/api/admin/rooms/reset \
 
 ## Test Session
 
-- Room ID: `<TEST_ROOM_ID>`
-- Share slug: `<TEST_SLUG>`
+- Room ID: `<TEST_ROOM_ID>` (set locally; not committed)
+- Share slug: `<TEST_SLUG>` (set locally; not committed)
 - URL: `http://localhost:3000/s/<TEST_SLUG>`
 
 ## Content Format

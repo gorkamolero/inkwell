@@ -3,10 +3,10 @@
  * Redis Ping Script
  * 
  * Run this via cron every 13 days to keep Upstash Redis alive:
- * 
+ *
  * Linux/Mac cron (every 13 days at midnight):
- * 0 0 */13 * * /path/to/node /path/to/www/inkwell/scripts/ping-redis.js
- * 
+ * 0 0 */13 * * /path/to/node /path/to/hotpress/scripts/ping-redis.js
+ *
  * Or run manually:
  * node scripts/ping-redis.js
  */

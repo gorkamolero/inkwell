@@ -30,8 +30,8 @@ See `.claude/skills/room-admin/SKILL.md`
 
 ## Test Session
 
-- Room: `<TEST_ROOM_ID>`
-- Slug: `<TEST_SLUG>`
+- Room: `<TEST_ROOM_ID>` (set locally; not committed)
+- Slug: `<TEST_SLUG>` (set locally; not committed)
 - URL: `/s/<TEST_SLUG>`
 
 ## Commands

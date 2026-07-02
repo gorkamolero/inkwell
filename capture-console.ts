@@ -29,10 +29,12 @@ async function captureConsoleLogs() {
     });
   });
 
-  console.log('Navigating to http://localhost:3847/s/<TEST_SLUG>...');
-  await page.goto('http://localhost:3847/s/<TEST_SLUG>', { 
+  // Set locally; not committed
+  const TEST_SLUG = process.env.HOTPRESS_TEST_SLUG || '<TEST_SLUG>';
+  console.log(`Navigating to http://localhost:3847/s/${TEST_SLUG}...`);
+  await page.goto(`http://localhost:3847/s/${TEST_SLUG}`, {
     waitUntil: 'networkidle',
-    timeout: 30000 
+    timeout: 30000
   });
 
   console.log('Waiting 3 seconds to capture logs...');

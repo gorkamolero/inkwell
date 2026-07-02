@@ -2,7 +2,7 @@ import { withWorkflow } from "workflow/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["devhost", "devhost.tail*"],
+  allowedDevOrigins: ["localhost"],
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",
