@@ -4,13 +4,7 @@ import { sendDocumentEditedEmail } from "@/lib/email";
 import { db, projects, projectCollaborators, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { Liveblocks } from "@liveblocks/node";
-import { Redis } from "@upstash/redis";
-
-// Initialize Redis client (Upstash)
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL || process.env.REDIS_URL,
-  token: process.env.KV_REST_API_TOKEN || process.env.KV_REST_API_READ_ONLY_TOKEN,
-});
+import { redis } from "@/lib/redis";
 
 // Redis key prefix for online users
 const ONLINE_USERS_PREFIX = "hotpress:online-users:";
