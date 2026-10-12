@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
 import { resolve } from "path";
+import { output } from "./e2e/proof/rooms";
 
 // Load environment variables for auth token signing
 config({ path: resolve(__dirname, ".env.local") });
@@ -9,8 +10,12 @@ config({ path: resolve(__dirname, ".env.local") });
  * Playwright E2E Test Configuration for Hotpress
  * @see https://playwright.dev/docs/test-configuration
  */
+process.env.HOTPRESS_PROOF_RUN_ID ||= `${Date.now()}-${process.pid}`;
+
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: `${output}/test-results`,
+  globalTeardown: "./e2e/proof/teardown.ts",
 
   /* Global setup and teardown for database seeding */
   // Temporarily disabled - DB seeding not required for mocked tests
@@ -40,7 +45,7 @@ export default defineConfig({
   /* Reporter to use. */
   reporter: [
     ["list"],
-    ["html", { open: "never" }],
+    ["html", { open: "never", outputFolder: process.env.PLAYWRIGHT_HTML_OUTPUT_DIR || `${output}/report` }],
     ...(process.env.CI ? [["github"] as const] : []),
   ],
 
@@ -48,9 +53,10 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: "http://localhost:3847",
+    channel: "chromium",
 
     /* Collect trace when retrying the failed test. */
-    trace: "on-first-retry",
+    trace: "off",
 
     /* Screenshot on failure */
     screenshot: "only-on-failure",

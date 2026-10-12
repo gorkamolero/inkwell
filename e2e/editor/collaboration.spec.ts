@@ -29,7 +29,7 @@ test.describe("Real-Time Collaboration", () => {
   let pageB: Page;
 
   test.beforeAll(async () => {
-    browser = await chromium.launch();
+    browser = await chromium.launch({ channel: "chromium" });
     contextA = await browser.newContext();
     contextB = await browser.newContext();
     pageA = await contextA.newPage();
@@ -37,9 +37,8 @@ test.describe("Real-Time Collaboration", () => {
   });
 
   test.afterAll(async () => {
-    await contextA.close();
-    await contextB.close();
-    await browser.close();
+    await Promise.all([contextA?.close(), contextB?.close()]);
+    await browser?.close();
   });
 
   test("user B can join user A's session via share link", async () => {
@@ -63,9 +62,7 @@ test.describe("Real-Time Collaboration", () => {
     ).toBeVisible({ timeout: 15000 });
     await waitForLiveblocksConnection(pageB, 15000);
 
-    // Wait for both to connect
-    await pageA.waitForTimeout(2000);
-    await pageB.waitForTimeout(2000);
+
   });
 
   test("changes from user A sync to user B", async () => {
@@ -78,7 +75,7 @@ test.describe("Real-Time Collaboration", () => {
     await editorA.type("Hello from User A");
 
     // Wait for sync (Liveblocks real-time)
-    await pageA.waitForTimeout(3000);
+
 
     // User B should see the change
     await expect(pageB.getByText("Hello from User A")).toBeVisible({
@@ -93,7 +90,7 @@ test.describe("Real-Time Collaboration", () => {
     await editorB.type(" and User B");
 
     // Wait for sync
-    await pageB.waitForTimeout(3000);
+
 
     // User A should see the combined content
     await expect(
@@ -108,7 +105,7 @@ test.describe("Shared Session Access", () => {
     const shareUrl = await createAndShareSession(page);
 
     // Open a new context (anonymous user)
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({ channel: "chromium" });
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
 
@@ -122,7 +119,7 @@ test.describe("Shared Session Access", () => {
       await waitForLiveblocksConnection(anonPage, 15000);
     } finally {
       await anonContext.close();
-      await browser.close();
+      await browser?.close();
     }
   });
 

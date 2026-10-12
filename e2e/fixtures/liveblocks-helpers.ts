@@ -8,6 +8,8 @@ import { Browser, BrowserContext, Page, chromium } from "@playwright/test";
 import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { TestUser, TEST_USERS } from "./test-data";
 
+import { trackRoom } from "../proof/rooms";
+
 const LIVEBLOCKS_BASE_URL = "https://api.liveblocks.io/v2";
 const APP_BASE_URL = "http://localhost:3847";
 
@@ -79,6 +81,12 @@ export async function setupCollaborationTest(
 export async function createSharedSession(
   page: Page
 ): Promise<{ url: string; shareSlug: string }> {
+  page.on("response", async response => {
+    if (response.request().method() === "POST" && new URL(response.url()).pathname === "/api/sessions" && response.ok()) {
+      const data = await response.json();
+      trackRoom(data.session.id);
+    }
+  });
   await page.goto("/");
   await page.waitForSelector('[role="textbox"]', { timeout: 15000 });
 
@@ -116,6 +124,8 @@ export async function createSharedSessionViaApi(
     session: { id: string };
   };
 
+  trackRoom(createData.session.id);
+
   const shareResponse = await page.context().request.post(
     `${APP_BASE_URL}/api/sessions/${createData.session.id}/share`,
     {
@@ -132,6 +142,7 @@ export async function createSharedSessionViaApi(
     shareUrl: string;
   };
 
+  if (new URL(shareData.shareUrl).origin !== APP_BASE_URL) throw new Error("Refusing non-local shared URL");
   await page.goto(shareData.shareUrl);
   await page.waitForURL(/\/s\/.+/, { timeout: 15000 });
   await page.waitForSelector('[role="textbox"]', { timeout: 15000 });
@@ -150,29 +161,16 @@ export async function createSharedSessionViaApi(
  */
 export async function deleteTestRoom(roomId: string): Promise<void> {
   const secretKey = process.env.LIVEBLOCKS_SECRET_KEY;
-  if (!secretKey) {
-    console.warn("[E2E] LIVEBLOCKS_SECRET_KEY not set, cannot delete room");
-    return;
-  }
-
-  try {
-    const response = await fetch(`${LIVEBLOCKS_BASE_URL}/rooms/${roomId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-      },
-    });
-
-    if (response.ok) {
-      console.log(`[E2E] Deleted Liveblocks room: ${roomId}`);
-    } else if (response.status !== 404) {
-      console.warn(
-        `[E2E] Failed to delete room ${roomId}: ${response.status}`
-      );
-    }
-  } catch (error) {
-    console.warn(`[E2E] Error deleting room ${roomId}:`, error);
-  }
+  if (!secretKey) throw new Error("LIVEBLOCKS_SECRET_KEY required for room cleanup");
+  const response = await fetch(`${LIVEBLOCKS_BASE_URL}/rooms/${encodeURIComponent(roomId)}`, {
+    method: "DELETE", headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  if (!response.ok && response.status !== 404) throw new Error(`Room cleanup failed: ${response.status}`);
+  const verification = await fetch(`${LIVEBLOCKS_BASE_URL}/rooms/${encodeURIComponent(roomId)}`, {
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  if (verification.status !== 404) throw new Error(`Room absence verification failed: ${verification.status}`);
+  console.log(`[E2E] Room removed; verified GET 404: ${roomId}`);
 }
 
 /**
@@ -228,10 +226,7 @@ export async function waitForLiveblocksConnection(
     state: "visible",
     timeout,
   });
-  await page
-    .getByText(/live|connecting|collaborative/i)
-    .first()
-    .waitFor({ state: "visible", timeout });
+  await page.getByText("Live", { exact: true }).waitFor({ state: "visible", timeout });
 }
 
 /**
