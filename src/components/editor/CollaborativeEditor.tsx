@@ -594,7 +594,7 @@ function ThreadsSidebar({ isOpen, onClose }: ThreadsSidebarProps) {
       </div>
       <div
         className="overflow-auto"
-        style={{ maxHeight: "calc(100vh - 200px)" }}
+        style={{ height: "calc(100vh - 200px)" }}
       >
         {threads && threads.length > 0 ? (
           <AnchoredThreads threads={threads} />
@@ -835,19 +835,17 @@ function CollaborativeEditorInner({
   };
 
   return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-        <LexicalComposer initialConfig={editorConfig}>
-          {/* Liveblocks Plugin - handles all collaboration + floating comments */}
-          <LiveblocksPlugin>
-            <FloatingComposer />
-            {threads && <FloatingThreads threads={threads} />}
-            <FloatingToolbar>
-              <Toolbar.SectionInline />
-              <Toolbar.Separator />
-              <Toolbar.SectionCollaboration />
-            </FloatingToolbar>
-          </LiveblocksPlugin>
+    <LexicalComposer initialConfig={editorConfig}>
+      <LiveblocksPlugin>
+        <FloatingComposer />
+        {threads && <FloatingThreads threads={threads} />}
+        <FloatingToolbar>
+          <Toolbar.SectionInline />
+          <Toolbar.Separator />
+          <Toolbar.SectionCollaboration />
+        </FloatingToolbar>
+        <div className="flex h-full">
+          <div className="flex-1 flex flex-col border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
 
           {/* Header with presence - FIXED */}
           <div className="flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2 flex-shrink-0">
@@ -1036,10 +1034,9 @@ function CollaborativeEditorInner({
               Collaborative
             </BrutalBadge>
           </div>
-        </LexicalComposer>
       </div>
 
-      {/* Threads sidebar */}
+      {/* Threads sidebar shares the editor and Liveblocks comment contexts. */}
       <ThreadsSidebar
         isOpen={showThreads}
         onClose={() => setShowThreads(false)}
@@ -1047,7 +1044,9 @@ function CollaborativeEditorInner({
 
       {/* AI Assistant panel */}
       <AiAssistantPanel isOpen={showAi} onClose={() => setShowAi(false)} />
-    </div>
+        </div>
+      </LiveblocksPlugin>
+    </LexicalComposer>
   );
 }
 
