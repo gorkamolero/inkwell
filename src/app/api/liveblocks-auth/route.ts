@@ -29,13 +29,25 @@ export async function POST(request: Request) {
   // Get the room from request body (may be undefined for AI/notifications)
   const body = await request.json();
   const { room } = body;
+  // A room ID is a capability in the existing sharing model, never a pattern.
+  if (
+    room !== undefined &&
+    (typeof room !== "string" || !room || room.includes("*"))
+  ) {
+    return new Response("Invalid room ID", { status: 400 });
+  }
 
   // Get authenticated user if available
   const session = await auth();
 
   // Generate user ID and info
   let userId: string;
-  let userInfo: { name: string; color: string; picture?: string; isAuthenticated: boolean };
+  let userInfo: {
+    name: string;
+    color: string;
+    picture?: string;
+    isAuthenticated: boolean;
+  };
 
   if (session?.user) {
     // Authenticated user
@@ -58,24 +70,13 @@ export async function POST(request: Request) {
 
   const liveblocks = getLiveblocks();
 
-  // If no room specified (AI/notifications), use identifyUser
-  // If room specified, use prepareSession with room access
-  if (!room) {
-    // ID token auth - for AI copilots, notifications, etc.
-    const { status, body: responseBody } = await liveblocks.identifyUser(
-      userId,
-      { userInfo }
-    );
-    return new Response(responseBody, { status });
+  // Use access tokens for both room and roomless features. An empty grant
+  // authenticates notifications without granting access to any room; the client
+  // only reuses a room token when its exact room permission matches.
+  const liveblocksSession = liveblocks.prepareSession(userId, { userInfo });
+  if (room) {
+    liveblocksSession.allow(room, liveblocksSession.FULL_ACCESS);
   }
-
-  // Access token auth - for specific room access
-  const liveblocksSession = liveblocks.prepareSession(userId, {
-    userInfo,
-  });
-
-  // Grant full access to the requested room
-  liveblocksSession.allow(room, liveblocksSession.FULL_ACCESS);
 
   // Authorize and return the session
   const { status, body: responseBody } = await liveblocksSession.authorize();
