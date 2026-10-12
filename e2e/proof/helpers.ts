@@ -99,6 +99,8 @@ export const test = base.extend<{ proof: Proof }>({
           ? route.abort()
           : route.continue();
       });
+    const browserErrors: string[] = [];
+    const authorizationFailures: string[] = [];
     for (const p of [a, b, c]) {
       p.on("response", async (response) => {
         try {
@@ -135,6 +137,7 @@ export const test = base.extend<{ proof: Proof }>({
                   Buffer.from(bearer.split(".")[1], "base64url").toString(),
                 ).k
               : "none";
+            if ([401, 403].includes(response.status())) authorizationFailures.push(`${response.request().method()} ${url.pathname}: ${response.status()}`);
             console.log(
               "Liveblocks HTTP failure",
               tokenKind,
@@ -149,16 +152,17 @@ export const test = base.extend<{ proof: Proof }>({
           /* A closing page may make diagnostic response bodies unavailable. */
         }
       });
-      p.on("pageerror", (error) =>
+      p.on("pageerror", (error) => {
+        browserErrors.push(error.message.replace(/eyJ[A-Za-z0-9_.-]+/g, "[redacted]"));
         console.log(
           "Browser error",
           error.message.includes("LexicalComposerContext")
             ? "Missing Lexical context"
             : error.message.includes("thread")
               ? "Thread fetch/render failed"
-              : "Unclassified browser error",
-        ),
-      );
+              : error.stack?.replace(/eyJ[A-Za-z0-9_.-]+/g, "[redacted]"),
+        );
+      });
     }
     const ids = [randomUUID(), randomUUID()].map((id) => `proof-${id}`);
     const dbUrl = new URL(process.env.DATABASE_URL!);
@@ -187,10 +191,15 @@ export const test = base.extend<{ proof: Proof }>({
       await b.goto(session.url);
       await ready(b);
       await use({ a, b, c, id: session.sessionId, url: session.url });
+      expect(browserErrors, "Browser errors can interrupt the Lexical/Yjs listener chain").toEqual([]);
+      expect(authorizationFailures, "No mounted feature may silently fail authorization").toEqual([]);
     } finally {
       if (info.status !== info.expectedStatus) {
         const states = await Promise.all(
-          [a, b].map((p) => state(p).catch(() => null)),
+          [a, b].map(async (p) => ({
+            lexical: await state(p).catch(() => null),
+            yjs: await p.evaluate(() => (window as any).__collaborationSnapshot?.()).catch(() => null),
+          })),
         );
         writeFileSync(
           `${output}/failed-states-${process.env.HOTPRESS_PROOF_RUN_ID}-${info.testId.replace(/[^a-zA-Z0-9]/g, "")}.json`,

@@ -118,6 +118,12 @@ test.describe("Rapid typing — full paragraph integrity", () => {
     await append(a, text);
     await converge(a, b);
     await expect(editor(b)).toHaveText(text);
+    for (const page of [a, b]) {
+      const yjsText = await page.evaluate(() =>
+        (window as any).__collaborationSnapshot().flat(Infinity)
+          .filter((part: unknown) => typeof part === "string").join(""));
+      expect(yjsText).toBe(text);
+    }
   });
 });
 test.describe("Comments — anchor, reply, resolve, reload", () => {
@@ -196,11 +202,13 @@ test.describe("Offline and reconnect — no sentences lost", () => {
     await append(a, "Starting together.");
     await converge(a, b);
     await b.context().setOffline(true);
+    const offlineStarted = Date.now();
     await append(b, " Guest writes offline.");
     await append(a, " Owner writes online.");
     expect(await b.evaluate(() => navigator.onLine)).toBe(false);
     await expect(editor(a)).not.toContainText("Guest writes offline.");
     await expect(editor(b)).not.toContainText("Owner writes online.");
+    await b.waitForTimeout(Math.max(0, 9000 - (Date.now() - offlineStarted)));
     await b.context().setOffline(false);
     for (const p of [a, b])
       for (const text of [

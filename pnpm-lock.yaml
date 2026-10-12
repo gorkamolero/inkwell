@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@liveblocks/react-lexical@3.12.1':
+    hash: 54a5857c90ecfbae673e96ad131b2c12a55eebb282312a94e98f2dadf40e64cd
+    path: patches/@liveblocks__react-lexical@3.12.1.patch
+
 importers:
 
   .:
@@ -97,7 +102,7 @@ importers:
         version: 3.12.1(@types/json-schema@7.0.15)(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(react@19.2.3)
       '@liveblocks/react-lexical':
         specifier: ^3.12.1
-        version: 3.12.1(@lexical/react@0.35.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(yjs@13.6.29))(@lexical/rich-text@0.35.0)(@lexical/selection@0.35.0)(@lexical/utils@0.35.0)(@lexical/yjs@0.35.0(yjs@13.6.29))(@types/json-schema@7.0.15)(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(lexical@0.35.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 3.12.1(patch_hash=54a5857c90ecfbae673e96ad131b2c12a55eebb282312a94e98f2dadf40e64cd)(@lexical/react@0.35.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(yjs@13.6.29))(@lexical/rich-text@0.35.0)(@lexical/selection@0.35.0)(@lexical/utils@0.35.0)(@lexical/yjs@0.35.0(yjs@13.6.29))(@types/json-schema@7.0.15)(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(lexical@0.35.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@liveblocks/react-ui':
         specifier: ^3.12.1
         version: 3.12.1(@types/json-schema@7.0.15)(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -5438,7 +5443,7 @@ snapshots:
       - '@types/json-schema'
       - encoding
 
-  '@liveblocks/react-lexical@3.12.1(@lexical/react@0.35.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(yjs@13.6.29))(@lexical/rich-text@0.35.0)(@lexical/selection@0.35.0)(@lexical/utils@0.35.0)(@lexical/yjs@0.35.0(yjs@13.6.29))(@types/json-schema@7.0.15)(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(lexical@0.35.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@liveblocks/react-lexical@3.12.1(patch_hash=54a5857c90ecfbae673e96ad131b2c12a55eebb282312a94e98f2dadf40e64cd)(@lexical/react@0.35.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(yjs@13.6.29))(@lexical/rich-text@0.35.0)(@lexical/selection@0.35.0)(@lexical/utils@0.35.0)(@lexical/yjs@0.35.0(yjs@13.6.29))(@types/json-schema@7.0.15)(@types/react-dom@19.2.3(@types/react@19.2.8))(@types/react@19.2.8)(lexical@0.35.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@floating-ui/react-dom': 2.1.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@lexical/react': 0.35.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(yjs@13.6.29)

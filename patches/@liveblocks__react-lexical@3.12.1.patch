@@ -1,0 +1,26 @@
+diff --git a/dist/comments/comment-plugin-provider.cjs b/dist/comments/comment-plugin-provider.cjs
+index bab5576ba61c576484204ce374265625bac03ab2..a5372554909e179b2fba5d6f685309c8a85eef07 100644
+--- a/dist/comments/comment-plugin-provider.cjs
++++ b/dist/comments/comment-plugin-provider.cjs
+@@ -142,7 +142,7 @@ function CommentPluginProvider({ children }) {
+       const threadIds2 = $getThreadIds(selection).filter((id) => {
+         return store.outputs.threads.get().findMany(roomId, { resolved: false }, "asc", void 0).some((thread) => thread.id === id);
+       });
+-      setActiveThreads(threadIds2);
++      setActiveThreads((previous) => client.shallow(previous, threadIds2) ? previous : threadIds2);
+     }
+     const unsubscribeCache = store.outputs.threads.subscribe(() => {
+       editor.getEditorState().read($onStateRead);
+diff --git a/dist/comments/comment-plugin-provider.js b/dist/comments/comment-plugin-provider.js
+index 24f33223672b734074daa6cc0f969d3651d169ad..3df1cb559d2b3c7a7aaf8fb1334e93cfc4782c5d 100644
+--- a/dist/comments/comment-plugin-provider.js
++++ b/dist/comments/comment-plugin-provider.js
+@@ -140,7 +140,7 @@ function CommentPluginProvider({ children }) {
+       const threadIds2 = $getThreadIds(selection).filter((id) => {
+         return store.outputs.threads.get().findMany(roomId, { resolved: false }, "asc", void 0).some((thread) => thread.id === id);
+       });
+-      setActiveThreads(threadIds2);
++      setActiveThreads((previous) => shallow(previous, threadIds2) ? previous : threadIds2);
+     }
+     const unsubscribeCache = store.outputs.threads.subscribe(() => {
+       editor.getEditorState().read($onStateRead);

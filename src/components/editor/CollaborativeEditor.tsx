@@ -25,6 +25,7 @@ import {
   useHistoryVersions,
   useInboxNotifications,
   useThreads,
+  useStatus,
 } from "@liveblocks/react";
 import {
   AnchoredThreads,
@@ -60,6 +61,7 @@ import { AiChat } from "@liveblocks/react-ui";
 import { BrutalBadge } from "@/components/ui";
 import { RoomProvider, useMyPresence, useOthers, useSelf } from "@/lib/liveblocks";
 import { EditorToolbar } from "./editor-toolbar";
+import { CollaborationProofSnapshot } from "./CollaborationProofSnapshot";
 
 // Editor theme - neobrutalist style
 const editorTheme = {
@@ -312,6 +314,24 @@ function AutoSavePlugin({ sessionId }: AutoSavePluginProps) {
 
 function EditorReadyIndicator() {
   const isReady = useIsEditorReady();
+  const status = useStatus();
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    const update = () => setOffline(!navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  if (offline || status === "disconnected") {
+    return <BrutalBadge variant="destructive" size="sm">Offline</BrutalBadge>;
+  }
+  if (status === "reconnecting") {
+    return <BrutalBadge variant="default" size="sm">Reconnecting...</BrutalBadge>;
+  }
 
   return isReady ? (
     <BrutalBadge variant="success" size="sm">
@@ -837,6 +857,7 @@ function CollaborativeEditorInner({
   return (
     <LexicalComposer initialConfig={editorConfig}>
       <LiveblocksPlugin>
+        <CollaborationProofSnapshot />
         <FloatingComposer />
         {threads && <FloatingThreads threads={threads} />}
         <FloatingToolbar>

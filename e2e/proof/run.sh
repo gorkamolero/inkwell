@@ -5,7 +5,7 @@ export HOTPRESS_PROOF_OUTPUT="${HOTPRESS_PROOF_OUTPUT:-/private/tmp/claude-501/-
 export PLAYWRIGHT_BROWSERS_PATH="$HOTPRESS_PROOF_OUTPUT/browsers"
 mkdir -p "$HOTPRESS_PROOF_OUTPUT"
 if ! curl -fsS http://localhost:3847 > /dev/null; then
-  pnpm dev > "$HOTPRESS_PROOF_OUTPUT/dev.log" 2>&1 &
+  NEXT_PUBLIC_COLLABORATION_PROOF=1 pnpm dev > "$HOTPRESS_PROOF_OUTPUT/dev.log" 2>&1 &
   dev_pid=$!
   trap 'kill "$dev_pid" 2>/dev/null || true' EXIT
   for attempt in {1..90}; do

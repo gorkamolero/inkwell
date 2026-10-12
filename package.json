@@ -102,7 +102,10 @@
       "@swc/core",
       "esbuild",
       "sharp"
-    ]
+    ],
+    "patchedDependencies": {
+      "@liveblocks/react-lexical@3.12.1": "patches/@liveblocks__react-lexical@3.12.1.patch"
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
