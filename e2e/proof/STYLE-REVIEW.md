@@ -132,3 +132,20 @@ All five round-2 items pass:
 One leftover, fixed by Claude in this round: remote pointers still showed at 390 px and covered words, which goal.md rules out for phones. They're now hidden at 640 px and below, and the proof and style specs assert it. Full collaboration suite on a production build: 20/20 passed, and all 18 rooms were deleted and verified 404.
 
 **Verdict: the collaboration UI passes the style rubric.** Next come the deploy, the live check and the video.
+
+## Demo video review gate (Claude plus a fresh-eyes reviewer, 2026-10-12)
+
+| Take | Claude's frame review | Fresh-eyes scores (framing / phone / pacing / polish / claims) | Verdict |
+| --- | --- | --- | --- |
+| v3 | fail: zoom crops, popover over its phrase | 3 / 2 / 2 / 3 / 2 | fail |
+| v4 | fail: duplicate labels, cut crops, blank guest window | (not run) | fail |
+| v5 | pass | 4 / 4 / 3 / 3 / 3 | fail |
+| v6 | pass | 4 / 4 / 4 / 3 / 4 | fail |
+| v7 | pass | 4 / 3 / 3 / 4 / 3 | fail |
+| v8 | pass | 4 / 4 / 4 / 3 / 4 | fail, narrowly |
+| v9 | pass | 4 / 4 / 4 / 4 / 4 | meets the bar, nitpicks |
+| v10 | pass | the nitpick fixes were confirmed, with no regressions | **meets the bar** |
+
+Accepted as true app behaviour, not composition: Ana's presence avatar stays in the offline guest's header, the guest's pointer hovers a header icon during reconnect, and a name label can sit between two nearby carets. The product fix from this gate, "the popover never covers its phrase", is commit 686e144 and is live.
+
+v10 (44.6 s, 1920×1080) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v10.mp4` on the Hotpress case page and the Engineering page.
