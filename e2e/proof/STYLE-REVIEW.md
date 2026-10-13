@@ -173,6 +173,26 @@ Remaining nitpicks from the last review, all accepted:
 - no share-link shot;
 - a hard cut to the end card.
 
+### Claude's frame review of v21, by step (2026-10-13)
+
+I looked at a frame from every shot (`v21-contact-sheet.png`) and at every 2–3 frames through the three camera moves. I checked the pointer paths with a darken-blend trail of the join frames at 15 fps.
+
+| Step | Output time | What the frames show |
+| --- | --- | --- |
+| Opener | 0–2.5 s | Ana's full app, LIVE, three lines. Her caret moves in the third line. "One story. Two writers." |
+| 1. Join, both pointers | 2.5–7.1 s | The guest's page has loaded, with Ana's avatar and LIVE. Ana's green "Ana" pointer glides along a gentle curve in the margin below the text (the trail shows ease at both ends). Then on Ana's screen the blue "Swift Author" pointer traces a clear eased arc. Neither covers a word. The caption appears after the load. |
+| 2. Both write | 7.1–14.2 s | An eased 0.5 s tilt into Ana's document. Ana types "Sails stirred" while the guest's pointer rests in the margin. On the guest's screen, Ana's green caret and flag sit after "stirred." while the guest types "Light warmed the quay." |
+| 3. Same sentence | 14.2–18.7 s | Zoomed on line 1. The blue "Swift Author" caret and flag, plus Ana's caret, are both in "Mara reached the … harbor … before dawn." "old" and "just" are typed at the same time. |
+| Camera in | 18.7–19.5 s | The push starts from the sentence framing. Heading and line 1 leave across the top edge. Smooth, with no flash. |
+| 4. Comment, pin | 19.7–26.2 s | Ana selects "Light warmed the quay", and the toolbar with Comment appears. The composer opens below the phrase, she types "Keep this quiet opening?" and clicks Send, and her own pin shows about 1.5 s. |
+| 5. Guest replies, Ana sees | 26.2–34.8 s | On the guest's screen: the pin with "1", the hover preview, then the Discussion popover with the reply being typed. On Ana's screen: the pin shows "2", and the popover shows both messages (readable at 390 px: names, text and count). |
+| Camera out | 33.6–34.8 s | An eased pull-back. The header enters from the top edge, and the full view holds 0.4 s before the cut. |
+| 6. Offline, merge | 34.8–46.7 s | The guest's screen is OFFLINE, typing "The town woke slowly." Then "Meanwhile, Ana keeps writing": "The tide turned." The two-screen reconnect: OFFLINE held 1.5 s, RECONNECTING…, LIVE, and the line lands on Ana's side. The merge close-up has tints, plus "Ana, meanwhile" and "Swift Author, offline" beside their sentences. |
+| Match | 46.7–50.3 s | Both real windows side by side, LIVE on both, the same four paragraphs, the highlight and the pin. |
+| End card | 50.3–54.3 s | "Edits reach the other writer in about 0.1 s, median of 30 edits", "Tested end to end against Liveblocks", hotpress.app. |
+
+Result: every step in goal.md section 2 is visible in v21.
+
 ## Live check on hotpress.app (2026-10-13)
 
 `e2e/proof/live-check.cjs` is run against production with two anonymous guests in one shared document:
