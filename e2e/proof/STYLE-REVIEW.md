@@ -74,3 +74,48 @@ Evidence directory: `/private/tmp/claude-501/-Users-gorkolas-Developer-job-hunt-
 Additional states: `1440-toolbar.png`, `1440-focus.png`, `1440-resolved.png`, `390-caret-selection-no-pointers.png`, `390-resolved.png`, plus the `product-*.png` captures from the existing proof. The style test checks both guest-reply screens, text/pin intersection, phone horizontal overflow, outside-tap dismissal, resolution, and keyboard inset handling. Rerun `collaboration-style.spec.ts` to regenerate the intermediate compositor frames, then extract the clips and strips with `HOTPRESS_PROOF_OUTPUT=<evidence directory> node e2e/proof/extract-style-motion.mjs`.
 
 Verification completed: production build and targeted source lint passed; the entire collaboration project passed **20/20** (auth 1, latency 1, proof including names 11, style 1, video 1, legacy collaboration 5), with zero skips/retries. A final capture-only run passed **1/1** on the same application build. All 31 delivered screenshots and all six nine-frame strips were inspected at full size. Video metadata confirms six 1440 × 1000, 30 fps clips. Across the debugging attempts and final runs, **66 exact recorded rooms** were deleted and each GET verified 404; the ledgers match with no missing or extra IDs. The production server was stopped and port **3847 is free**. No push, deployment or hotpress.app calls.
+
+## Round 2 review (Claude, 2026-10-12, commits 0656e8d to 8a56033; 31 screenshots and 6 motion strips)
+
+Now passing:
+- one readable colour per person (blue, indigo, green) on the pointer, caret, pin and avatars;
+- thread avatars in the person's colour with initials;
+- guest names right on both screens;
+- pin counts;
+- collision-free pin placement (past the line end when the line above is long);
+- popover and preview anchored to the pin, with a single shadow;
+- the pending highlight in warm yellow;
+- the composer aligned to the selection;
+- the header name not truncated;
+- the phone sheet with a handle;
+- pointer glide and the popover fade from the pin, as seen in the strips.
+
+### Must fix (round 3)
+
+1. **Duplicate name labels.** The same person shows two "Writer A" labels at once, a caret flag and a pointer pill (1440-two-pointers, pointer-curve strip). Show one label per person: on the pointer while they move the mouse, on the caret while they type (that person's pointer pill then shows the arrow only), and never both.
+2. **Header avatars.** The header shows one letter ("W", "W") while pins and threads show two ("WA", "BS"). Use the same two-letter initials everywhere. On the phone, remove the gap between the first avatar and the others (390-*).
+3. **The composer's send button** is olive (1440-composer-pending). Use the app's primary button style when enabled (black with a white icon, or the app's yellow with a black border, whichever the toolbar uses for primary actions), and the muted grey when disabled.
+4. **The focus ring after a mouse click.** The blue ring around the pin shows after clicking it (popover strip). Show focus rings only for `:focus-visible` (keyboard).
+5. **Phone toolbar contrast.** The floating toolbar's icons and "Comment" label are light grey (390-toolbar). Use the app's dark icon colour, with the "Comment" button the clearest action.
+
+## Round 2 fixes
+
+Implemented by Codex on 2026-10-12 for round 3 review. The Round 2 review above is preserved. Evidence directory: `/private/tmp/claude-501/-Users-gorkolas-Developer-job-hunt-command-center/130c3c3e-ffb7-43bf-a354-cb1c2408aaed/scratchpad/hotpress-style-r3/`. Desktop screenshots are 1440 × 1000; phone screenshots are 390 × 844.
+
+| Item | Change | Screenshot / motion evidence |
+| --- | --- | --- |
+| 1 — fixed | Presence carries the latest pointer/caret activity. Keyboard input hides that person's pointer pill and shows the caret flag; mouse movement reverses this. The caret keeps its visible stroke in either state. The existing Lexical patch adds a Yjs client-ID hook, avoiding name/colour matching and keeping different people independent. Scrolling preserves the activity state. Remote mouse pointers now remain available on narrow views; touch input does not publish a mouse pointer. | `1440-two-pointers-typing.png`, `1440-two-pointers-moving.png`, `390-two-pointers-typing.png`, `390-two-pointers-moving.png`; `pointer-and-typing.webm`, `pointer-and-typing-strip.png`, `pointer-and-typing-detail-strip.png` |
+| 2 — fixed | The live header uses the shared two-letter initials helper. Its invisible edit pencil no longer reserves space on phones, so avatar gaps are consistent. | Both widths of `*-two-pointers-typing.png` and `*-two-pointers-moving.png` show the full header. |
+| 3 — fixed | The current Liveblocks primary-button selector receives the app's black background and white icon when enabled; disabled Send/Reply stays grey. | `1440-composer-enabled.png`, `390-composer-enabled.png`; disabled states in `1440-composer-pending.png`, `390-composer-pending.png` |
+| 4 — fixed | Pointer activation avoids transferring keyboard focus to the pin; keyboard focus still uses `:focus-visible`. Mouse and keyboard outline styles are asserted separately. | `1440-pin-mouse.png`, `1440-focus.png`, `390-pin-mouse.png`, `390-pin-keyboard.png` |
+| 5 — fixed | Floating-toolbar controls use dark ink; Comment has a yellow background and black border as the clearest action. | `390-toolbar.png`, `1440-toolbar.png` |
+
+The style spec asserts the Writer A caret flag is visible and its pointer pill absent while typing, and the reverse while moving, at both widths. The product spec now expects remote mouse pointers on phones, matching this round's requested evidence. All other collaboration cases remain included.
+
+Final verification: `NEXT_PUBLIC_COLLABORATION_PROOF=1 pnpm build` and targeted source lint passed. The complete collaboration project passed **20/20** on `next start`: auth **1/1**, latency **1/1**, proof/names/product **11/11**, style **1/1**, video **1/1**, legacy collaboration **5/5**; **zero skips and retries**. Evidence: `suite-results.json`, `suite.log`, `report/index.html`, `latency.json`, `RESULTS.md`.
+
+The initial full run was **17/20**: the read-only Yjs build flag was missing, the previous phone-pointer-hidden assertion needed to match this round's requested behavior, and the default ffmpeg lacked drawtext. These were corrected before the fresh full run; initial results remain in `initial-suite-results.json` and `initial-suite.log`. The video run uses the existing drawtext-enabled ffmpeg from the earlier proof. A targeted style run also passed **1/1** before the full runs.
+
+All **39 full-size screenshots and seven strips** were personally inspected at original resolution. `visual-audit.json` records their dimensions and hashes. The pointer-and-typing clip is **6.3 seconds, 1440 × 1000, 30 fps**, with the 390 px segment padded inside that canvas. The detail strip crops nine unaltered video frames to keep the labels legible; it reads left-to-right, top-to-bottom. Phone keyboard-inset evidence remains a simulated visualViewport, not a physical-device keyboard claim.
+
+Across the targeted attempts and both full runs, **38 exact recorded rooms** were deleted and each GET verified **404**. `cleanup-audit.json` matches every recorded ID to `cleanup.jsonl`, with no missing or extra IDs. The production server was stopped and port **3847 is free**. No push, deployment, or hotpress.app calls. Reports, screenshots, and test results remain outside git.
