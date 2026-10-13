@@ -11,6 +11,12 @@ import { TestUser, TEST_USERS } from "../fixtures/test-data";
 
 // Load AUTH_SECRET from environment
 const AUTH_SECRET = process.env.AUTH_SECRET;
+// Match the app's production cookie name and JWT derivation salt. Chromium and
+// Playwright both support secure cookies on the trusted localhost origin.
+const secureProofCookies = process.env.HOTPRESS_PROOF_PRODUCTION === "1";
+const sessionCookieName = secureProofCookies
+  ? "__Secure-authjs.session-token"
+  : "authjs.session-token";
 
 if (!AUTH_SECRET) {
   console.warn(
@@ -45,18 +51,18 @@ export async function mockAuthSession(
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
     },
     secret: AUTH_SECRET,
-    salt: "authjs.session-token",
+    salt: sessionCookieName,
   });
 
   // Set the session cookie for localhost
   await page.context().addCookies([
     {
-      name: "authjs.session-token",
+      name: sessionCookieName,
       value: token,
       domain: "localhost",
       path: "/",
       httpOnly: true,
-      secure: false, // false for localhost
+      secure: secureProofCookies,
       sameSite: "Lax",
     },
   ]);
@@ -136,18 +142,18 @@ export async function setupAuthBeforeNavigation(
       exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
     },
     secret: AUTH_SECRET,
-    salt: "authjs.session-token",
+    salt: sessionCookieName,
   });
 
   // Set cookies before any navigation
   await page.context().addCookies([
     {
-      name: "authjs.session-token",
+      name: sessionCookieName,
       value: token,
       domain: "localhost",
       path: "/",
       httpOnly: true,
-      secure: false,
+      secure: secureProofCookies,
       sameSite: "Lax",
     },
   ]);

@@ -142,14 +142,21 @@ export async function createSharedSessionViaApi(
     shareUrl: string;
   };
 
-  if (new URL(shareData.shareUrl).origin !== APP_BASE_URL) throw new Error("Refusing non-local shared URL");
-  await page.goto(shareData.shareUrl);
+  const shareUrl = new URL(shareData.shareUrl);
+  const localOrigin = new URL(APP_BASE_URL);
+  if (shareUrl.host !== localOrigin.host || shareUrl.pathname !== `/s/${shareData.shareSlug}`) {
+    throw new Error("Refusing non-local shared URL");
+  }
+  // The API hardcodes HTTPS in production mode, while local next start uses
+  // HTTP. Adapt only the validated localhost transport, preserving the slug.
+  shareUrl.protocol = localOrigin.protocol;
+  await page.goto(shareUrl.href);
   await page.waitForURL(/\/s\/.+/, { timeout: 15000 });
   await page.waitForSelector('[role="textbox"]', { timeout: 15000 });
 
   return {
     sessionId: createData.session.id,
-    url: shareData.shareUrl,
+    url: shareUrl.href,
     shareSlug: shareData.shareSlug,
   };
 }
@@ -162,13 +169,33 @@ export async function createSharedSessionViaApi(
 export async function deleteTestRoom(roomId: string): Promise<void> {
   const secretKey = process.env.LIVEBLOCKS_SECRET_KEY;
   if (!secretKey) throw new Error("LIVEBLOCKS_SECRET_KEY required for room cleanup");
-  const response = await fetch(`${LIVEBLOCKS_BASE_URL}/rooms/${encodeURIComponent(roomId)}`, {
-    method: "DELETE", headers: { Authorization: `Bearer ${secretKey}` },
-  });
+  // DELETE is idempotent. Retry only transient service/network failures on
+  // this exact recorded room; never discover or substitute other room IDs.
+  const request = async (method: "DELETE" | "GET") => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let response: Response;
+      try {
+        response = await fetch(`${LIVEBLOCKS_BASE_URL}/rooms/${encodeURIComponent(roomId)}`, {
+          method, headers: { Authorization: `Bearer ${secretKey}` },
+        });
+      } catch {
+        if (attempt === 4) throw new Error(`Room cleanup ${method} network failure`);
+        await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+        continue;
+      }
+      if (response.status === 429 || response.status >= 500) {
+        if (attempt === 4) throw new Error(`Room cleanup ${method} failed: ${response.status}`);
+        await response.body?.cancel();
+        await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+        continue;
+      }
+      return response;
+    }
+    throw new Error("Room cleanup retry limit reached");
+  };
+  const response = await request("DELETE");
   if (!response.ok && response.status !== 404) throw new Error(`Room cleanup failed: ${response.status}`);
-  const verification = await fetch(`${LIVEBLOCKS_BASE_URL}/rooms/${encodeURIComponent(roomId)}`, {
-    headers: { Authorization: `Bearer ${secretKey}` },
-  });
+  const verification = await request("GET");
   if (verification.status !== 404) throw new Error(`Room absence verification failed: ${verification.status}`);
   console.log(`[E2E] Room removed; verified GET 404: ${roomId}`);
 }

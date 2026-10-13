@@ -1,6 +1,6 @@
 import { test as base, expect, Page } from "@playwright/test";
 import postgres from "postgres";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { output } from "./rooms";
 import { randomUUID } from "node:crypto";
 import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
@@ -78,12 +78,12 @@ export const test = base.extend<{ proof: Proof }>({
     const contexts = await Promise.all(
       [0, 1, 2].map((i) =>
         browser.newContext({
-          viewport: { width: 1280, height: 800 },
+          viewport: { width: 1280, height: recording ? 600 : 800 },
           ...(recording && i < 2
             ? {
                 recordVideo: {
                   dir: `${output}/raw`,
-                  size: { width: 1280, height: 800 },
+                  size: { width: 1280, height: 600 },
                 },
               }
             : {}),
@@ -188,9 +188,17 @@ export const test = base.extend<{ proof: Proof }>({
       }
       const session = await createSharedSessionViaApi(a);
       await ready(a);
-      await b.goto(session.url);
-      await ready(b);
+      if (!recording) {
+        await b.goto(session.url);
+        await ready(b);
+      }
       await use({ a, b, c, id: session.sessionId, url: session.url });
+      if (recording && (browserErrors.length || authorizationFailures.length)) {
+        const path = `${output}/video-scenario-v2.json`;
+        const scenario = JSON.parse(readFileSync(path, "utf8"));
+        scenario.errors.push("Browser or authorization errors occurred; see the test report.");
+        writeFileSync(path, JSON.stringify(scenario, null, 2));
+      }
       expect(browserErrors, "Browser errors can interrupt the Lexical/Yjs listener chain").toEqual([]);
       expect(authorizationFailures, "No mounted feature may silently fail authorization").toEqual([]);
     } finally {
@@ -223,8 +231,8 @@ export const test = base.extend<{ proof: Proof }>({
       }
       await Promise.all(contexts.map((ctx) => ctx.close()));
       if (recording) {
-        await a.video()!.saveAs(`${output}/writer-a.webm`);
-        await b.video()!.saveAs(`${output}/writer-b.webm`);
+        await a.video()!.saveAs(`${output}/writer-a-v2.webm`);
+        await b.video()!.saveAs(`${output}/writer-b-v2.webm`);
       }
       for (const id of ids) await sql`delete from "user" where id = ${id}`;
       await sql.end();
