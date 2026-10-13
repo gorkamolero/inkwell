@@ -15,7 +15,7 @@ import { createPortal } from "react-dom";
 
 import { authorColor, initials } from "@/lib/collaboration-identity";
 
-type Anchor = { id: string; x: number; y: number; element: HTMLElement };
+type Anchor = { id: string; x: number; y: number; element: HTMLElement; rects: DOMRect[] };
 
 function Author({ id }: { id: string }) {
   const { user } = useUser(id);
@@ -39,7 +39,7 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
   }, [closing]);
   const [hovered, setHovered] = useState<string | null>(null);
   const [viewport, setViewport] = useState({ bottom: 8, height: 800 });
-  const [position, setPosition] = useState({ left: 0, top: 0, origin: 0 });
+  const [position, setPosition] = useState({ left: 0, top: 0, origin: 0, maxHeight: 800 });
   const popover = useRef<HTMLDivElement>(null);
   const previousRequest = useRef(nextRequest);
   const lastPin = useRef<HTMLButtonElement | null>(null);
@@ -77,6 +77,7 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
                     ),
                     y: rect.top - hostRect.top,
                     element,
+                    rects: [...(found.get(id)?.rects || []), ...Array.from(rects)],
                   });
             }
           }
@@ -138,15 +139,21 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
       if (selected) {
         const pinX = hostRect.left + selected.x;
         const left = Math.max(12, Math.min(pinX, window.innerWidth - 372));
-        const height = popover.current?.offsetHeight || 340;
-        const top = Math.max(
-          12,
-          Math.min(
-            hostRect.top + selected.y + 33,
-            window.innerHeight - height - 12,
-          ),
-        );
-        setPosition({ left, top, origin: Math.max(12, pinX - left) });
+        // Anchor to the entire highlighted range, never the raised pin. Clamping
+        // the old pin-based top into the viewport could move a thread over words.
+        const lineTop = Math.min(...selected.rects.map((r) => r.top));
+        const lineBottom = Math.max(...selected.rects.map((r) => r.bottom));
+        const desiredHeight = popover.current
+          ? popover.current.scrollHeight +
+            popover.current.offsetHeight - popover.current.clientHeight
+          : 340;
+        const below = Math.max(0, window.innerHeight - 12 - lineBottom - 8);
+        const above = Math.max(0, lineTop - 8 - 12);
+        const useBelow = desiredHeight <= below;
+        const maxHeight = useBelow ? below : above;
+        const height = Math.min(desiredHeight, maxHeight);
+        const top = useBelow ? lineBottom + 8 : lineTop - 8 - height;
+        setPosition({ left, top, origin: Math.max(12, pinX - left), maxHeight });
       }
     };
     const schedule = () => {
@@ -298,6 +305,7 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
                 left: position.left,
                 top: position.top,
                 transformOrigin: `${position.origin}px 0`,
+                "--thread-max-height": `${position.maxHeight}px`,
                 "--sheet-bottom": `${viewport.bottom}px`,
                 "--sheet-height": `${viewport.height - 24}px`,
               } as CSSProperties

@@ -774,7 +774,7 @@ select:focus-visible {
 @media (hover: hover) and (min-width: 641px) {
   .hotpress-comment-pin:hover:not([aria-expanded="true"]) :is(.hotpress-pin-author, .hotpress-pin-preview), .hotpress-comment-pin:focus-visible :is(.hotpress-pin-author, .hotpress-pin-preview) { display: block; animation: collaboration-in 180ms ease-out; }
 }
-.hotpress-comment-popover { position: fixed; z-index: 100; width: 360px; max-height: calc(100dvh - 24px); overflow: auto; border: 2px solid #171717; border-radius: 8px; background: white; box-shadow: 4px 4px 0 #171717; animation: collaboration-in 200ms ease-out; }
+.hotpress-comment-popover { position: fixed; z-index: 100; width: 360px; max-height: min(calc(100dvh - 24px), var(--thread-max-height, 100dvh)); overflow: auto; border: 2px solid #171717; border-radius: 8px; background: white; box-shadow: 4px 4px 0 #171717; animation: collaboration-in 200ms ease-out; }
 .hotpress-popover-heading { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-bottom: 2px solid #171717; background: #fff3b8; font-size: 12px; font-weight: 600; }
 .hotpress-popover-heading button { font-size: 22px; line-height: 24px; width: 28px; cursor: pointer; }
 .hotpress-comment-popover .lb-thread, .hotpress-comment-popover .lb-composer { border: 0 !important; box-shadow: none !important; }

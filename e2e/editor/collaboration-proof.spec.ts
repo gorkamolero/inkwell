@@ -462,10 +462,33 @@ test("Product — moving pointers, highlight and pin, preview, popover reply, co
   ).toBeVisible();
   await expect(popover.locator(".lb-user").filter({ hasText: guestName })).toHaveCount(1);
   await expect(popover.locator(".lb-user[data-loading]")).toHaveCount(0);
+  const assertClearOfPhrase = async (side: "below" | "above") => {
+    await expect.poll(() => b.evaluate((side) => {
+      const pop = document.querySelector(".hotpress-comment-popover")!.getBoundingClientRect();
+      const rects = [...document.querySelectorAll(".lb-lexical-thread-mark")]
+        .flatMap((mark) => [...mark.getClientRects()]);
+      return rects.length > 0 && rects.every((r) =>
+        !(pop.left < r.right && pop.right > r.left && pop.top < r.bottom && pop.bottom > r.top)
+      ) && pop.top >= 11 && pop.bottom <= innerHeight - 11 &&
+        (side === "below" ? pop.top >= Math.max(...rects.map(r => r.bottom)) + 7 :
+          pop.bottom <= Math.min(...rects.map(r => r.top)) - 7);
+    }, side)).toBe(true);
+  };
+  await assertClearOfPhrase("below");
   await b.screenshot({
     animations: "disabled",
     path: `${output}/product-popover-reply.png`,
   });
+  // Exercise both a constrained, scrollable thread and a full-height thread
+  // above a lower anchor. Border thickness must not consume the 8px gap.
+  await b.setViewportSize({ width: 1440, height: 400 });
+  await assertClearOfPhrase("above");
+  await b.setViewportSize({ width: 1440, height: 700 });
+  await editor(b).evaluate(el => { el.style.paddingTop = "300px"; });
+  await assertClearOfPhrase("above");
+  await editor(b).evaluate(el => { el.style.paddingTop = ""; });
+  await b.setViewportSize({ width: 1440, height: 1000 });
+  await assertClearOfPhrase("below");
   await b.keyboard.press("Escape");
   await expect(popover).toHaveCount(0);
   await b.getByTitle("Next unresolved comment").click();
