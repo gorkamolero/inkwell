@@ -13,39 +13,14 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-function authorColor(id: string) {
-  const colors = [
-    "#0066FF",
-    "#FF66B2",
-    "#00FF66",
-    "#FFE75C",
-    "#FF3333",
-    "#9933FF",
-    "#FF9900",
-    "#00CCCC",
-  ];
-  let hash = 0;
-  for (const char of id) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
-  return colors[Math.abs(hash) % colors.length];
-}
+import { authorColor, initials } from "@/lib/collaboration-identity";
 
 type Anchor = { id: string; x: number; y: number; element: HTMLElement };
 
 function Author({ id }: { id: string }) {
   const { user } = useUser(id);
   const name = user?.name || "Writer";
-  return (
-    <>
-      <span className="hotpress-pin-initials">
-        {name
-          .split(" ")
-          .map((part) => part[0])
-          .slice(0, 2)
-          .join("")}
-      </span>
-      <span className="hotpress-pin-author">{name}</span>
-    </>
-  );
+  return <span className="hotpress-pin-initials">{initials(name)}</span>;
 }
 
 export function CommentPins({ nextRequest }: { nextRequest: number }) {
@@ -53,6 +28,17 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
   const { threads } = useThreads();
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [active, setActive] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    if (!closing) return;
+    const timer = window.setTimeout(() => {
+      setActive(null);
+      setClosing(false);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [closing]);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [viewport, setViewport] = useState({ bottom: 8, height: 800 });
   const [position, setPosition] = useState({ left: 0, top: 0, origin: 0 });
   const popover = useRef<HTMLDivElement>(null);
   const previousRequest = useRef(nextRequest);
@@ -99,25 +85,64 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
         visit($getRoot());
       });
       const pins = Array.from(found.values());
-      // Separate pins sharing an anchor without changing document layout.
-      pins.forEach((pin, i) => {
-        for (const previous of pins.slice(0, i))
-          if (
-            Math.abs(pin.y - previous.y) < 28 &&
-            Math.abs(pin.x - previous.x) < 48
-          )
-            pin.x = previous.x - 52;
-      });
+      // Measure glyphs, not element boxes (which include empty line width).
+      const textRects: DOMRect[] = [];
+      const walker = document.createTreeWalker(root!, NodeFilter.SHOW_TEXT);
+      for (
+        let textNode = walker.nextNode();
+        textNode;
+        textNode = walker.nextNode()
+      ) {
+        const range = document.createRange();
+        range.selectNodeContents(textNode);
+        textRects.push(...Array.from(range.getClientRects()));
+      }
+      const occupied: {
+        left: number;
+        right: number;
+        top: number;
+        bottom: number;
+      }[] = [];
+      for (const pin of pins) {
+        const width = 52;
+        let left = hostRect.left + pin.x - 8;
+        let top = hostRect.top + pin.y - 29;
+        const intersects = () =>
+          [...textRects, ...occupied].some(
+            (r) =>
+              left < r.right + 3 &&
+              left + width > r.left - 3 &&
+              top < r.bottom + 3 &&
+              top + 25 > r.top - 3,
+          );
+        if (intersects()) {
+          const line = textRects.filter(
+            (r) =>
+              r.top < hostRect.top + pin.y + 25 &&
+              r.bottom > hostRect.top + pin.y,
+          );
+          left = Math.min(
+            window.innerWidth - width - 8,
+            Math.max(...line.map((r) => r.right), hostRect.left + pin.x) + 8,
+          );
+          top = hostRect.top + pin.y;
+          while (intersects()) top += 28;
+        }
+        pin.x = left - hostRect.left;
+        pin.y = top - hostRect.top;
+        occupied.push({ left, right: left + width, top, bottom: top + 25 });
+      }
+
       setAnchors(pins);
-      const selected = pins.find((pin) => pin.id === active);
+      const selected = pins.find((pin) => pin.id === (active || hovered));
       if (selected) {
         const pinX = hostRect.left + selected.x;
-        const left = Math.max(12, Math.min(pinX - 36, window.innerWidth - 372));
+        const left = Math.max(12, Math.min(pinX, window.innerWidth - 372));
         const height = popover.current?.offsetHeight || 340;
         const top = Math.max(
           12,
           Math.min(
-            hostRect.top + selected.y + 32,
+            hostRect.top + selected.y + 33,
             window.innerHeight - height - 12,
           ),
         );
@@ -143,7 +168,26 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
     };
-  }, [editor, threads, active]);
+  }, [editor, threads, active, hovered]);
+
+  useEffect(() => {
+    const update = () => {
+      const vv = window.visualViewport;
+      setViewport({
+        bottom: vv
+          ? Math.max(8, window.innerHeight - vv.height - vv.offsetTop + 8)
+          : 8,
+        height: vv?.height || window.innerHeight,
+      });
+    };
+    update();
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
+    };
+  }, []);
 
   useEffect(() => {
     if (previousRequest.current === nextRequest) return;
@@ -167,11 +211,11 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
           ".hotpress-comment-popover, .hotpress-comment-pin, .lb-portal, [title='Next unresolved comment']",
         )
       )
-        setActive(null);
+        setClosing(true);
     };
     const onEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setActive(null);
+        setClosing(true);
         lastPin.current?.focus();
       }
     };
@@ -192,9 +236,7 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
         const thread = threads?.find((t) => t.id === anchor.id);
         const first = thread?.comments.find((c) => !c.deletedAt);
         if (!thread || !first) return null;
-        const preview = first.body?.content
-          .flatMap((p) => p.children.map((c) => ("text" in c ? c.text : "")))
-          .join(" ");
+
         return (
           <button
             key={anchor.id}
@@ -208,18 +250,37 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
                 "--author-color": authorColor(first.userId),
               } as CSSProperties
             }
-            aria-label={`Open comment, ${thread.comments.length - 1} replies`}
+            aria-label={`Open comment, ${thread.comments.filter((c) => !c.deletedAt).length} comments`}
+            onMouseEnter={() => setHovered(anchor.id)}
+            onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered(anchor.id)}
+            onBlur={() => setHovered(null)}
             aria-expanded={active === anchor.id}
-            onClick={() => setActive(active === anchor.id ? null : anchor.id)}
+            onClick={() => {
+              if (active === anchor.id) setClosing(true);
+              else {
+                setClosing(false);
+                setActive(anchor.id);
+              }
+            }}
           >
             <Author id={first.userId} />
             <span className="hotpress-pin-count">
-              {thread.comments.length - 1}
+              {thread.comments.filter((c) => !c.deletedAt).length}
             </span>
-            <span className="hotpress-pin-preview">{preview}</span>
           </button>
         );
       })}
+      {!active &&
+        hovered &&
+        createPortal(
+          <Preview
+            thread={threads?.find((t) => t.id === hovered)}
+            left={position.left}
+            top={position.top}
+          />,
+          document.body,
+        )}
       {selected &&
         createPortal(
           <div
@@ -227,18 +288,24 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
             role="dialog"
             aria-label="Comment thread"
             className="hotpress-comment-popover lb-root"
-            style={{
-              left: position.left,
-              top: position.top,
-              transformOrigin: `${position.origin}px 0`,
-            }}
+            data-closing={closing}
+            style={
+              {
+                left: position.left,
+                top: position.top,
+                transformOrigin: `${position.origin}px 0`,
+                "--sheet-bottom": `${viewport.bottom}px`,
+                "--sheet-height": `${viewport.height - 24}px`,
+              } as CSSProperties
+            }
           >
+            <div className="hotpress-sheet-handle" aria-hidden="true" />
             <div className="hotpress-popover-heading">
               <span>Discussion</span>
               <button
                 type="button"
                 aria-label="Close comment"
-                onClick={() => setActive(null)}
+                onClick={() => setClosing(true)}
               >
                 ×
               </button>
@@ -248,5 +315,45 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
           document.body,
         )}
     </>
+  );
+}
+
+function Preview({
+  thread,
+  left,
+  top,
+}: {
+  thread: import("@liveblocks/client").ThreadData | undefined;
+  left: number;
+  top: number;
+}) {
+  const first = thread?.comments.find((c) => !c.deletedAt);
+  const { user } = useUser(first?.userId || "");
+  if (!first) return null;
+  const text = first.body?.content
+    .flatMap((p) => p.children.map((c) => ("text" in c ? c.text : "")))
+    .join(" ");
+  return (
+    <div className="hotpress-comment-preview" style={{ left, top }}>
+      <div className="hotpress-preview-author">
+        <span
+          className="hotpress-preview-avatar"
+          style={{
+            background: authorColor(first.userId),
+            width: 28,
+            height: 28,
+            borderRadius: 5,
+            display: "grid",
+            placeItems: "center",
+            color: "white",
+            fontWeight: 700,
+          }}
+        >
+          {initials(user?.name || "Writer")}
+        </span>
+        <strong>{user?.name}</strong>
+      </div>
+      <p>{text}</p>
+    </div>
   );
 }

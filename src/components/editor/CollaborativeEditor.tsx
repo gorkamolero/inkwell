@@ -189,7 +189,7 @@ function LivePresenceAvatars() {
                   selfName.charAt(0).toUpperCase()
                 )}
               </div>
-              <span className="text-xs font-medium max-w-[80px] truncate hidden sm:inline">
+              <span className="text-xs font-medium max-w-[20ch] truncate hidden sm:inline">
                 {selfName}
               </span>
               <Pencil className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />

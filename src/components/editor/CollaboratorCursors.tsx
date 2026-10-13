@@ -62,7 +62,7 @@ function Pointer({
         aria-hidden="true"
       >
         <path
-          d="M2 2L19 15L11 16L7 23L2 2Z"
+          d="M0 0L20 15L11 17L7 24L0 0Z"
           fill="currentColor"
           stroke="white"
           strokeWidth="1.5"
