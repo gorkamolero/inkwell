@@ -848,3 +848,8 @@ select:focus-visible {
 .lb-lexical-floating-toolbar button { color: #171717 !important; }
 .lb-lexical-floating-toolbar button:has(.lb-button-label) { background: #ffe75c !important; border-color: #171717 !important; }
 .hotpress-comment-pin:focus:not(:focus-visible) { outline: none; }
+
+/* Phones: no remote pointers; they would cover words on a narrow page (style review, round 3). */
+@media (max-width: 640px) {
+  .hotpress-pointers { display: none; }
+}

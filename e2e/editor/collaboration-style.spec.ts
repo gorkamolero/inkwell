@@ -73,6 +73,12 @@ test("Style round 2 — all states, guest identity and motion", async ({
         await a.mouse.move(box.x + 100 + i * 8, box.y + 110 + 35 * Math.sin(i / 30 * Math.PI));
         await a.waitForTimeout(25);
       }
+      if (width === 390) {
+        // Phones show no remote pointers (they would cover words); the caret keeps its name.
+        await expect(b.locator(".hotpress-pointers")).toBeHidden();
+        await shot(b, `${width}-no-pointers-on-phone`);
+        continue;
+      }
       await expect(labels).toBeHidden();
       await expect(pointerLabel).toBeVisible();
       await shot(b, `${width}-two-pointers-moving`);

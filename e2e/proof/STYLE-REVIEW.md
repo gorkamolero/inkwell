@@ -119,3 +119,16 @@ The initial full run was **17/20**: the read-only Yjs build flag was missing, th
 All **39 full-size screenshots and seven strips** were personally inspected at original resolution. `visual-audit.json` records their dimensions and hashes. The pointer-and-typing clip is **6.3 seconds, 1440 × 1000, 30 fps**, with the 390 px segment padded inside that canvas. The detail strip crops nine unaltered video frames to keep the labels legible; it reads left-to-right, top-to-bottom. Phone keyboard-inset evidence remains a simulated visualViewport, not a physical-device keyboard claim.
 
 Across the targeted attempts and both full runs, **38 exact recorded rooms** were deleted and each GET verified **404**. `cleanup-audit.json` matches every recorded ID to `cleanup.jsonl`, with no missing or extra IDs. The production server was stopped and port **3847 is free**. No push, deployment, or hotpress.app calls. Reports, screenshots, and test results remain outside git.
+
+## Round 3 review (Claude, 2026-10-12, commits beea137 and f4ad20a)
+
+All five round-2 items pass:
+- one name label per person: on the caret while typing, and on the pointer while the mouse moves;
+- two-letter initials in the header, pins and threads, with no gap on phones;
+- the black primary send button;
+- focus rings only for the keyboard;
+- dark phone-toolbar controls with a yellow "Comment" button.
+
+One leftover, fixed by Claude in this round: remote pointers still showed at 390 px and covered words, which goal.md rules out for phones. They're now hidden at 640 px and below, and the proof and style specs assert it. Full collaboration suite on a production build: 20/20 passed, and all 18 rooms were deleted and verified 404.
+
+**Verdict: the collaboration UI passes the style rubric.** Next come the deploy, the live check and the video.

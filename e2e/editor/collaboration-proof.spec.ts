@@ -495,8 +495,8 @@ test("Product — moving pointers, highlight and pin, preview, popover reply, co
   expect(sheet.y + sheet.height).toBeGreaterThan(825);
   await a.mouse.move(box.x + 130, box.y + 100);
   await expect(b.getByTestId("remote-pointer")).toHaveCount(1);
-  // Narrow views also show remote mouse pointers; touch input still publishes none.
-  await expect(b.getByTestId("remote-pointer")).toBeVisible();
+  // Phones show no remote pointers (they would cover words), and touch input publishes none.
+  await expect(b.getByTestId("remote-pointer")).toBeHidden();
   expect(
     await b.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
