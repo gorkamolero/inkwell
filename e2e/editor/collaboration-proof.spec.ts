@@ -12,6 +12,7 @@ import {
   append,
   end,
   comment,
+  selectPhrase,
 } from "../proof/helpers";
 test.describe("Join — authenticated owner, anonymous guest, authenticated collaborator", () => {
   test("three isolated people connect to the same shared room", async ({
@@ -120,7 +121,7 @@ test.describe("Rapid typing — full paragraph integrity", () => {
     await expect(editor(b)).toHaveText(text);
     for (const page of [a, b]) {
       const yjsText = await page.evaluate(() =>
-        (window as any)
+        (window as unknown as { __collaborationSnapshot: () => unknown[] })
           .__collaborationSnapshot()
           .flat(Infinity)
           .filter((part: unknown) => typeof part === "string")
@@ -135,14 +136,19 @@ test.describe("Comments — anchor, reply, resolve, reload", () => {
     await append(a, "An anchored phrase for discussion.");
     await converge(a, b);
     await comment(a, "anchored phrase", "Please review this phrase.");
-    await b.getByTitle("Toggle Comments Sidebar").click();
-    const threadB = b.locator(".lb-lexical-anchored-threads .lb-thread");
+    await b.locator(".hotpress-comment-pin").click();
+    const threadB = b.locator(".hotpress-comment-popover .lb-thread");
     await expect(
       threadB.getByText("Please review this phrase.", { exact: true }),
     ).toBeVisible();
     const anchored = await state(b);
-    const marks: any[] = [];
-    const visit = (node: any) => {
+    type SnapshotNode = {
+      type: string;
+      text?: string;
+      children?: SnapshotNode[];
+    };
+    const marks: SnapshotNode[] = [];
+    const visit = (node: SnapshotNode) => {
       if (node.type === "lb-thread-mark") marks.push(node);
       node.children?.forEach(visit);
     };
@@ -150,7 +156,7 @@ test.describe("Comments — anchor, reply, resolve, reload", () => {
     expect(
       marks.some(
         (mark) =>
-          mark.children.map((child: any) => child.text || "").join("") ===
+          mark.children?.map((child) => child.text || "").join("") ===
           "anchored phrase",
       ),
     ).toBe(true);
@@ -159,10 +165,10 @@ test.describe("Comments — anchor, reply, resolve, reload", () => {
       .click();
     await threadB.locator(".lb-composer-editor").fill("Reviewed by the guest.");
     await threadB.getByRole("button", { name: "Reply", exact: true }).click();
-    await a.getByTitle("Toggle Comments Sidebar").click();
+    await a.locator(".hotpress-comment-pin").click();
     await expect(
       a
-        .locator(".lb-lexical-anchored-threads")
+        .locator(".hotpress-comment-popover")
         .getByText("Reviewed by the guest.", { exact: true }),
     ).toBeVisible();
     await threadB
@@ -302,13 +308,13 @@ test("Comment authors — real names reach the other person and survive departur
   await append(a, "A phrase worth discussing.");
   await converge(a, b);
   await comment(a, "phrase", "An opening thought.");
-  await b.getByTitle("Toggle Comments Sidebar").click();
-  const threadB = b.locator(".lb-lexical-anchored-threads .lb-thread");
+  await b.locator(".hotpress-comment-pin").click();
+  const threadB = b.locator(".hotpress-comment-popover .lb-thread");
   await expect(threadB.getByText("Writer A", { exact: true })).toBeVisible();
   await threadB.getByText("An opening thought.", { exact: true }).click();
   await threadB.locator(".lb-composer-editor").fill("A guest thought.");
   await threadB.getByRole("button", { name: "Reply", exact: true }).click();
-  await a.getByTitle("Toggle Comments Sidebar").click();
+  await a.locator(".hotpress-comment-pin").click();
   await expect(
     a.locator(".lb-thread").getByText(guest, { exact: true }),
   ).toBeVisible();
@@ -329,9 +335,187 @@ test("Comment authors — real names reach the other person and survive departur
   await b.goto("about:blank");
   await c.goto(url);
   await ready(c);
-  await c.getByTitle("Toggle Comments Sidebar").click();
-  const threadC = c.locator(".lb-lexical-anchored-threads .lb-thread");
+  await c.locator(".hotpress-comment-pin").click();
+  const threadC = c.locator(".hotpress-comment-popover .lb-thread");
   await expect(threadC.getByText("Writer A", { exact: true })).toBeVisible();
   await expect(threadC.getByText(/^Guest [a-z0-9]+$/)).toBeVisible();
   await expect(threadC).not.toContainText("Anonymous");
+});
+
+test("Product — moving pointers, highlight and pin, preview, popover reply, composer, resolve and phone sheet; no sidebar", async ({
+  proof: { a, b },
+}) => {
+  test.setTimeout(90000);
+  await Promise.all(
+    [a, b].map((p) => p.setViewportSize({ width: 1440, height: 1000 })),
+  );
+  await end(a);
+  await a.keyboard.type(
+    "The morning harbor\nMara reached the harbor before dawn.\nThe boats waited in the mist.\nA lantern glowed beside the gate.",
+  );
+  await converge(a, b);
+  const box = (await editor(a).boundingBox())!;
+  await a.mouse.move(box.x + 110, box.y + 110);
+  await b.mouse.move(box.x + 260, box.y + 150);
+  for (const p of [a, b])
+    await expect(p.getByTestId("remote-pointer")).toBeVisible();
+  const pointer = b.getByTestId("remote-pointer");
+  await expect
+    .poll(async () =>
+      Math.abs((await pointer.boundingBox())!.x - (box.x + 110)),
+    )
+    .toBeLessThan(3);
+  const before = (await pointer.boundingBox())!;
+  const motion = pointer.evaluate(
+    (el) =>
+      new Promise<number[]>((resolve) => {
+        const samples: number[] = [];
+        const start = performance.now();
+        const frame = () => {
+          samples.push(el.getBoundingClientRect().x);
+          if (performance.now() - start < 650) requestAnimationFrame(frame);
+          else resolve(samples);
+        };
+        requestAnimationFrame(frame);
+      }),
+  );
+  await a.mouse.move(box.x + 300, box.y + 170);
+  const samples = await motion;
+  expect(samples.some((x) => x > before.x + 10 && x < box.x + 280)).toBe(true);
+  writeFileSync(`${output}/pointer-motion.json`, JSON.stringify(samples));
+  await expect
+    .poll(async () => (await pointer.boundingBox())!.x)
+    .toBeGreaterThan(before.x + 100);
+  await a.screenshot({
+    animations: "disabled",
+    path: `${output}/product-pointer-owner.png`,
+  });
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-pointer-guest.png`,
+  });
+  await b.setViewportSize({ width: 1100, height: 1000 });
+  const narrower = (await editor(b).boundingBox())!;
+  await expect
+    .poll(async () =>
+      Math.abs((await pointer.boundingBox())!.x - narrower.x - 300),
+    )
+    .toBeLessThan(3);
+  await b.setViewportSize({ width: 1440, height: 1000 });
+  await expect(pointer).toHaveAttribute("data-idle", "true", { timeout: 5000 });
+  await a.mouse.move(5, 5);
+  await expect(pointer).toHaveCount(0);
+  await end(b);
+  await selectPhrase(a, "before dawn");
+  const remoteSelection = b.locator(".lb-lexical-cursors > div > span").first();
+  await expect
+    .poll(async () => (await remoteSelection.boundingBox())?.width || 0)
+    .toBeGreaterThan(50);
+  const flag = b
+    .locator(".lb-lexical-cursors")
+    .getByText("Writer A", { exact: true });
+  await expect(flag.locator("..")).toHaveCSS("width", "2px");
+  await expect(flag).toHaveCSS("font-size", "13px");
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-caret-selection.png`,
+  });
+  await a.getByRole("button", { name: "Comment", exact: true }).click();
+  await expect(a.locator(".lb-lexical-floating-composer")).toBeVisible();
+  await a.screenshot({
+    animations: "disabled",
+    path: `${output}/product-composer.png`,
+  });
+  await a.locator(".lb-composer-editor").fill("Keep this quiet opening?");
+  await a.getByRole("button", { name: "Send", exact: true }).click();
+  const pin = b.locator(".hotpress-comment-pin");
+  await expect(pin).toBeVisible();
+  await expect(
+    b.locator(
+      "aside[aria-label='Document comments'], .hotpress-comment-margin, .lb-lexical-anchored-threads",
+    ),
+  ).toHaveCount(0);
+  const mark = editor(b).locator(".lb-lexical-thread-mark");
+  await expect(mark).toHaveCSS("background-color", "rgb(255, 241, 172)");
+  await b.mouse.move(5, 5);
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-highlight-pin.png`,
+  });
+  await pin.hover();
+  await expect(pin.locator(".hotpress-pin-preview")).toBeVisible();
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-hover-preview.png`,
+  });
+  await pin.click();
+  const popover = b.getByRole("dialog", { name: "Comment thread" });
+  await expect(popover.locator(".lb-composer-editor")).toBeVisible();
+  await popover
+    .locator(".lb-composer-editor")
+    .fill("Yes, let the harbor wake slowly.");
+  await popover.getByRole("button", { name: "Reply", exact: true }).click();
+  await expect(
+    popover.getByText("Yes, let the harbor wake slowly.", { exact: true }),
+  ).toBeVisible();
+  await expect(popover.locator(".lb-user[data-loading]")).toHaveCount(0);
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-popover-reply.png`,
+  });
+  await b.keyboard.press("Escape");
+  await expect(popover).toHaveCount(0);
+  await b.getByTitle("Next unresolved comment").click();
+  await expect(popover).toBeVisible();
+  await b.mouse.click(10, 10);
+  await expect(popover).toHaveCount(0);
+  await b.setViewportSize({ width: 390, height: 844 });
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-phone-highlight-pin.png`,
+  });
+  await selectPhrase(b, "boats");
+  await b.getByRole("button", { name: "Comment", exact: true }).click();
+  await expect(b.locator(".lb-lexical-floating-composer")).toBeVisible();
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-phone-composer.png`,
+  });
+  await b.keyboard.press("Escape");
+  await expect(b.locator(".lb-lexical-floating-composer")).toHaveCount(0);
+  await end(b);
+  await pin.click();
+  await expect(popover).toBeVisible();
+  await expect.poll(async () => (await popover.boundingBox())!.x).toBe(8);
+  const sheet = (await popover.boundingBox())!;
+  expect(sheet.x).toBe(8);
+  expect(sheet.y + sheet.height).toBeGreaterThan(825);
+  await a.mouse.move(box.x + 130, box.y + 100);
+  await expect(b.getByTestId("remote-pointer")).toHaveCount(1);
+  await expect(b.getByTestId("remote-pointer")).not.toBeVisible();
+  expect(
+    await b.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-phone-bottom-sheet.png`,
+  });
+  await popover
+    .getByRole("button", { name: "Resolve thread", exact: true })
+    .click();
+  await expect(pin).toHaveCount(0);
+  await expect(editor(b).locator("[data-comment-resolved=true]")).toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)",
+  );
+  await b.screenshot({
+    animations: "disabled",
+    path: `${output}/product-phone-resolved.png`,
+  });
+  await a.setViewportSize({ width: 1440, height: 1000 });
+  await expect(a.locator(".hotpress-comment-pin")).toHaveCount(0);
+  await a.screenshot({
+    animations: "disabled",
+    path: `${output}/product-resolved.png`,
+  });
 });

@@ -69,7 +69,6 @@ test.describe("Measure — real remote DOM observation latency", () => {
       save();
     }
     await a.screenshot({ path: `${output}/latency-before-comments.png` });
-    await b.getByTitle("Toggle Comments Sidebar").click();
     for (let i = 0; i < 10; i++) {
       await append(a, ` Latency anchor ${i}.`);
       await converge(a, b);
@@ -93,6 +92,7 @@ test.describe("Measure — real remote DOM observation latency", () => {
       const response = await responsePromise;
       let latencyMs: number | null = null;
       if (response.ok()) {
+        await b.locator(".hotpress-comment-pin").click();
         await b.waitForFunction(
           (text) =>
             [...document.querySelectorAll(".lb-comment-body")].some(
@@ -104,7 +104,7 @@ test.describe("Measure — real remote DOM observation latency", () => {
         latencyMs = performance.now() - start;
         comments.push(latencyMs);
         await b
-          .locator(".lb-lexical-anchored-threads")
+          .locator(".hotpress-comment-popover")
           .getByRole("button", { name: "Resolve thread", exact: true })
           .click();
       } else {

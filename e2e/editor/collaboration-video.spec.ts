@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { writeFileSync, readFileSync } from "node:fs";
-import { test, expect, editor, ready, append, converge, end, comment, selectPhrase } from "../proof/helpers";
+import { test, expect, editor, ready, converge, end, comment, selectPhrase } from "../proof/helpers";
 import { output } from "../proof/rooms";
 
 test.describe("Video — real two-person scenario", () => {
@@ -63,21 +63,20 @@ test.describe("Video — real two-person scenario", () => {
       event("same sentence edits merged");
       await beat(18);
       await comment(a, "shared story", "Shall we keep this opening?");
-      await b.getByTitle("Toggle Comments Sidebar").click();
-      const thread = b.locator(".lb-lexical-anchored-threads .lb-thread");
+      await b.locator(".hotpress-comment-pin").click();
+      const thread = b.locator(".hotpress-comment-popover .lb-thread");
       await expect(thread.getByText("Shall we keep this opening?", { exact: true })).toBeVisible();
       event("B saw A's comment");
       await beat(23);
       await thread.getByText("Shall we keep this opening?", { exact: true }).click();
       await thread.locator(".lb-composer-editor").pressSequentially("Yes, it sets the scene.", { delay: 75 });
       await thread.getByRole("button", { name: "Reply", exact: true }).click();
-      await a.getByTitle("Toggle Comments Sidebar").click();
-      await expect(a.locator(".lb-lexical-anchored-threads").getByText("Yes, it sets the scene.", { exact: true })).toBeVisible();
+      await a.locator(".hotpress-comment-pin").click();
+      await expect(a.locator(".hotpress-comment-popover").getByText("Yes, it sets the scene.", { exact: true })).toBeVisible();
       evidence.commentsVerified = true;
       event("A saw B's reply");
       await beat(30);
       for (const p of [a, b]) {
-        await p.getByTitle("Toggle Comments Sidebar").click();
         await p.keyboard.press("Escape");
       }
       await b.context().setOffline(true);
