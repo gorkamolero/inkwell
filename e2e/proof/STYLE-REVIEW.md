@@ -160,17 +160,18 @@ v10 (44.6 s, 1920×1080) was published at `https://pub-066596d7e4fe4de2b74eac13b
 | v17 (recut) | fail: merge labels between lines | (not run) | fail |
 | v18 (recut) | pass | 3 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix |
 | v19 (recut) | pass | 4 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix; OFFLINE held 1.5 s on both screens before the reconnect |
+| v20 (new take: both pointers at the join, eased comment zooms) | pass | 3 / 3 / 4 / 3 / 4 | fail: a two-frame wide flash at the start of the zoom in |
+| v21 (v20 recut) | pass: matched push-in, natural edge crossings, holds | 4 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix; all three camera moves smooth |
 
-v19 (50.9 s, 1920×1080, take 7 of the v13 recording only; provenance and checks in `V13-NOTES.md` to `V19-NOTES.md` and `verify-v19.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v19.mp4` on the Hotpress case page and the Engineering page.
+v19 missed two goal items: Ana's pointer at the join, and the smooth comment zoom. v21 (54.3 s, 1920×1080, take 3 of the v20 recording only; provenance and checks in `V20-NOTES.md`, `V21-NOTES.md` and `verify-v21.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v21.mp4` on the Hotpress case page and the Engineering page.
 
 Remaining nitpicks from the last review, all accepted:
-- the two-screen shots are smaller on a phone;
-- no share-link shot;
-- the crop margins vary;
-- the pin shifts as a line grows (true app behaviour);
+- a tight left margin in the thread close-ups;
+- small screen tags and two-screen text on a phone;
+- a one-frame hover-card remnant at 30.4 s;
 - the offline guest's caret and avatar linger on Ana's screen (true app behaviour);
-- the floating toolbar covers the line above (true app behaviour).
-
+- no share-link shot;
+- a hard cut to the end card.
 
 ## Live check on hotpress.app (2026-10-13)
 
