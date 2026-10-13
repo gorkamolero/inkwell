@@ -149,3 +149,21 @@ One leftover, fixed by Claude in this round: remote pointers still showed at 390
 Accepted as true app behaviour, not composition: Ana's presence avatar stays in the offline guest's header, the guest's pointer hovers a header icon during reconnect, and a name label can sit between two nearby carets. The product fix from this gate, "the popover never covers its phrase", is commit 686e144 and is live.
 
 v10 (44.6 s, 1920×1080) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v10.mp4` on the Hotpress case page and the Engineering page.
+
+## Live check on hotpress.app (2026-10-13)
+
+`e2e/proof/live-check.cjs` is run against production with two anonymous guests in one shared document:
+- both sync directions (about 0.2 s), a zero-delay typing burst with identical results on both screens, and nine seconds offline then merge;
+- a late joiner;
+- a remote pointer;
+- a coloured remote selection;
+- comment, pin, popover and reply across both screens;
+- console errors.
+
+It ran 5 out of 5 clean (deploy 7276d5d), with no console errors outside the deliberate offline window. Six expected websocket and autosave errors appear while one browser has no network.
+
+An intermittent 403 on share and a "Save error: Failed to fetch" were traced to the script: loading the homepage first let its own editor create a second session, which raced the test's session for the `hp_session` cookie. The script now creates its session through the API only. Run it with:
+
+```sh
+PLAYWRIGHT_BROWSERS_PATH=<browsers> node e2e/proof/live-check.cjs <output-dir>
+```
