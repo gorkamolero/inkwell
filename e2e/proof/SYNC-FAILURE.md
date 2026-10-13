@@ -1,33 +1,12 @@
-# Rapid typing fails full-document convergence
+# Interrupted Lexical-to-Yjs synchronization
 
-The focused `Rapid typing — full paragraph integrity` test fails against real Liveblocks with two independent browser contexts. A types ten short numbered phrases with Playwright keyboard.type and zero artificial delay. No comments, formatting, clipboard injection, or mocked transport are involved in this test.
+- **Found:** rapid typing left B missing characters; longer offline merges could leave one side stale.
+- **Cause:** Liveblocks' comment provider sets a fresh active-thread array on every editor update, even if unchanged. React throws `Maximum update depth exceeded` from `$onStateRead`, interrupting Lexical's update listeners before Yjs receives every edit. Read-only failure snapshots show A's complete Lexical text, but the same truncated text in A's Yjs, B's Yjs, and B's Lexical state. This is not a receiving-client-only CRDT loss.
+- **Fix (`fa30116`):** a reproducible pnpm patch to `@liveblocks/react-lexical@3.12.1` compares active-thread IDs with the SDK's existing `shallow` helper and retains unchanged state. Both ESM and CJS are patched. No CRDT replacement, transport throttling, or document overwrite. The badge now reports actual offline/reconnecting state.
+- **Proof:** 10 consecutive rapid-typing checks passed. Five consecutive nine-second outages with both writers typing passed 5/5. Three consecutive production suites passed 17/17 each, including the continuous 53.48-second recording. Thirty final edit measurements: median 196 ms, p95 453 ms.
 
-A's complete serialized text:
+Disabling History/List/Link/AutoLink/paste/MarkdownShortcut/word-count plugins did not eliminate the exception. The app's autosave only serializes state; paste plugins are command-driven; autolinking skips collaboration updates. HotpressEditor's initial-content setter is not mounted in the shared editor. The stack identifies the upstream comment listener.
 
-```text
-Latency anchor 0. Latency anchor 1. Latency anchor 2. Latency anchor 3. Latency anchor 4. Latency anchor 5. Latency anchor 6. Latency anchor 7. Latency anchor 8. Latency anchor 9.
-```
+A coordinated 3.24.3 upgrade reproduced the exception and divergence and was discarded. The intervening changelog contains storage/reconnect and Tiptap fixes, but no fix for this Lexical listener. Liveblocks remains 3.12.1 and Lexical remains 0.35.0.
 
-B's serialized text after the 20-second convergence deadline in the final proof run:
-
-```text
-Latency anchor 0. Latency anchor 1. Latency anchor 2 Latency anchor 3. Latency anchor 4. Latency anchor5. Latency anchor 6. Latency anchor 7. Latency ancho 8. Latency anchor 9.
-```
-
-B lacks the period after `2`, the space before `5`, and the `r` in `anchor 8`. This is not a screenshot overlap or merely different Lexical node segmentation: the text field itself differs. The saved JSON pair is `failed-states-1791846873400-34153-3a1839686382919b8fd6693bf6b65de9fa31bb30.json` in the output folder. The same long-input setup also failed in the preceding full suite.
-
-The shorter concurrent-edit check (two simultaneous five-character keyboard streams, bold formatting, and a real clipboard paste) passes full serialized-state comparison. Thirty individually observed marker edits also propagate. Those results do not invalidate this longer burst failure.
-
-Reproduce with:
-
-```sh
-bash e2e/proof/run.sh collaboration-proof.spec.ts --grep 'Rapid typing'
-```
-
-The defect is localized to the live editor/synchronization path: A has the expected text, while B's actual Lexical state remains different. The precise cause inside the Lexical/Yjs/Liveblocks integration has not been isolated. No CRDT, provider, dependency-version, or synchronization-design change was attempted. The failing test and complete state evidence are retained for that investigation, as required by the risky-change boundary.
-
-## Longer outage in the recording
-
-The short offline/reconnect unit check passes, including negative assertions while offline and full-state equality afterward. The paced recording's eight-second outage does not: after reconnect, A contains both `A continued online.` and `B kept writing offline.`, but B still lacks A's sentence after the ten-second deadline. Both pages did receive their own typing before reconnect. The state pair is `failed-states-1791846873400-34153-bb068b514c0935a2803231f7cffb0d43bbbb4534.json`.
-
-The MP4 preserves the failure and carries a partial-proof label. The cause of this one-sided reconnect result has not been isolated; do not assume it is identical to the auth-cache issue or the rapid-typing issue. No successful reconnect was fabricated or substituted into the recording.
+Failure evidence is retained in the output folder (`yjs-diagnostic.log`, `stack-diagnostic.log`, their timestamped `failed-states` JSON, `no-app-plugins.log`, and `upgrade-candidate.log`). The proof now rejects browser errors and captures Yjs alongside Lexical on failure.

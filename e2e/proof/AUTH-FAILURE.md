@@ -1,24 +1,10 @@
-# Intermittent comments authorization failure
+# Comments authentication
 
-Observed against real Liveblocks, using isolated local test users and anonymous guests. No transport mocks or real account logins.
+- **Found:** intermittent comments REST 403s while WebSocket edits still worked.
+- **Cause:** one client cached both room access tokens and roomless ID tokens. Its auth manager accepted the latest ID token for any room, whose server-side permissions were empty.
+- **Fix (`280a329`):** consistently use access tokens. Preserve the existing exact-room `FULL_ACCESS` grant for a supplied session/room ID, and issue an empty grant for roomless notifications/AI. Reject wildcard room patterns. No default grants or room-permission API mutations, and no migration of production rooms.
+- **Proof:** 10 consecutive real create/reply/resolve/reload cycles passed with independent owner/anonymous-guest contexts. Three consecutive production suites passed 17/17 each. Ten final comment measurements: median 1535 ms, p95 6568 ms (all HTTP 200); raw samples are in the external v2 report.
 
-## Evidence
+This follows [Liveblocks' individual-room access-token guide](https://liveblocks.io/docs/guides/how-to-grant-access-to-individual-rooms-with-access-tokens), which explicitly covers roomless notifications. Installed node 3.12.1 serializes empty permissions; core caches that token only for roomless requests and requires an exact matching grant for room calls. The node SDK emits a future-deprecation warning for empty grants; no wildcard workaround is used.
 
-- `comments-diagnostic-report` records failed thread creation with 403 `FORBIDDEN`.
-- `sidebar-fix-report` records a passing anchored comment, guest reply, owner visibility, resolution, and persisted thread contents after both pages reload.
-- `sidebar-fix.log` records ID-token requests failing after reload, including `GET .../thread-with-notification/<test-thread>` and `POST .../text-metadata`, while access-token grants contain both write permissions.
-- The diagnostic prints only token kind and room permission names, never token strings, headers, or signing keys.
-
-## Cause
-
-`src/app/api/liveblocks-auth/route.ts` returns `identifyUser` ID tokens when `room` is missing and `prepareSession` access tokens when a room is supplied. `src/lib/liveblocks.ts` has a single shared client. The installed Liveblocks core auth manager's `getCachedToken` scans tokens in reverse arrival order and accepts an ID token immediately for any room. A later roomless token can therefore replace the effective authority used by room REST requests. The WebSocket can continue synchronizing edits with its original access token, so working edits do not imply working comments.
-
-The roomless path is exercised by the mounted notification/AI features. Both request types were observed without opening any external service or settings page. The server's room-specific grants were verified from decoded permission metadata only. Failed room requests were verified to use token kind `id`.
-
-## Reproduce
-
-Run `bash e2e/proof/run.sh collaboration-proof.spec.ts --grep 'Comments —'` repeatedly as independent diagnostic runs, keeping every result. Depending on auth response order, thread creation or later reads can return 403. A reload starts a new race. The full suite also exercises comments after 30 edits and in the recording.
-
-## Boundary
-
-The sidebar provider/layout issue is fixed separately in `8f1463a`. No authentication redesign, wildcard grant, production room-policy change, notification removal, or service-settings change was made. A safe resolution needs an explicit choice of authentication model for both room and roomless features; broadening production permissions is not an acceptable test workaround.
+The pre-existing auth route treats possession of a room/session ID as access; the fix preserves that policy and its write permissions for authenticated and anonymous users. It does not replace the app's session access checks or broaden room access.
