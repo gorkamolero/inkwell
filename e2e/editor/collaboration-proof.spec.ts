@@ -120,8 +120,12 @@ test.describe("Rapid typing — full paragraph integrity", () => {
     await expect(editor(b)).toHaveText(text);
     for (const page of [a, b]) {
       const yjsText = await page.evaluate(() =>
-        (window as any).__collaborationSnapshot().flat(Infinity)
-          .filter((part: unknown) => typeof part === "string").join(""));
+        (window as any)
+          .__collaborationSnapshot()
+          .flat(Infinity)
+          .filter((part: unknown) => typeof part === "string")
+          .join(""),
+      );
       expect(yjsText).toBe(text);
     }
   });
@@ -287,4 +291,47 @@ test.describe("PDF preview — local generation includes both writers", () => {
     for (const sentence of ["Owner PDF sentence.", "Guest PDF sentence."])
       expect(text.replace(/\s+/g, "")).toContain(sentence.replace(/\s+/g, ""));
   });
+});
+
+test("Comment authors — real names reach the other person and survive departure", async ({
+  proof: { a, b, c, url },
+}) => {
+  const guest = (
+    await b.getByTitle("Click to change your name").locator("span").innerText()
+  ).trim();
+  await append(a, "A phrase worth discussing.");
+  await converge(a, b);
+  await comment(a, "phrase", "An opening thought.");
+  await b.getByTitle("Toggle Comments Sidebar").click();
+  const threadB = b.locator(".lb-lexical-anchored-threads .lb-thread");
+  await expect(threadB.getByText("Writer A", { exact: true })).toBeVisible();
+  await threadB.getByText("An opening thought.", { exact: true }).click();
+  await threadB.locator(".lb-composer-editor").fill("A guest thought.");
+  await threadB.getByRole("button", { name: "Reply", exact: true }).click();
+  await a.getByTitle("Toggle Comments Sidebar").click();
+  await expect(
+    a.locator(".lb-thread").getByText(guest, { exact: true }),
+  ).toBeVisible();
+  const userId = (await (await a.request.get("/api/auth/session")).json()).user
+    .id;
+  expect(
+    (
+      await b.request.post("/api/liveblocks-users", {
+        data: { userIds: [userId] },
+      })
+    ).status(),
+  ).toBe(401);
+  const profiles = await a.request.post("/api/liveblocks-users", {
+    data: { userIds: [userId, "missing"] },
+  });
+  expect(await profiles.json()).toEqual([{ name: "Writer A" }, null]);
+  await a.goto("about:blank");
+  await b.goto("about:blank");
+  await c.goto(url);
+  await ready(c);
+  await c.getByTitle("Toggle Comments Sidebar").click();
+  const threadC = c.locator(".lb-lexical-anchored-threads .lb-thread");
+  await expect(threadC.getByText("Writer A", { exact: true })).toBeVisible();
+  await expect(threadC.getByText(/^Guest [a-z0-9]+$/)).toBeVisible();
+  await expect(threadC).not.toContainText("Anonymous");
 });

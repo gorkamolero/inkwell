@@ -59,7 +59,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AiChat } from "@liveblocks/react-ui";
 import { BrutalBadge } from "@/components/ui";
-import { RoomProvider, useMyPresence, useOthers, useSelf } from "@/lib/liveblocks";
+import { RoomProvider, useMyPresence, useOthers, useSelf, useRoomUserProfiles } from "@/lib/liveblocks";
 import { EditorToolbar } from "./editor-toolbar";
 import { CollaborationProofSnapshot } from "./CollaborationProofSnapshot";
 
@@ -101,6 +101,7 @@ const editorTheme = {
 // ============================================================================
 
 function LivePresenceAvatars() {
+  useRoomUserProfiles();
   const others = useOthers();
   const self = useSelf();
   const [, updateMyPresence] = useMyPresence();
