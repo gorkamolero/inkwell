@@ -174,6 +174,7 @@ export const test = base.extend<{ proof: Proof }>({
       });
     }
     const ids = [randomUUID(), randomUUID()].map((id) => `proof-${id}`);
+    if (info.title.includes("portfolio v6")) while (authorColor(ids[0]) !== "#15803D") ids[0] += "-c";
     if (style) while (authorColor(ids[0]) === authorColor(ids[1])) ids[1] += "-c";
     const dbUrl = new URL(process.env.DATABASE_URL!);
     if (
