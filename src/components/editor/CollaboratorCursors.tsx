@@ -1,134 +1,169 @@
 "use client";
 
-import type * as React from "react";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { useEffect, useRef, useState } from "react";
+import { useMyPresence, useOthers, type Presence } from "@/lib/liveblocks";
 
-/**
- * CollaboratorCursors - Shows other users' cursors in the editor
- *
- * Renders cursor positions and selections for all collaborators
- * in the current Liveblocks room. Each cursor shows the user's
- * name and uses their assigned color.
- */
+type Point = NonNullable<Presence["cursor"]>;
 
-// =============================================================================
-// Types
-// =============================================================================
-
-export interface CursorData {
-  /** User identifier */
-  id: string;
-  /** Display name */
+function Pointer({
+  point,
+  name,
+  color,
+}: {
+  point: Point;
   name: string;
-  /** Cursor color (hex) */
   color: string;
-  /** Cursor position in the document */
-  position: {
-    x: number;
-    y: number;
-  } | null;
-  /** Text selection range, if any */
-  selection?: {
-    anchor: number;
-    focus: number;
-  } | null;
-}
-
-export interface CollaboratorCursorsProps {
-  /** List of other users' cursor data from Liveblocks presence */
-  cursors: CursorData[];
-  /** Container element ref for positioning calculations */
-  containerRef?: React.RefObject<HTMLElement>;
-}
-
-// =============================================================================
-// Subcomponents
-// =============================================================================
-
-interface CursorProps {
-  cursor: CursorData;
-}
-
-function Cursor({ cursor }: CursorProps) {
-  if (!cursor.position) return null;
-
-  // TODO: Implement proper cursor rendering with:
-  // - Cursor SVG icon
-  // - Name label that fades after inactivity
-  // - Selection highlight overlay
-  // - Smooth position transitions
-
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const current = useRef({ x: point.x, y: point.y });
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    setIdle(false);
+    const timer = window.setTimeout(() => setIdle(true), 3000);
+    let frame = 0;
+    let previous = performance.now();
+    const move = (now: number) => {
+      const alpha = 1 - Math.exp(-Math.min(now - previous, 64) / 45);
+      previous = now;
+      current.current.x += (point.x - current.current.x) * alpha;
+      current.current.y += (point.y - current.current.y) * alpha;
+      if (ref.current)
+        ref.current.style.transform = `translate3d(${current.current.x}px, ${current.current.y}px, 0)`;
+      if (
+        Math.abs(point.x - current.current.x) +
+          Math.abs(point.y - current.current.y) >
+        0.1
+      )
+        frame = requestAnimationFrame(move);
+    };
+    frame = requestAnimationFrame(move);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+    };
+  }, [point]);
   return (
     <div
-      className="pointer-events-none absolute z-50 transition-transform duration-75"
+      ref={ref}
+      className="hotpress-pointer"
+      data-idle={idle}
+      data-testid="remote-pointer"
       style={{
-        transform: `translate(${cursor.position.x}px, ${cursor.position.y}px)`,
+        color,
+        transform: `translate3d(${current.current.x}px, ${current.current.y}px, 0)`,
       }}
     >
-      {/* Cursor icon */}
       <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
+        width="22"
+        height="25"
+        viewBox="0 0 22 25"
         fill="none"
-        className="drop-shadow-md"
-        style={{ color: cursor.color }}
-        aria-labelledby={`cursor-title-${cursor.id}`}
-        role="img"
+        aria-hidden="true"
       >
-        <title id={`cursor-title-${cursor.id}`}>{cursor.name}&apos;s cursor</title>
         <path
-          d="M5.65376 12.4563L5.65376 3.99999L14.1091 12.4563H9.01041L8.57951 12.6203L5.65376 12.4563Z"
+          d="M2 2L19 15L11 16L7 23L2 2Z"
           fill="currentColor"
           stroke="white"
           strokeWidth="1.5"
+          strokeLinejoin="round"
         />
       </svg>
-
-      {/* Name label */}
-      <div
-        className="absolute left-4 top-4 px-2 py-1 text-xs font-bold text-white whitespace-nowrap border-2 border-black shadow-[2px_2px_0_0_#000]"
-        style={{ backgroundColor: cursor.color }}
-      >
-        {cursor.name}
-      </div>
+      <span style={{ background: color }}>{name}</span>
     </div>
   );
 }
 
-// =============================================================================
-// Component
-// =============================================================================
-
-export function CollaboratorCursors({
-  cursors,
-  containerRef: _containerRef,
-}: CollaboratorCursorsProps) {
-  // TODO: Use containerRef for relative position calculations
-  // TODO: Implement Liveblocks useOthers() hook integration
-  // TODO: Add smooth cursor position interpolation
-  // TODO: Handle cursor visibility (hide after inactivity)
-  // TODO: Calculate relative positions within container
-
-  // Filter out cursors without positions
-  const visibleCursors = cursors.filter((c) => c.position !== null);
-
-  if (visibleCursors.length === 0) {
-    return null;
-  }
-
+/** Coordinates use the content column, with normalized x for narrower windows. */
+export function CollaboratorCursors() {
+  const [editor] = useLexicalComposerContext();
+  const others = useOthers();
+  const [, update] = useMyPresence();
+  const [bounds, setBounds] = useState({ x: 0, y: 0, width: 1 });
+  useEffect(() => {
+    let cleanup = () => {};
+    const unregister = editor.registerRootListener((root) => {
+      cleanup();
+      if (!root) return;
+      const measure = () => {
+        const host = root.closest(".hotpress-document-layout");
+        if (!host) return;
+        const r = root.getBoundingClientRect();
+        const h = host.getBoundingClientRect();
+        setBounds({ x: r.left - h.left, y: r.top - h.top, width: r.width });
+      };
+      let timer = 0;
+      let latest: Point | null = null;
+      let mouse: { x: number; y: number } | null = null;
+      const publish = () => {
+        if (!mouse) return;
+        const rect = root.getBoundingClientRect();
+        latest = {
+          x: (mouse.x - rect.left) / rect.width,
+          y: mouse.y - rect.top,
+        };
+        if (!timer)
+          timer = window.setTimeout(() => {
+            timer = 0;
+            update({ cursor: latest });
+          }, 25);
+      };
+      const move = (e: PointerEvent) => {
+        if (
+          e.pointerType !== "mouse" ||
+          window.matchMedia("(max-width: 640px)").matches
+        )
+          return;
+        mouse = { x: e.clientX, y: e.clientY };
+        publish();
+      };
+      const leave = () => {
+        mouse = null;
+        clearTimeout(timer);
+        timer = 0;
+        update({ cursor: null });
+      };
+      const observer = new ResizeObserver(measure);
+      observer.observe(root);
+      root.addEventListener("pointermove", move);
+      root.addEventListener("pointerleave", leave);
+      window.addEventListener("blur", leave);
+      window.addEventListener("scroll", publish, true);
+      measure();
+      cleanup = () => {
+        observer.disconnect();
+        root.removeEventListener("pointermove", move);
+        root.removeEventListener("pointerleave", leave);
+        window.removeEventListener("blur", leave);
+        window.removeEventListener("scroll", publish, true);
+        leave();
+      };
+    });
+    return () => {
+      unregister();
+      cleanup();
+    };
+  }, [editor, update]);
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="hotpress-pointers"
       aria-hidden="true"
+      style={{ left: bounds.x, top: bounds.y }}
     >
-      {visibleCursors.map((cursor) => (
-        <Cursor key={cursor.id} cursor={cursor} />
-      ))}
-
-      {/* Hidden for screen readers */}
-      <div className="sr-only">
-        {visibleCursors.length} collaborator(s) editing
-      </div>
+      {others.map(
+        (other) =>
+          other.presence.cursor && (
+            <Pointer
+              key={other.connectionId}
+              point={{
+                x: other.presence.cursor.x * bounds.width,
+                y: other.presence.cursor.y,
+              }}
+              name={String(other.info?.name || "Writer")}
+              color={String(other.info?.color || "#0066ff")}
+            />
+          ),
+      )}
     </div>
   );
 }

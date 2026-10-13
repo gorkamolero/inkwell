@@ -10,6 +10,7 @@ const knownUsers = new Map<string, DisplayUser>();
 
 const client = createClient({
   authEndpoint: "/api/liveblocks-auth",
+  throttle: 25,
   resolveUsers: async ({ userIds }) => {
     const missing = userIds.filter(
       (id) => !id.startsWith("anon-") && !knownUsers.has(id),
