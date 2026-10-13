@@ -159,16 +159,18 @@ v10 (44.6 s, 1920×1080) was published at `https://pub-066596d7e4fe4de2b74eac13b
 | v16 (recut) | pass | 4 / 3 / 4 / 4 / 4 | **meets the bar**, nitpick: show the reconnect as an event |
 | v17 (recut) | fail: merge labels between lines | (not run) | fail |
 | v18 (recut) | pass | 3 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix |
+| v19 (recut) | pass | 4 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix; OFFLINE held 1.5 s on both screens before the reconnect |
 
-v18 (50.8 s, 1920×1080, take 7 of the v13 recording only; provenance and checks in `V13-NOTES.md` to `V18-NOTES.md` and `verify-v18.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v18.mp4` on the Hotpress case page and the Engineering page.
+v19 (50.9 s, 1920×1080, take 7 of the v13 recording only; provenance and checks in `V13-NOTES.md` to `V19-NOTES.md` and `verify-v19.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v19.mp4` on the Hotpress case page and the Engineering page.
 
 Remaining nitpicks from the last review, all accepted:
-- the reconnect split passes OFFLINE→LIVE in about 1 s (it's real time);
-- the offline guest's caret and avatar linger on Ana's screen (true app behaviour);
+- the two-screen shots are smaller on a phone;
 - no share-link shot;
+- the crop margins vary;
 - the pin shifts as a line grows (true app behaviour);
-- the floating toolbar covers the line above (true app behaviour);
-- writers take turns before the same-sentence beat.
+- the offline guest's caret and avatar linger on Ana's screen (true app behaviour);
+- the floating toolbar covers the line above (true app behaviour).
+
 
 ## Live check on hotpress.app (2026-10-13)
 
