@@ -5,7 +5,7 @@ import { output } from "./rooms";
 import { GUEST_COOKIE, guestIdentity } from "../../src/lib/guest-identity";
 import { authorColor, guestName } from "../../src/lib/collaboration-identity";
 
-test("record a real portfolio v4 collaboration session", async ({
+test("record a real portfolio v5 collaboration session", async ({
   proof: { a, b, url },
 }) => {
   test.setTimeout(100000);
@@ -111,73 +111,27 @@ test("record a real portfolio v4 collaboration session", async ({
     '<html><body style="margin:0;background:#fff"></body></html>',
   );
   // A local pointer overlay records real mouse events; remote pointers are the app's own.
-  const pointer = async (p: Page, name: string) =>
-    p.evaluate((name) => {
-      const color =
-        (
-          document.querySelector(
-            '[title="Click to change your name"]>div',
-          ) as HTMLElement
-        )?.style.backgroundColor ||
-        (document.querySelector('[title="Ana"]') as HTMLElement)?.style
-          .backgroundColor ||
-        "#0f766e";
+  const pointer = async (p: Page) =>
+    p.evaluate(() => {
       const el = document.createElement("div");
       el.id = "recording-pointer";
       el.style.cssText =
         "position:fixed;left:0;top:0;z-index:99;pointer-events:none;opacity:0";
-      el.innerHTML = `<svg width="21" height="26" viewBox="0 0 21 26"><path d="M1 1 L1 21 L6 16 L10 25 L14 23 L10 14 L19 14 Z" fill="${color}" stroke="white" stroke-width="1.5"/></svg><span style="position:absolute;left:17px;top:23px;border-radius:4px;background:${color};color:white;font:600 21px sans-serif;padding:3px 7px;white-space:nowrap">${name}</span>`;
+      el.innerHTML =
+        '<svg width="21" height="26" viewBox="0 0 21 26"><path d="M1 1 L1 21 L6 16 L10 25 L14 23 L10 14 L19 14 Z" fill="black" stroke="white" stroke-width="1.5"/></svg>';
       document.body.append(el);
-      const caret = document.createElement("div");
-      caret.style.cssText = `position:fixed;width:2px;background:${color};z-index:36;pointer-events:none;display:none`;
-      caret.innerHTML = `<span style="position:absolute;bottom:100%;left:0;background:${color};color:white;border-radius:4px;padding:3px 6px;font:500 21px/24px sans-serif;white-space:nowrap">${name}</span>`;
-      document.body.append(caret);
-      const update = () => {
-        const sel = getSelection();
-        if (
-          !sel?.isCollapsed ||
-          !sel.rangeCount ||
-          !document.activeElement?.matches(
-            '[aria-label="Collaborative Editor"]',
-          )
-        ) {
-          caret.style.display = "none";
-          return;
-        }
-        const r = sel.getRangeAt(0).getBoundingClientRect();
-        if (!r.height) {
-          caret.style.display = "none";
-          return;
-        }
-        Object.assign(caret.style, {
-          display: "block",
-          left: `${r.x}px`,
-          top: `${r.y}px`,
-          height: `${r.height}px`,
-        });
-      };
-      document.addEventListener("selectionchange", update);
-      document.addEventListener("input", () => requestAnimationFrame(update));
-      document.addEventListener("focusout", () =>
-        requestAnimationFrame(update),
-      );
       document.addEventListener("pointermove", (e) => {
         el.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
         el.style.opacity = "1";
-        const label = el.querySelector("span")!;
-        label.style.left =
-          e.clientX + label.offsetWidth + 20 > innerWidth - 8
-            ? `${-label.offsetWidth - 5}px`
-            : "17px";
       });
-    }, name);
-  await pointer(a, "Ana");
+    });
+  await pointer(a);
   const owner = (await (await a.request.get("/api/auth/session")).json()).user
     .id;
   let identity = guestIdentity();
   while (
     authorColor(identity.id) === authorColor(owner) ||
-    guestName(identity.id).length > 13
+    guestName(identity.id) !== "Bold Editor"
   )
     identity = guestIdentity();
   await b.context().addCookies([
@@ -237,7 +191,7 @@ test("record a real portfolio v4 collaboration session", async ({
         .locator("span")
         .innerText()
     ).trim();
-    await pointer(b, guest);
+    await pointer(b);
     event("joined");
     const avatarAt = await a.evaluate(
       () => (window as any).__recordingAvatarArrival,
