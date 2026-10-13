@@ -28,9 +28,7 @@ import {
   useStatus,
 } from "@liveblocks/react";
 import {
-  AnchoredThreads,
   FloatingComposer,
-  FloatingThreads,
   FloatingToolbar,
   HistoryVersionPreview,
   LiveblocksPlugin,
@@ -61,6 +59,8 @@ import { AiChat } from "@liveblocks/react-ui";
 import { BrutalBadge } from "@/components/ui";
 import { RoomProvider, useMyPresence, useOthers, useSelf, useRoomUserProfiles } from "@/lib/liveblocks";
 import { EditorToolbar } from "./editor-toolbar";
+import { CollaboratorCursors } from "./CollaboratorCursors";
+import { CommentPins } from "./CommentPins";
 import { CollaborationProofSnapshot } from "./CollaborationProofSnapshot";
 
 // Editor theme - neobrutalist style
@@ -588,48 +588,6 @@ function NotificationBell() {
 }
 
 // ============================================================================
-// Threads Sidebar
-// ============================================================================
-
-interface ThreadsSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-function ThreadsSidebar({ isOpen, onClose }: ThreadsSidebarProps) {
-  const { threads } = useThreads();
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="w-80 flex-shrink-0 border-l-4 border-black bg-white">
-      <div className="flex items-center justify-between border-b-3 border-black p-3">
-        <h3 className="font-bold">Comments</h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="hover:bg-gray-100 p-1"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <div
-        className="overflow-auto"
-        style={{ height: "calc(100vh - 200px)" }}
-      >
-        {threads && threads.length > 0 ? (
-          <AnchoredThreads threads={threads} />
-        ) : (
-          <div className="p-4 text-center text-gray-500 text-sm">
-            No comments yet. Select text and click the comment button to start.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // AI Assistant Panel
 // ============================================================================
 
@@ -803,7 +761,7 @@ function CollaborativeEditorInner({
 }: CollaborativeEditorInnerProps) {
   const [wordCount, setWordCount] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
-  const [showThreads, setShowThreads] = useState(false);
+  const [nextThreadRequest, setNextThreadRequest] = useState(0);
   const [showAi, setShowAi] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
   const { threads } = useThreads();
@@ -828,8 +786,8 @@ function CollaborativeEditorInner({
     },
   });
 
-  const threadCount = threads?.length ?? 0;
-
+  const unresolvedThreads = threads?.filter((thread) => !thread.resolved) ?? [];
+  const threadCount = unresolvedThreads.length;
   const handleCommitToGitHub = async () => {
     if (isCommitting) return;
 
@@ -860,17 +818,16 @@ function CollaborativeEditorInner({
       <LiveblocksPlugin>
         <CollaborationProofSnapshot />
         <FloatingComposer />
-        {threads && <FloatingThreads threads={threads} />}
         <FloatingToolbar>
           <Toolbar.SectionInline />
           <Toolbar.Separator />
           <Toolbar.SectionCollaboration />
         </FloatingToolbar>
         <div className="flex h-full">
-          <div className="flex-1 flex flex-col border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <div className="min-w-0 flex-1 flex flex-col border-4 border-black bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
 
           {/* Header with presence - FIXED */}
-          <div className="flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2 flex-shrink-0">
+          <div className="hotpress-collaboration-header flex items-center justify-between border-b-3 border-black bg-gray-50 px-4 py-2 flex-shrink-0">
             <div className="flex items-center gap-3">
               <EditableTitle
                 sessionId={roomId}
@@ -890,16 +847,12 @@ function CollaborativeEditorInner({
                 </Link>
               )}
 
-              {/* Threads toggle (also opens composer when text selected) */}
+              {/* Jump to the next unresolved discussion. */}
               <button
                 type="button"
-                onClick={() => setShowThreads(!showThreads)}
-                className={`flex h-8 items-center gap-1 px-2 border-2 transition-all ${
-                  showThreads
-                    ? "border-black bg-yellow-400"
-                    : "border-transparent hover:border-black hover:bg-gray-100"
-                }`}
-                title="Toggle Comments Sidebar"
+                onClick={() => setNextThreadRequest(value => value + 1)}
+                className="flex h-8 items-center gap-1 px-2 border-2 border-transparent hover:border-black hover:bg-brutal-yellow transition-all"
+                title="Next unresolved comment"
               >
                 <MessageSquare className="h-4 w-4" />
                 {threadCount > 0 && (
@@ -1038,9 +991,11 @@ function CollaborativeEditorInner({
           </div>
 
           {/* Editor content - SCROLLABLE */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="relative">
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="hotpress-document-layout">
               <EditorContentArea onWordCountChange={setWordCount} />
+              <CollaboratorCursors />
+              <CommentPins nextRequest={nextThreadRequest} />
             </div>
           </div>
 
@@ -1057,12 +1012,6 @@ function CollaborativeEditorInner({
             </BrutalBadge>
           </div>
       </div>
-
-      {/* Threads sidebar shares the editor and Liveblocks comment contexts. */}
-      <ThreadsSidebar
-        isOpen={showThreads}
-        onClose={() => setShowThreads(false)}
-      />
 
       {/* AI Assistant panel */}
       <AiAssistantPanel isOpen={showAi} onClose={() => setShowAi(false)} />
