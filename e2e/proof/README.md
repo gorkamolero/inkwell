@@ -61,3 +61,21 @@ proof invokes neither the background export workflow nor any deployment.
 For local production runs, the fixture validates the returned share link is on
 localhost:3847, then uses HTTP to match next start. The app hardcodes HTTPS in
 production-mode share URLs. No external host is accepted or contacted.
+
+## Portfolio recording
+
+After the production suite has passed, `portfolio.spec.ts` records a separate,
+continuous 55-second take using Ana and an actual anonymous share-link guest.
+Run it with the Chromium project and the same production environment flags.
+The two 956px panes use 24px manuscript text. `compose-portfolio.mjs` aligns the
+raw WebMs using a green setup slate, removes only setup/tail footage, crops the
+bottom status bars, and adds labels, event-timed captions and a three-second
+end card. It produces 1920×1080 H.264 at 30 fps and 7 Mbps with faststart.
+The end card reads this run's `names-suite/latency.json` and verified
+`names-suite/suite.log`; it refuses failed takes or missing suite results.
+The video spec is separate from the 18-check `collaboration` project.
+
+Set `HOTPRESS_PROOF_OUTPUT` explicitly when invoking the compositor, and point
+`HOTPRESS_PROOF_FFMPEG` at the existing drawtext-enabled binary. Preserve the
+successful raw files and scenario JSON with the deliverable. Any failed take
+must be re-recorded from the beginning, never repaired by mixing takes.

@@ -5,7 +5,7 @@ import { output } from "./rooms";
 import { randomUUID } from "node:crypto";
 import { setupAuthBeforeNavigation } from "../utils/auth-helpers";
 import { createSharedSessionViaApi } from "../fixtures/liveblocks-helpers";
-export const editor = (p: Page) => p.getByRole("textbox", { name: /editor/i });
+export const editor = (p: Page) => p.getByRole("textbox", { name: "Collaborative Editor", exact: true });
 export async function ready(p: Page) {
   await expect(editor(p)).toBeVisible();
   await expect(p.getByText("Live", { exact: true })).toBeVisible({
@@ -75,15 +75,16 @@ type Proof = { a: Page; b: Page; c: Page; id: string; url: string };
 export const test = base.extend<{ proof: Proof }>({
   proof: async ({ browser }, use, info) => {
     const recording = info.title.includes("record a real");
+    const portfolio = info.title.includes("portfolio");
     const contexts = await Promise.all(
       [0, 1, 2].map((i) =>
         browser.newContext({
-          viewport: { width: 1280, height: recording ? 600 : 800 },
+          viewport: portfolio ? { width: 956, height: 956 } : { width: 1280, height: recording ? 600 : 800 },
           ...(recording && i < 2
             ? {
                 recordVideo: {
                   dir: `${output}/raw`,
-                  size: { width: 1280, height: 600 },
+                  size: portfolio ? { width: 956, height: 956 } : { width: 1280, height: 600 },
                 },
               }
             : {}),
@@ -176,7 +177,7 @@ export const test = base.extend<{ proof: Proof }>({
       for (const [index, page] of [a, c].entries()) {
         const user = {
           id: ids[index],
-          name: index === 0 ? "Writer A" : "Writer C",
+          name: index === 0 ? (portfolio ? "Ana" : "Writer A") : "Writer C",
           email: `${ids[index]}@example.invalid`,
           image: "",
           login: ids[index],
@@ -193,10 +194,17 @@ export const test = base.extend<{ proof: Proof }>({
         await ready(b);
       }
       await use({ a, b, c, id: session.sessionId, url: session.url });
-      if (recording && (browserErrors.length || authorizationFailures.length)) {
+      if (recording && !portfolio && (browserErrors.length || authorizationFailures.length)) {
         const path = `${output}/video-scenario-v2.json`;
         const scenario = JSON.parse(readFileSync(path, "utf8"));
         scenario.errors.push("Browser or authorization errors occurred; see the test report.");
+        writeFileSync(path, JSON.stringify(scenario, null, 2));
+      }
+      if (portfolio && (browserErrors.length || authorizationFailures.length)) {
+        const path = `${output}/portfolio-scenario.json`;
+        const scenario = JSON.parse(readFileSync(path, "utf8"));
+        scenario.passed = false;
+        scenario.errors = ["Browser or authorization error; do not publish this take."];
         writeFileSync(path, JSON.stringify(scenario, null, 2));
       }
       expect(browserErrors, "Browser errors can interrupt the Lexical/Yjs listener chain").toEqual([]);
@@ -231,8 +239,8 @@ export const test = base.extend<{ proof: Proof }>({
       }
       await Promise.all(contexts.map((ctx) => ctx.close()));
       if (recording) {
-        await a.video()!.saveAs(`${output}/writer-a-v2.webm`);
-        await b.video()!.saveAs(`${output}/writer-b-v2.webm`);
+        await a.video()!.saveAs(`${output}/${portfolio ? "raw-ana" : "writer-a-v2"}.webm`);
+        await b.video()!.saveAs(`${output}/${portfolio ? "raw-guest" : "writer-b-v2"}.webm`);
       }
       for (const id of ids) await sql`delete from "user" where id = ${id}`;
       await sql.end();
