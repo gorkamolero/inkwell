@@ -314,6 +314,7 @@ test("Comment authors — real names reach the other person and survive departur
   await threadB.getByText("An opening thought.", { exact: true }).click();
   await threadB.locator(".lb-composer-editor").fill("A guest thought.");
   await threadB.getByRole("button", { name: "Reply", exact: true }).click();
+  await expect(threadB.getByText(guest, { exact: true })).toBeVisible();
   await a.locator(".hotpress-comment-pin").click();
   await expect(
     a.locator(".lb-thread").getByText(guest, { exact: true }),
@@ -338,7 +339,7 @@ test("Comment authors — real names reach the other person and survive departur
   await c.locator(".hotpress-comment-pin").click();
   const threadC = c.locator(".hotpress-comment-popover .lb-thread");
   await expect(threadC.getByText("Writer A", { exact: true })).toBeVisible();
-  await expect(threadC.getByText(/^Guest [a-z0-9]+$/)).toBeVisible();
+  await expect(threadC.getByText(guest, { exact: true })).toBeVisible();
   await expect(threadC).not.toContainText("Anonymous");
 });
 
@@ -443,7 +444,7 @@ test("Product — moving pointers, highlight and pin, preview, popover reply, co
     path: `${output}/product-highlight-pin.png`,
   });
   await pin.hover();
-  await expect(pin.locator(".hotpress-pin-preview")).toBeVisible();
+  await expect(b.locator(".hotpress-comment-preview")).toBeVisible();
   await b.screenshot({
     animations: "disabled",
     path: `${output}/product-hover-preview.png`,
@@ -451,6 +452,7 @@ test("Product — moving pointers, highlight and pin, preview, popover reply, co
   await pin.click();
   const popover = b.getByRole("dialog", { name: "Comment thread" });
   await expect(popover.locator(".lb-composer-editor")).toBeVisible();
+  const guestName = (await b.getByTitle("Click to change your name").locator("span").innerText()).trim();
   await popover
     .locator(".lb-composer-editor")
     .fill("Yes, let the harbor wake slowly.");
@@ -458,6 +460,7 @@ test("Product — moving pointers, highlight and pin, preview, popover reply, co
   await expect(
     popover.getByText("Yes, let the harbor wake slowly.", { exact: true }),
   ).toBeVisible();
+  await expect(popover.locator(".lb-user").filter({ hasText: guestName })).toHaveCount(1);
   await expect(popover.locator(".lb-user[data-loading]")).toHaveCount(0);
   await b.screenshot({
     animations: "disabled",

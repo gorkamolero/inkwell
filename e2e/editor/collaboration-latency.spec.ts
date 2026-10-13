@@ -85,11 +85,10 @@ test.describe("Measure — real remote DOM observation latency", () => {
           new URL(r.url()).hostname.endsWith("liveblocks.io") &&
           new URL(r.url()).pathname.endsWith("/threads") &&
           r.request().method() === "POST",
-        { timeout: 15000 },
+        { timeout: 30000 },
       );
       const start = performance.now();
-      await a.getByRole("button", { name: "Send", exact: true }).click();
-      const response = await responsePromise;
+      const [response] = await Promise.all([responsePromise, a.getByRole("button", { name: "Send", exact: true }).click()]);
       let latencyMs: number | null = null;
       if (response.ok()) {
         await b.locator(".hotpress-comment-pin").click();
@@ -107,6 +106,9 @@ test.describe("Measure — real remote DOM observation latency", () => {
           .locator(".hotpress-comment-popover")
           .getByRole("button", { name: "Resolve thread", exact: true })
           .click();
+        await expect(a.locator(".hotpress-comment-pin")).toHaveCount(0);
+        await expect(b.locator(".hotpress-comment-pin")).toHaveCount(0);
+        await converge(a, b);
       } else {
         await expect(
           a.getByText(`Latency comment ${i}`, { exact: true }),

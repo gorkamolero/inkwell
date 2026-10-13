@@ -1,3 +1,4 @@
+import { authorColor } from "../../src/lib/collaboration-identity";
 import { test as base, expect, Page } from "@playwright/test";
 import postgres from "postgres";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -39,6 +40,7 @@ export async function append(p: Page, text: string) {
   await expect(editor(p)).toContainText(text);
 }
 export async function selectPhrase(p: Page, phrase: string) {
+  await editor(p).click();
   await editor(p).evaluate((el, phrase) => {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let node;
@@ -74,17 +76,18 @@ export async function comment(p: Page, phrase: string, text: string) {
 type Proof = { a: Page; b: Page; c: Page; id: string; url: string };
 export const test = base.extend<{ proof: Proof }>({
   proof: async ({ browser }, use, info) => {
+    const style = info.title.includes("Style round 2");
     const recording = info.title.includes("record a real");
     const portfolio = info.title.includes("portfolio");
     const contexts = await Promise.all(
       [0, 1, 2].map((i) =>
         browser.newContext({
-          viewport: portfolio ? { width: 956, height: 956 } : { width: 1280, height: recording ? 600 : 800 },
-          ...(recording && i < 2
+          viewport: style ? { width: 1440, height: 1000 } : portfolio ? { width: 956, height: 956 } : { width: 1280, height: recording ? 600 : 800 },
+          ...((recording || style) && i < 2
             ? {
                 recordVideo: {
                   dir: `${output}/raw`,
-                  size: portfolio ? { width: 956, height: 956 } : { width: 1280, height: 600 },
+                  size: style ? { width: 1440, height: 1000 } : portfolio ? { width: 956, height: 956 } : { width: 1280, height: 600 },
                 },
               }
             : {}),
@@ -166,6 +169,7 @@ export const test = base.extend<{ proof: Proof }>({
       });
     }
     const ids = [randomUUID(), randomUUID()].map((id) => `proof-${id}`);
+    if (style) while (authorColor(ids[0]) === authorColor(ids[1])) ids[1] += "-c";
     const dbUrl = new URL(process.env.DATABASE_URL!);
     if (
       !["localhost", "127.0.0.1"].includes(dbUrl.hostname) ||
@@ -238,6 +242,11 @@ export const test = base.extend<{ proof: Proof }>({
           }
       }
       await Promise.all(contexts.map((ctx) => ctx.close()));
+      if (style) {
+        writeFileSync(`${output}/style-video-end.json`, JSON.stringify({ end: Date.now() }));
+        await a.video()!.saveAs(`${output}/style-owner-raw.webm`);
+        await b.video()!.saveAs(`${output}/style-guest-raw.webm`);
+      }
       if (recording) {
         await a.video()!.saveAs(`${output}/${portfolio ? "raw-ana" : "writer-a-v2"}.webm`);
         await b.video()!.saveAs(`${output}/${portfolio ? "raw-guest" : "writer-b-v2"}.webm`);
