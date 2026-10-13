@@ -193,6 +193,10 @@ I looked at a frame from every shot (`v21-contact-sheet.png`) and at every 2–3
 
 Result: every step in goal.md section 2 is visible in v21.
 
+A second independent reviewer checked v21 against section 2 item by item. All six items were met, with timestamps; there was no must-fix, and the verdict was "meets the bar".
+
+Its main note, accepted: the acting person's own mouse pointer is never shown, so selections and clicks happen with no cursor on that screen. The CDP screencast doesn't capture the OS cursor. Adding one would mean painting a synthetic cursor onto the app footage, which the take's rules exclude. Each person's pointer does show on the other person's screen, as the product draws it.
+
 ## Live check on hotpress.app (2026-10-13)
 
 `e2e/proof/live-check.cjs` is run against production with two anonymous guests in one shared document:
