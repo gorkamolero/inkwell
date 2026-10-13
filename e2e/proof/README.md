@@ -79,3 +79,41 @@ Set `HOTPRESS_PROOF_OUTPUT` explicitly when invoking the compositor, and point
 `HOTPRESS_PROOF_FFMPEG` at the existing drawtext-enabled binary. Preserve the
 successful raw files and scenario JSON with the deliverable. Any failed take
 must be re-recorded from the beginning, never repaired by mixing takes.
+
+## Portfolio v3: one continuous production take
+
+Start an owned `NEXT_PUBLIC_COLLABORATION_PROOF=1 pnpm build`, then `pnpm start`
+(port 3847). Do not reuse an unrelated server. The existing configuration loads
+credentials; do not inspect or print environment files. Set
+`HOTPRESS_PROOF_PRODUCTION=1` for production-compatible signed test cookies.
+
+Run the complete collaboration project into a fresh evidence directory with
+`--workers=1 --reporter=list,json` and `PLAYWRIGHT_JSON_OUTPUT_NAME` pointing to
+its `suite-results.json`. Supply the existing drawtext-capable ffmpeg through
+`HOTPRESS_PROOF_FFMPEG` for the legacy suite video. Run
+`e2e/proof/portfolio.spec.ts --project=chromium --workers=1` into its own fresh
+`HOTPRESS_PROOF_OUTPUT` directory. Each failed rehearsal must be discarded in
+full; retain its room ledger and cleanup evidence.
+
+Compose with:
+
+```sh
+HOTPRESS_PROOF_OUTPUT="$delivery_directory" \
+HOTPRESS_PROOF_TAKE="$successful_take_directory" \
+HOTPRESS_PROOF_SUITE="$fresh_suite_directory" \
+node e2e/proof/compose-portfolio.mjs
+```
+
+Use `PLAYWRIGHT_BROWSERS_PATH` consistently if Chromium is installed outside the
+default cache. Composition requires the successful take, a fresh 20/20 suite
+with zero skips/retries, and its latency measurements. It aligns the two raw
+recordings using a pre-take slate; the action is never spliced. Frame, Inter
+labels, caption fades, eased camera moves and the measured end card are added
+in composition. The output contains master/web MP4s, a poster, step frames,
+a contact sheet and `v3-metadata.json` with exact measurement sources.
+
+Review every step at full resolution and review motion and phone playback size.
+Record review results separately from the product UI's Claude style approval.
+Verify each room in this run's exact creation manifests is deleted with GET 404;
+never list rooms. Stop the owned server and verify port 3847 is free. Publishing
+is a separate action, outside the v3 recording brief.

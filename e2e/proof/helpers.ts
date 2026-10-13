@@ -61,18 +61,23 @@ export async function selectPhrase(p: Page, phrase: string) {
     throw new Error("Phrase missing");
   }, phrase);
 }
-export async function comment(p: Page, phrase: string, text: string) {
-  await selectPhrase(p, phrase);
-  await p
-    .getByRole("button", {
-      name: "Add Comment (select text first)",
-      exact: true,
-    })
-    .click();
+// Optional interaction hooks let the recorder reuse the proof flow at human speed.
+export async function comment(p: Page, phrase: string, text: string, motion?: {
+  select: (page: Page, phrase: string) => Promise<void>;
+  click: (page: Page, target: import("@playwright/test").Locator) => Promise<void>;
+  write: (page: Page, target: import("@playwright/test").Locator, text: string) => Promise<void>;
+}) {
+  await (motion?.select ?? selectPhrase)(p, phrase);
+  const button = p.getByRole("button", {
+    name: motion ? "Comment" : "Add Comment (select text first)", exact: true,
+  });
+  if (motion) await motion.click(p, button); else await button.click();
   const composer = p.locator(".lb-composer-editor");
-  await composer.fill(text);
-  await p.getByRole("button", { name: "Send", exact: true }).click();
+  if (motion) await motion.write(p, composer, text); else await composer.fill(text);
+  const send = p.getByRole("button", { name: "Send", exact: true });
+  if (motion) await motion.click(p, send); else await send.click();
 }
+
 type Proof = { a: Page; b: Page; c: Page; id: string; url: string };
 export const test = base.extend<{ proof: Proof }>({
   proof: async ({ browser }, use, info) => {
@@ -82,12 +87,12 @@ export const test = base.extend<{ proof: Proof }>({
     const contexts = await Promise.all(
       [0, 1, 2].map((i) =>
         browser.newContext({
-          viewport: style ? { width: 1440, height: 1000 } : portfolio ? { width: 956, height: 956 } : { width: 1280, height: recording ? 600 : 800 },
+          viewport: style ? { width: 1440, height: 1000 } : portfolio ? { width: 872, height: 800 } : { width: 1280, height: recording ? 600 : 800 },
           ...((recording || style) && i < 2
             ? {
                 recordVideo: {
                   dir: `${output}/raw`,
-                  size: style ? { width: 1440, height: 1000 } : portfolio ? { width: 956, height: 956 } : { width: 1280, height: 600 },
+                  size: style ? { width: 1440, height: 1000 } : portfolio ? { width: 872, height: 800 } : { width: 1280, height: 600 },
                 },
               }
             : {}),

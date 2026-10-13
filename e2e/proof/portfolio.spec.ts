@@ -1,4 +1,5 @@
 import { writeFileSync } from "node:fs";
+import type { Page, Locator } from "@playwright/test";
 import {
   test,
   expect,
@@ -9,9 +10,10 @@ import {
   selectPhrase,
   comment,
   state,
-} from "../proof/helpers";
-import { output } from "../proof/rooms";
+} from "./helpers";
+import { output } from "./rooms";
 
+// Every action belongs to one uninterrupted take. A failed assertion invalidates it.
 test("record a real portfolio collaboration session", async ({
   proof: { a, b, url },
 }) => {
@@ -20,17 +22,53 @@ test("record a real portfolio collaboration session", async ({
   let started = 0;
   const event = (name: string) =>
     events.push({ name, seconds: (Date.now() - started) / 1000 });
-  const beat = async (seconds: number) => {
-    await a.waitForTimeout(Math.max(0, started + seconds * 1000 - Date.now()));
+  const pause = (ms: number) => a.waitForTimeout(ms);
+  const beat = async (s: number) =>
+    pause(Math.max(0, started + s * 1000 - Date.now()));
+  const positions = new Map<Page, { x: number; y: number }>();
+  const glide = async (p: Page, x: number, y: number, ms = 650) => {
+    const from = positions.get(p) || { x: 20, y: 20 };
+    const n = Math.max(24, Math.round(ms / 16));
+    for (let i = 1; i <= n; i++) {
+      const t = i / n,
+        u = t * t * (3 - 2 * t);
+      await p.mouse.move(
+        from.x + (x - from.x) * u + Math.sin(Math.PI * u) * 28,
+        from.y + (y - from.y) * u - Math.sin(Math.PI * u) * 22,
+        { steps: 1 },
+      );
+      await p.waitForTimeout(ms / n);
+    }
+    positions.set(p, { x, y });
+  };
+  const approach = async (p: Page, target: Locator, click = true) => {
+    const r = (await target.boundingBox())!;
+    await glide(p, r.x + r.width / 2, r.y + r.height / 2);
+    await pause(160);
+    if (click) await p.mouse.click(r.x + r.width / 2, r.y + r.height / 2);
+  };
+  const type = async (p: Page, text: string) => {
+    for (let i = 0; i < text.length; i++) {
+      await p.keyboard.type(text[i]);
+      await p.waitForTimeout(62 + ((i * 37) % 65));
+    }
+  };
+  const select = async (p: Page, phrase: string) => {
+    // selectPhrase's click lands at the editor centre; approach it first.
+    await approach(p, editor(p), false);
+    await selectPhrase(p, phrase);
+  };
+  const atEnd = async (p: Page, phrase: string) => {
+    await select(p, phrase);
+    await p.keyboard.press("ArrowRight");
+    await p.keyboard.press("ArrowLeft");
   };
   const style = `
-    [aria-label="Collaborative Editor"] { font-size:24px!important; line-height:1.6!important; }
-    [aria-label="Collaborative Editor"] p { margin:0 0 24px!important; }
-    [aria-label="Collaborative Editor"] h1 { font-size:38px!important; margin:12px 0 28px!important; }
-    .lb-root { --lb-font-size:18px; }
-    .lb-comment-body,.lb-composer-editor { font-size:18px!important; line-height:1.5!important; }
+    [aria-label="Collaborative Editor"] { font-size:26px!important; line-height:1.55!important; }
+    [aria-label="Collaborative Editor"] p { margin:0 0 25px!important; }
+    [aria-label="Collaborative Editor"] h1 { font-size:38px!important; margin:8px 0 28px!important; }
+    .lb-comment-body,.lb-composer-editor { font-size:18px!important; line-height:1.45!important; }
   `;
-  // Apply readability styling before each navigation paints; no content or status is replaced.
   for (const p of [a, b])
     await p.addInitScript((css) => {
       const install = () => {
@@ -46,17 +84,16 @@ test("record a real portfolio collaboration session", async ({
   await a.getByTitle("Click to edit title").click();
   await a.locator('input[maxlength="100"]').fill("Harbor");
   await a.locator('input[maxlength="100"]').press("Enter");
-  await expect(a.getByTitle("Click to edit title")).toHaveText("Harbor");
   await end(a);
   await a.keyboard.type(
-    "# Chapter One\nMara reached the harbor before dawn.\nThe boats waited in the mist.\nA lantern glowed beside the gate.",
+    "# Chapter One\nMara reached the harbor before dawn. The water lay dark and quiet.\nThe boats waited in the mist. Ropes creaked softly against the wooden posts.\nA lantern glowed beside the gate. Its light traced a narrow path across the stones.\nBeyond the seawall, the town was still asleep.",
   );
-  await expect(editor(a).locator("h1")).toHaveText("Chapter One");
   await b.setContent(
     '<html><body style="margin:0;background:#fafafa"></body></html>',
   );
-  // A shared visual slate provides an exact timestamp in each raw recording.
-  for (const p of [a, b])
+  for (const p of [a, b]) {
+    await p.mouse.move(20, 20);
+    positions.set(p, { x: 20, y: 20 });
     await p.evaluate(() => {
       const slate = document.createElement("div");
       slate.id = "recording-sync";
@@ -64,7 +101,8 @@ test("record a real portfolio collaboration session", async ({
         "position:fixed;inset:0;z-index:2147483647;background:rgb(0,255,0)";
       document.body.append(slate);
     });
-  await a.waitForTimeout(500);
+  }
+  await pause(500);
   await Promise.all(
     [a, b].map((p) =>
       p.evaluate(() => document.getElementById("recording-sync")!.remove()),
@@ -83,116 +121,118 @@ test("record a real portfolio collaboration session", async ({
         .locator("span")
         .innerText()
     ).trim();
-    await expect(a.getByTitle(guest, { exact: true })).toBeVisible();
-    await expect(b.getByTitle("Ana", { exact: true })).toBeVisible();
-    const atEnd = async (p: typeof a, index: number) => {
-      await editor(p).locator("p").nth(index).click();
-      await p.keyboard.press("End");
-      await p.keyboard.press("ArrowLeft");
-    };
-    await Promise.all([atEnd(a, 1), atEnd(b, 2)]);
+    await glide(a, 310, 340, 1000);
+    await glide(b, 510, 410, 1000);
+    await expect(a.getByTestId("remote-pointer")).toBeVisible();
+    await expect(b.getByTestId("remote-pointer")).toBeVisible();
+    event("pointers-visible");
+    await beat(7);
+    event("parallel");
+    await Promise.all([
+      atEnd(a, "The boats waited in the mist."),
+      atEnd(b, "A lantern glowed beside the gate."),
+    ]);
+    await Promise.all([type(a, ", sails still"), type(b, ", burning low")]);
+    await converge(a, b);
     await expect(
       a.locator(".lb-lexical-cursors").getByText(guest, { exact: true }),
     ).toBeVisible();
     await expect(
       b.locator(".lb-lexical-cursors").getByText("Ana", { exact: true }),
     ).toBeVisible();
-    await beat(6);
-    event("parallel");
-    await Promise.all([
-      a.keyboard.type(", their sails still", { delay: 125 }),
-      b.keyboard.type(", warm against the cold", { delay: 110 }),
-    ]);
-    await converge(a, b);
-    await expect(editor(a)).toContainText(
-      "The boats waited in the mist, their sails still.",
-    );
-    await expect(editor(a)).toContainText(
-      "A lantern glowed beside the gate, warm against the cold.",
-    );
-    await beat(13);
+    event("parallel-visible");
+    await beat(14);
     event("sentence");
-    await Promise.all([selectPhrase(a, "harbor"), selectPhrase(b, "before")]);
+    await Promise.all([select(a, "harbor"), select(b, "before")]);
     await Promise.all([
       a.keyboard.press("ArrowLeft"),
       b.keyboard.press("ArrowLeft"),
     ]);
-    await Promise.all([
-      a.keyboard.type("old ", { delay: 180 }),
-      b.keyboard.type("just ", { delay: 180 }),
-    ]);
+    await Promise.all([type(a, "old "), type(b, "just ")]);
     await converge(a, b);
     await expect(editor(a)).toContainText(
       "Mara reached the old harbor just before dawn.",
     );
-    await beat(19);
+    event("sentence-visible");
+    await beat(20);
     event("comments");
-    await selectPhrase(a, "before dawn");
-    await a.waitForTimeout(1000);
-    await a
-      .getByRole("button", {
-        name: "Add Comment (select text first)",
-        exact: true,
-      })
-      .click();
-    await a
-      .locator(".lb-composer-editor")
-      .pressSequentially("Keep this quiet opening?", { delay: 85 });
-    await a.getByRole("button", { name: "Send", exact: true }).click();
-    await b.getByTitle("Toggle Comments Sidebar").click();
-    const thread = b.locator(".lb-lexical-anchored-threads .lb-thread");
+    await comment(a, "before dawn", "Keep this quiet opening?", {
+      select: async (p, phrase) => {
+        await select(p, phrase);
+        await pause(500);
+      },
+      click: approach,
+      write: async (p, target, text) => {
+        await approach(p, target);
+        await type(p, text);
+        event("composer-ready");
+      },
+    });
+    for (const p of [a, b])
+      await expect(p.locator(".hotpress-comment-pin")).toBeVisible();
+    event("comment-visible");
+    await beat(29);
+    event("reply");
+    await approach(b, b.locator(".hotpress-comment-pin"), false);
+    await expect(b.locator(".hotpress-comment-preview")).toBeVisible();
+    event("hover-visible");
+    await pause(750);
+    await b.mouse.down();
+    await pause(80);
+    await b.mouse.up();
+    const pop = b.locator(".hotpress-comment-popover");
+    await expect(pop).toBeVisible();
     await expect(
-      thread.getByText("Keep this quiet opening?", { exact: true }),
+      pop.getByText("Keep this quiet opening?", { exact: true }),
     ).toBeVisible();
-    await expect(thread.getByText("Ana", { exact: true })).toBeVisible();
-    await beat(27);
-    await thread.getByText("Keep this quiet opening?", { exact: true }).click();
-    await b.getByTitle("Toggle Comments Sidebar").click();
-    const reply = b.locator(".lb-lexical-floating-threads .lb-thread");
-    await reply
-      .locator(".lb-composer-editor")
-      .pressSequentially("Yes, let the harbor wake slowly.", { delay: 70 });
-    await reply.getByRole("button", { name: "Reply", exact: true }).click();
-    await editor(b).locator("h1").click();
-    await b.getByTitle("Toggle Comments Sidebar").click();
-    await a.getByTitle("Toggle Comments Sidebar").click();
-    const threadA = a.locator(".lb-lexical-anchored-threads .lb-thread");
+    await approach(b, pop.locator(".lb-composer-editor"));
+    await type(b, "Yes, let the harbor wake slowly.");
+    await approach(b, pop.getByRole("button", { name: "Reply", exact: true }));
+    await approach(a, a.locator(".hotpress-comment-pin"));
     await expect(
-      threadA.getByText("Yes, let the harbor wake slowly.", { exact: true }),
+      a
+        .locator(".hotpress-comment-popover")
+        .getByText("Yes, let the harbor wake slowly.", { exact: true }),
     ).toBeVisible();
-    await expect(threadA.getByText(guest, { exact: true })).toBeVisible();
+    await expect(
+      a.locator(".lb-thread .lb-user").filter({ hasText: guest }),
+    ).toHaveCount(1);
+    await pause(250);
     event("reply-visible");
-    await a.screenshot({ path: `${output}/step4-ana.png` });
-    await b.screenshot({ path: `${output}/step4-guest.png` });
-    await beat(35);
-    for (const p of [a, b]) {
-      await p.getByTitle("Toggle Comments Sidebar").click();
-      await p.keyboard.press("Escape");
-      await editor(p).locator("h1").click();
-    }
+    await pause(3300);
+    await beat(41);
+    for (const p of [a, b]) await p.keyboard.press("Escape");
+    await pause(800);
+    await beat(43);
     event("offline");
     await b.context().setOffline(true);
     await expect(b.getByText("Offline", { exact: true })).toBeVisible();
-    await Promise.all([atEnd(a, 1), atEnd(b, 2)]);
     await Promise.all([
-      a.keyboard.type(" as the tide turned", { delay: 120 }),
-      b.keyboard.type(" until the sun rose", { delay: 120 }),
+      atEnd(a, "The boats waited in the mist, sails still."),
+      atEnd(b, "A lantern glowed beside the gate, burning low."),
     ]);
-    await expect(editor(a)).not.toContainText("until the sun rose");
+    await Promise.all([
+      type(a, " as the tide turned"),
+      type(b, " until sunrise"),
+    ]);
+    await expect(editor(a)).not.toContainText("until sunrise");
     await expect(editor(b)).not.toContainText("as the tide turned");
-    await beat(47);
+    event("offline-visible");
+    await pause(4000);
+    await beat(53);
     event("reconnect");
     await b.context().setOffline(false);
     await ready(b);
     for (const p of [a, b]) {
       await expect(editor(p)).toContainText("as the tide turned");
-      await expect(editor(p)).toContainText("until the sun rose");
+      await expect(editor(p)).toContainText("until sunrise");
     }
     await converge(a, b);
     event("merged");
-    await Promise.all([a, b].map((p) => p.mouse.move(930, 850)));
-    await a.waitForTimeout(2500);
-    await beat(55);
+    await Promise.all([glide(a, 820, 700), glide(b, 820, 700)]);
+    await pause(2200);
+    await beat(58);
+    expect((Date.now() - started) / 1000).toBeLessThanOrEqual(62);
     passed = true;
   } finally {
     writeFileSync(
@@ -202,11 +242,11 @@ test("record a real portfolio collaboration session", async ({
           passed,
           events,
           durationSeconds: (Date.now() - started) / 1000,
+          continuousTake: true,
           finalDocuments: await Promise.all([
             state(a).catch(() => null),
             state(b).catch(() => null),
           ]),
-          continuousTake: true,
         },
         null,
         2,
