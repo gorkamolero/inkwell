@@ -162,16 +162,21 @@ v10 (44.6 s, 1920×1080) was published at `https://pub-066596d7e4fe4de2b74eac13b
 | v19 (recut) | pass | 4 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix; OFFLINE held 1.5 s on both screens before the reconnect |
 | v20 (new take: both pointers at the join, eased comment zooms) | pass | 3 / 3 / 4 / 3 / 4 | fail: a two-frame wide flash at the start of the zoom in |
 | v21 (v20 recut) | pass: matched push-in, natural edge crossings, holds | 4 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix; all three camera moves smooth |
+| v22 (v21 polish: 44 px screen tags, 36 px merge pills, even close-up margins, 0.3 s end dissolve) | pass | 4 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix |
 
-v19 missed two goal items: Ana's pointer at the join, and the smooth comment zoom. v21 (54.3 s, 1920×1080, take 3 of the v20 recording only; provenance and checks in `V20-NOTES.md`, `V21-NOTES.md` and `verify-v21.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v21.mp4` on the Hotpress case page and the Engineering page.
+v19 missed two goal items: Ana's pointer at the join, and the smooth comment zoom. v22 (54.3 s, 1920×1080, take 3 of the v20 recording only; v21 plus phone-legibility polish; provenance and checks in `V20-NOTES.md` to `V22-NOTES.md` and `verify-v22.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v22.mp4` on the Hotpress case page and the Engineering page.
 
 Remaining nitpicks from the last review, all accepted:
-- a tight left margin in the thread close-ups;
-- small screen tags and two-screen text on a phone;
-- a one-frame hover-card remnant at 30.4 s;
-- the offline guest's caret and avatar linger on Ana's screen (true app behaviour);
+- two-screen body text is about 7 px on a phone; it's 38 px in the 1920 frame, above the 22–26 px standard;
+- the dark strip at the top changes height between close-ups;
+- the two-screen crops end before the right end of each header;
+- the guest's caret leaves at the start of the zoom (true app behaviour: the guest clicks away);
+- the pin shifts as a line grows (true app behaviour);
+- a spellcheck squiggle mid-word;
 - no share-link shot;
-- a hard cut to the end card.
+- the acting person's own OS cursor isn't captured.
+
+Fixed in v22 from the v21 reviews: screen tags raised from 32 to 44 px, merge pills from 30 to 36 px, even margins of at least 64 px in the thread close-ups, and a 0.3 s dissolve into the end card.
 
 ### Claude's frame review of v21, by step (2026-10-13)
 
