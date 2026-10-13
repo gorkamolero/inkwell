@@ -55,20 +55,30 @@ test("Style round 2 — all states, guest identity and motion", async ({
   );
   await converge(a, b);
   const box = (await editor(a).boundingBox())!;
-  await c.mouse.move(box.x + 300, box.y + 200);
+  await c.mouse.move(box.x + 600, box.y + 25);
   await a.mouse.move(box.x + 100, box.y + 100);
   await expect(b.getByTestId("remote-pointer")).toHaveCount(2);
-  await shot(b, "1440-two-pointers");
-  await motion("pointer-curve", async () => {
-    for (let i = 0; i <= 55; i++) {
-      const t = i / 55;
-      await a.mouse.move(
-        box.x + 100 + 380 * t,
-        box.y + 100 + 70 * Math.sin(t * Math.PI),
-      );
-      await a.waitForTimeout(25);
+  const labels = b.locator('.lb-lexical-cursors [data-yjs-client-id] > span').filter({ hasText: "Writer A" });
+  const pointerLabel = b.getByTestId("remote-pointer").locator("span").filter({ hasText: "Writer A" });
+  await motion("pointer-and-typing", async () => {
+    for (const width of [1440, 390]) {
+      await b.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      await end(a);
+      await a.keyboard.type(" Dawn arrived.", { delay: 65 });
+      await c.mouse.move(box.x + 600, box.y + 25);
+      await expect(labels).toBeVisible();
+      await expect(pointerLabel).toHaveCount(0);
+      await shot(b, `${width}-two-pointers-typing`);
+      for (let i = 0; i <= 30; i++) {
+        await a.mouse.move(box.x + 100 + i * 8, box.y + 110 + 35 * Math.sin(i / 30 * Math.PI));
+        await a.waitForTimeout(25);
+      }
+      await expect(labels).toBeHidden();
+      await expect(pointerLabel).toBeVisible();
+      await shot(b, `${width}-two-pointers-moving`);
     }
   });
+  await b.setViewportSize({ width: 1440, height: 1000 });
   await selectPhrase(a, "water");
   await end(c);
   await shot(b, "1440-caret-selection");
@@ -81,6 +91,8 @@ test("Style round 2 — all states, guest identity and motion", async ({
   });
   await shot(b, "1440-composer-pending");
   await b.locator(".lb-composer-editor").fill("Let the harbor wake slowly.");
+  await expect(b.getByRole("button", { name: "Send", exact: true })).toHaveCSS("background-color", "rgb(23, 23, 23)");
+  await shot(b, "1440-composer-enabled");
   await motion("pin-appear", async () => {
     await b.getByRole("button", { name: "Send", exact: true }).click();
   });
@@ -118,7 +130,9 @@ test("Style round 2 — all states, guest identity and motion", async ({
   });
   await shot(b, "1440-hover-preview");
   await b.mouse.move(10, 10);
+  await b.keyboard.press("Tab");
   await pin.focus();
+  await expect(pin).toHaveCSS("outline-style", "solid");
   await shot(b, "1440-focus");
   await motion("popover-open-close", async () => {
     await pin.click();
@@ -126,6 +140,8 @@ test("Style round 2 — all states, guest identity and motion", async ({
     await b.keyboard.press("Escape");
   });
   await pin.click();
+  await expect(pin).toHaveCSS("outline-style", "none");
+  await shot(b, "1440-pin-mouse");
   const pop = b.locator(".hotpress-comment-popover");
   const guest = (
     await b.getByTitle("Click to change your name").locator("span").innerText()
@@ -146,14 +162,25 @@ test("Style round 2 — all states, guest identity and motion", async ({
   await b.mouse.click(10, 10);
   await b.setViewportSize({ width: 390, height: 844 });
   await shot(b, "390-pin-long-line-above");
+  await pin.click();
+  await expect(pin).toHaveCSS("outline-style", "none");
+  await shot(b, "390-pin-mouse");
+  await b.keyboard.press("Escape");
+  await b.keyboard.press("Tab");
+  await pin.focus();
+  await expect(pin).toHaveCSS("outline-style", "solid");
+  await shot(b, "390-pin-keyboard");
+  await b.mouse.click(10, 10);
   await selectPhrase(a, "water");
   await c.mouse.click(10, 10);
-  await shot(b, "390-caret-selection-no-pointers");
+  await shot(b, "390-caret-selection");
   await a.mouse.click(10, 10);
   await selectPhrase(b, "lantern");
   await shot(b, "390-toolbar");
   await b.getByRole("button", { name: "Comment", exact: true }).click();
   await shot(b, "390-composer-pending");
+  await b.locator(".lb-composer-editor").fill("A quiet morning.");
+  await shot(b, "390-composer-enabled");
   await b.keyboard.press("Escape");
   await end(b);
   await motion("phone-sheet-open-close", async () => {

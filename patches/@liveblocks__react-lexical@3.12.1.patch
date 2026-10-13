@@ -234,3 +234,31 @@ index 22aac59bfc7bd261eb3d6bc139c21081e52e20c8..3951d06e21ab579866278c9a5c91cfe6
        hide({ padding: FLOATING_COMPOSER_COLLISION_PADDING }),
        shift({
          padding: FLOATING_COMPOSER_COLLISION_PADDING,
+--- a/dist/liveblocks-plugin-provider.js
++++ b/dist/liveblocks-plugin-provider.js
+@@ -0,0 +1 @@
++import { syncCursorPositions } from "@lexical/yjs";
+@@ -16,0 +18,7 @@
++// Expose the Yjs identity so pointer/caret labels share one activity state.
++function syncIdentifiedCursors(binding, provider) {
++  syncCursorPositions(binding, provider);
++  for (const [id, cursor] of binding.cursors) {
++    if (cursor.selection) cursor.selection.caret.dataset.yjsClientId = String(id);
++  }
++}
+@@ -119,0 +128 @@
++        syncCursorPositionsFn: syncIdentifiedCursors,
+--- a/dist/liveblocks-plugin-provider.cjs
++++ b/dist/liveblocks-plugin-provider.cjs
+@@ -1,0 +2 @@
++var { syncCursorPositions } = require("@lexical/yjs");
+@@ -18,0 +20,7 @@
++// Expose the Yjs identity so pointer/caret labels share one activity state.
++function syncIdentifiedCursors(binding, provider) {
++  syncCursorPositions(binding, provider);
++  for (const [id, cursor] of binding.cursors) {
++    if (cursor.selection) cursor.selection.caret.dataset.yjsClientId = String(id);
++  }
++}
+@@ -121,0 +130 @@
++        syncCursorPositionsFn: syncIdentifiedCursors,

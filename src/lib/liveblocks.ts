@@ -80,6 +80,8 @@ const client = createClient({
 });
 
 export type Presence = {
+  labelActivity?: "pointer" | "caret";
+  __yjs_clientid?: number;
   cursor: { x: number; y: number } | null;
   name: string;
   color: string;

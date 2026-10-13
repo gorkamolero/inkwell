@@ -785,7 +785,7 @@ select:focus-visible {
 @keyframes collaboration-in { from { opacity: 0; scale: .96; } to { opacity: 1; scale: 1; } }
 @keyframes pin-in { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
 @media (max-width: 640px) {
-  .hotpress-pointers { display: none; }
+
   .hotpress-comment-popover { left: 8px !important; right: 8px; top: auto !important; bottom: 8px; width: auto; max-height: 70dvh; border-radius: 12px 12px 6px 6px; transform-origin: bottom center !important; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -841,3 +841,10 @@ select:focus-visible {
 }
 @keyframes sheet-out { to { opacity: 0; transform: translateY(32px); } }
 @media (prefers-reduced-motion: reduce) { .hotpress-comment-popover[data-closing="true"] { animation: none; } }
+
+/* Round 2: primary actions and input-modality focus. */
+.lb-composer .lb-button[data-variant="primary"]:enabled { background: #171717 !important; color: white !important; border: 2px solid #171717 !important; }
+.lb-composer .lb-button[data-variant="primary"]:disabled { background: #e5e5e5 !important; color: #737373 !important; opacity: 1; }
+.lb-lexical-floating-toolbar button { color: #171717 !important; }
+.lb-lexical-floating-toolbar button:has(.lb-button-label) { background: #ffe75c !important; border-color: #171717 !important; }
+.hotpress-comment-pin:focus:not(:focus-visible) { outline: none; }

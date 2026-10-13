@@ -10,10 +10,12 @@ function Pointer({
   point,
   name,
   color,
+  showLabel,
 }: {
   point: Point;
   name: string;
   color: string;
+  showLabel: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const current = useRef({ x: point.x, y: point.y });
@@ -69,7 +71,7 @@ function Pointer({
           strokeLinejoin="round"
         />
       </svg>
-      <span style={{ background: color }}>{name}</span>
+      {showLabel && <span style={{ background: color }}>{name}</span>}
     </div>
   );
 }
@@ -94,6 +96,7 @@ export function CollaboratorCursors() {
       };
       let timer = 0;
       let latest: Point | null = null;
+      let activity: "pointer" | "caret" = "pointer";
       let mouse: { x: number; y: number } | null = null;
       const publish = () => {
         if (!mouse) return;
@@ -105,17 +108,23 @@ export function CollaboratorCursors() {
         if (!timer)
           timer = window.setTimeout(() => {
             timer = 0;
-            update({ cursor: latest });
+            update({ cursor: latest, labelActivity: activity });
           }, 25);
       };
       const move = (e: PointerEvent) => {
         if (
-          e.pointerType !== "mouse" ||
-          window.matchMedia("(max-width: 640px)").matches
+          e.pointerType !== "mouse"
         )
           return;
+        activity = "pointer";
         mouse = { x: e.clientX, y: e.clientY };
         publish();
+      };
+      const type = () => {
+        activity = "caret";
+        clearTimeout(timer);
+        timer = 0;
+        update({ labelActivity: "caret" });
       };
       const leave = () => {
         mouse = null;
@@ -126,6 +135,8 @@ export function CollaboratorCursors() {
       const observer = new ResizeObserver(measure);
       observer.observe(root);
       root.addEventListener("pointermove", move);
+      root.addEventListener("beforeinput", type);
+      root.addEventListener("keydown", type);
       root.addEventListener("pointerleave", leave);
       window.addEventListener("blur", leave);
       window.addEventListener("scroll", publish, true);
@@ -133,6 +144,8 @@ export function CollaboratorCursors() {
       cleanup = () => {
         observer.disconnect();
         root.removeEventListener("pointermove", move);
+        root.removeEventListener("beforeinput", type);
+        root.removeEventListener("keydown", type);
         root.removeEventListener("pointerleave", leave);
         window.removeEventListener("blur", leave);
         window.removeEventListener("scroll", publish, true);
@@ -150,6 +163,12 @@ export function CollaboratorCursors() {
       aria-hidden="true"
       style={{ left: bounds.x, top: bounds.y }}
     >
+      <style>{others.map((other) => {
+        const id = other.presence.__yjs_clientid;
+        if (typeof id !== "number") return "";
+        const hide = other.presence.cursor && other.presence.labelActivity === "pointer";
+        return `[data-yjs-client-id="${id}"] > span { visibility: ${hide ? "hidden" : "visible"}; }`;
+      }).join("\n")}</style>
       {others.map(
         (other) =>
           other.presence.cursor && (
@@ -159,6 +178,7 @@ export function CollaboratorCursors() {
                 x: other.presence.cursor.x * bounds.width,
                 y: other.presence.cursor.y,
               }}
+              showLabel={other.presence.labelActivity === "pointer"}
               name={String(other.info?.name || "Writer")}
               color={String(other.info?.color || "#0066ff")}
             />

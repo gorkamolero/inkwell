@@ -1,5 +1,7 @@
 "use client";
 
+import { initials } from "@/lib/collaboration-identity";
+
 import { CodeHighlightNode, CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ImageNode } from "@/lib/nodes/ImageNode";
@@ -186,13 +188,13 @@ function LivePresenceAvatars() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  selfName.charAt(0).toUpperCase()
+                  initials(selfName)
                 )}
               </div>
               <span className="text-xs font-medium max-w-[20ch] truncate hidden sm:inline">
                 {selfName}
               </span>
-              <Pencil className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Pencil className="hidden sm:block h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           )}
         </div>
@@ -214,7 +216,7 @@ function LivePresenceAvatars() {
               className="h-full w-full object-cover"
             />
           ) : (
-            user.name.charAt(0).toUpperCase()
+            initials(user.name)
           )}
         </div>
       ))}

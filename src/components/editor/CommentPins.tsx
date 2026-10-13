@@ -256,6 +256,10 @@ export function CommentPins({ nextRequest }: { nextRequest: number }) {
             onFocus={() => setHovered(anchor.id)}
             onBlur={() => setHovered(null)}
             aria-expanded={active === anchor.id}
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }}
             onClick={() => {
               if (active === anchor.id) setClosing(true);
               else {
