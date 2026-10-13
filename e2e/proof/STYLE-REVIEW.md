@@ -148,7 +148,27 @@ One leftover, fixed by Claude in this round: remote pointers still showed at 390
 
 Accepted as true app behaviour, not composition: Ana's presence avatar stays in the offline guest's header, the guest's pointer hovers a header icon during reconnect, and a name label can sit between two nearby carets. The product fix from this gate, "the popover never covers its phrase", is commit 686e144 and is live.
 
-v10 (44.6 s, 1920×1080) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v10.mp4` on the Hotpress case page and the Engineering page.
+v10 (44.6 s, 1920×1080) was published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v10.mp4`, but since v6 it combined footage from more than one take. The goal requires one continuous take, so the gate continued:
+
+| Take | Claude's frame review | Fresh-eyes scores (framing / phone / pacing / polish / claims) | Verdict |
+| --- | --- | --- | --- |
+| v11 (new single take) | pass | 3 / 4 / 3 / 4 / 4 | fail: a line missing from the match frame, "Meanwhile" shown before the offline cue |
+| v12 (v11 recut) | pass | 3 / 3 / 2 / 3 / 3 | fail: the join hidden by a loading screen, the same-sentence beat too short, a reconnect freeze, the match frame not looking like the app |
+| v13 (new take, native 2× CDP capture, no freezes) | fail: merge labels detached | 3 / 3 / 4 / 3 / 4 | fail: popover clipped, merge labels detached |
+| v14 to v15 (recuts) | fail: comment text too small on a phone, then a word fragment at the crop edge | (not run) | fail |
+| v16 (recut) | pass | 4 / 3 / 4 / 4 / 4 | **meets the bar**, nitpick: show the reconnect as an event |
+| v17 (recut) | fail: merge labels between lines | (not run) | fail |
+| v18 (recut) | pass | 3 / 3 / 4 / 4 / 4 | **meets the bar**, no must-fix |
+
+v18 (50.8 s, 1920×1080, take 7 of the v13 recording only; provenance and checks in `V13-NOTES.md` to `V18-NOTES.md` and `verify-v18.py`) is published at `https://pub-066596d7e4fe4de2b74eac13bb03fe55.r2.dev/hotpress-collaboration-v18.mp4` on the Hotpress case page and the Engineering page.
+
+Remaining nitpicks from the last review, all accepted:
+- the reconnect split passes OFFLINE→LIVE in about 1 s (it's real time);
+- the offline guest's caret and avatar linger on Ana's screen (true app behaviour);
+- no share-link shot;
+- the pin shifts as a line grows (true app behaviour);
+- the floating toolbar covers the line above (true app behaviour);
+- writers take turns before the same-sentence beat.
 
 ## Live check on hotpress.app (2026-10-13)
 
