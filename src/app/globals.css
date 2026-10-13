@@ -508,25 +508,39 @@ select:focus-visible {
   outline: none;
 }
 
-/* Liveblocks cursor styles - neobrutalist */
-.lb-lexical-cursor {
-  border-left: 3px solid currentColor !important;
+/* Lexical renders inline-styled spans, not named cursor classes. */
+.lb-lexical-cursors > div > span > span:has(> span) {
+  width: 2px !important;
+  right: -1px !important;
 }
-
-.lb-lexical-cursor-label {
-  font-weight: 700 !important;
-  font-size: 11px !important;
-  padding: 2px 6px !important;
-  border: 2px solid black !important;
-  box-shadow: 2px 2px 0 0 black !important;
-  border-radius: 0 !important;
+.lb-lexical-cursors > div > span > span > span {
+  top: -25px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 17px !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  font-family: var(--font-geist-sans), sans-serif !important;
 }
-
-/* Liveblocks floating composer/threads - neobrutalist */
-.lb-root {
-  --lb-radius: 0 !important;
+.lb-root, .hotpress-document-layout {
+  --lb-accent: #806000;
+  --lb-accent-foreground: #ffffff;
+  --lb-accent-subtle: #fff3b8;
+  --lb-accent-moderate: #e4bc39;
+  --lb-radius: 6px;
 }
-
+.lb-lexical-thread-mark {
+  background: #fff1ac;
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: underline #c79b21;
+  text-underline-offset: 3px;
+}
+.lb-lexical-thread-mark[data-state="active"] {
+  background: #ffe16a;
+  color: inherit;
+  text-decoration-color: #806000;
+}
 .lb-composer,
 .lb-thread,
 .lb-lexical-floating-composer {
@@ -743,4 +757,54 @@ select:focus-visible {
 /* Liveblocks badge z-index fix - prevent overlap with modals/panels */
 #liveblocks-badge {
   z-index: 40 !important;
+}
+
+/* Collaboration overlays stay out of the text flow. */
+.hotpress-document-layout { position: relative; max-width: 900px; margin: 0 auto; padding-bottom: 100px; }
+.hotpress-pointers { position: absolute; pointer-events: none; z-index: 40; }
+.hotpress-pointer { position: absolute; transition: opacity 200ms ease-out; will-change: transform; }
+.hotpress-pointer[data-idle="true"] { opacity: 0; }
+.hotpress-pointer > span { position: absolute; top: 21px; left: 13px; padding: 3px 7px; border-radius: 5px; color: white; font: 500 13px/18px var(--font-geist-sans), sans-serif; white-space: nowrap; box-shadow: 1px 2px 0 #0002; animation: collaboration-in 180ms ease-out; }
+.hotpress-comment-pin { position: absolute; transform: translate(-8px, -25px); z-index: 30; display: flex; align-items: center; height: 25px; border: 2px solid #171717; border-radius: 8px 8px 8px 0; background: white; box-shadow: 2px 2px 0 #171717; font: 500 12px/1 var(--font-geist-sans), sans-serif; cursor: pointer; animation: pin-in 180ms ease-out; }
+.hotpress-pin-initials { display: grid; place-items: center; min-width: 24px; height: 21px; padding: 0 3px; border-radius: 5px 0 0 0; color: white; background: var(--author-color, #0066ff); }
+.hotpress-pin-count { padding: 0 5px; }
+.hotpress-pin-author, .hotpress-pin-preview { display: none; position: absolute; left: -2px; width: 225px; text-align: left; background: white; border: 2px solid #171717; padding: 9px 10px; pointer-events: none; }
+.hotpress-pin-author { bottom: 53px; border-bottom: 0; border-radius: 6px 6px 0 0; font-weight: 600; }
+.hotpress-pin-preview { bottom: 27px; border-top: 0; border-radius: 0 0 6px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: 3px 3px 0 #171717; }
+@media (hover: hover) and (min-width: 641px) {
+  .hotpress-comment-pin:hover:not([aria-expanded="true"]) :is(.hotpress-pin-author, .hotpress-pin-preview), .hotpress-comment-pin:focus-visible :is(.hotpress-pin-author, .hotpress-pin-preview) { display: block; animation: collaboration-in 180ms ease-out; }
+}
+.hotpress-comment-popover { position: fixed; z-index: 100; width: 360px; max-height: calc(100dvh - 24px); overflow: auto; border: 2px solid #171717; border-radius: 8px; background: white; box-shadow: 4px 4px 0 #171717; animation: collaboration-in 200ms ease-out; }
+.hotpress-popover-heading { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-bottom: 2px solid #171717; background: #fff3b8; font-size: 12px; font-weight: 600; }
+.hotpress-popover-heading button { font-size: 22px; line-height: 24px; width: 28px; cursor: pointer; }
+.hotpress-comment-popover .lb-thread, .hotpress-comment-popover .lb-composer { border: 0 !important; box-shadow: none !important; }
+.lb-root { --lb-font-family: var(--font-geist-sans), sans-serif; font-family: var(--font-geist-sans), sans-serif; --lb-background: white; --lb-foreground: #171717; --lb-spacing: 12px; }
+.lb-lexical-thread-mark[data-comment-active="true"] { background: #ffe16a; text-decoration-color: #806000; }
+.lb-lexical-thread-mark[data-comment-resolved="true"] { background: transparent; text-decoration: none; }
+.lb-lexical-floating { --lb-lexical-floating-size: min(360px, calc(100vw - 24px)); }
+@keyframes collaboration-in { from { opacity: 0; scale: .96; } to { opacity: 1; scale: 1; } }
+@keyframes pin-in { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
+@media (max-width: 640px) {
+  .hotpress-pointers { display: none; }
+  .hotpress-comment-popover { left: 8px !important; right: 8px; top: auto !important; bottom: 8px; width: auto; max-height: 70dvh; border-radius: 12px 12px 6px 6px; transform-origin: bottom center !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hotpress-comment-pin, .hotpress-comment-popover, .hotpress-pointer > span { animation: none; }
+}
+
+.lb-lexical-floating-composer { border-radius: 8px !important; padding: 0 !important; overflow: hidden; }
+.lb-lexical-floating-composer .lb-composer { border: 0 !important; box-shadow: none !important; }
+.lb-lexical-cursors { z-index: 35; pointer-events: none; }
+.lb-lexical-floating-composer, .lb-lexical-floating-toolbar { z-index: 100; }
+.hotpress-pointer > span, .hotpress-pin-initials, .lb-lexical-cursors > div > span > span > span { text-shadow: 0 1px 2px #0005; }
+
+.lb-lexical-cursors > div > span > span:first-child { opacity: .18 !important; }
+.hotpress-pin-author { top: 50px; bottom: auto; right: -2px; left: auto; }
+.hotpress-pin-preview { top: 76px; bottom: auto; right: -2px; left: auto; }
+
+@media (max-width: 640px) {
+  .hotpress-collaboration-header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .hotpress-collaboration-header > div { min-width: 0; width: 100%; }
+  .hotpress-collaboration-header > div:last-child { flex-wrap: wrap; justify-content: space-between; }
+  .hotpress-collaboration-header button[title="Click to edit title"] { max-width: 180px; }
 }
