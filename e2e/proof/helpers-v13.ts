@@ -133,7 +133,7 @@ export const test = base.extend<{ proof: Proof }>({
       });
     }
     const ids = [randomUUID(), randomUUID()].map((id) => `proof-${id}`);
-    if (/portfolio v(?:[678]|11|13)/.test(info.title))
+    if (/portfolio v(?:[678]|11|13|20)/.test(info.title))
       while (authorColor(ids[0]) !== "#15803D") ids[0] += "-c";
     if (style)
       while (authorColor(ids[0]) === authorColor(ids[1])) ids[1] += "-c";
