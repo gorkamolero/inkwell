@@ -1,3 +1,10 @@
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import { GUEST_COOKIE, guestIdentity } from "@/lib/guest-identity";
+import {
+  authorColor as generateUserColor,
+  guestName,
+} from "@/lib/collaboration-identity";
 import { Liveblocks } from "@liveblocks/node";
 import { auth } from "@/lib/auth";
 
@@ -41,6 +48,7 @@ export async function POST(request: Request) {
   const session = await auth();
 
   // Generate user ID and info
+  let guestCookie: string | undefined;
   let userId: string;
   let userInfo: {
     name: string;
@@ -59,10 +67,12 @@ export async function POST(request: Request) {
       isAuthenticated: true,
     };
   } else {
-    // Anonymous user - generate a consistent ID based on request
-    userId = `anon-${generateAnonymousId()}`;
+    // One identity for room, roomless and refreshed access tokens.
+    const guest = guestIdentity((await cookies()).get(GUEST_COOKIE)?.value);
+    userId = guest.id;
+    guestCookie = guest.cookie;
     userInfo = {
-      name: generateAnonymousName(),
+      name: guestName(userId),
       color: generateUserColor(userId),
       isAuthenticated: false,
     };
@@ -81,74 +91,14 @@ export async function POST(request: Request) {
   // Authorize and return the session
   const { status, body: responseBody } = await liveblocksSession.authorize();
 
-  return new Response(responseBody, { status });
-}
-
-/**
- * Generate a consistent color based on user ID.
- * Uses a hash of the user ID to pick from a predefined palette.
- */
-function generateUserColor(userId: string): string {
-  const colors = [
-    "#0066FF", // Blue
-    "#FF66B2", // Pink
-    "#00FF66", // Green
-    "#FFE75C", // Yellow
-    "#FF3333", // Red
-    "#9933FF", // Purple
-    "#FF9900", // Orange
-    "#00CCCC", // Teal
-  ];
-
-  // Simple hash function to pick a color consistently
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = (hash << 5) - hash + userId.charCodeAt(i);
-    hash = hash & hash; // Convert to 32bit integer
-  }
-
-  return colors[Math.abs(hash) % colors.length];
-}
-
-/**
- * Generate a random anonymous ID.
- * Format: 8 random alphanumeric characters.
- */
-function generateAnonymousId(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-/**
- * Generate a random anonymous name.
- * Uses adjective + noun pattern for friendly names.
- */
-function generateAnonymousName(): string {
-  const adjectives = [
-    "Swift",
-    "Clever",
-    "Bold",
-    "Quiet",
-    "Bright",
-    "Keen",
-    "Calm",
-    "Brave",
-  ];
-  const nouns = [
-    "Writer",
-    "Author",
-    "Scribe",
-    "Wordsmith",
-    "Poet",
-    "Editor",
-    "Storyteller",
-    "Narrator",
-  ];
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  return `${adjective} ${noun}`;
+  const response = new NextResponse(responseBody, { status });
+  if (guestCookie && status === 200)
+    response.cookies.set(GUEST_COOKIE, guestCookie, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      secure: new URL(request.url).protocol === "https:",
+    });
+  return response;
 }

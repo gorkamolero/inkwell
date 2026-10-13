@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  USER_COLORS,
+  guestName,
+  identityAvatar,
+} from "./collaboration-identity";
 import { createClient } from "@liveblocks/client";
 import { useEffect } from "react";
 import { createRoomContext } from "@liveblocks/react";
@@ -8,8 +13,26 @@ type DisplayUser = { name: string; avatar?: string };
 // Keep identities learned in this browser even after a guest disconnects.
 const knownUsers = new Map<string, DisplayUser>();
 
+// The first response establishes the signed guest cookie before another token
+// request starts, so simultaneous room/notification mounts share one identity.
+let authorizationQueue: Promise<void> = Promise.resolve();
 const client = createClient({
-  authEndpoint: "/api/liveblocks-auth",
+  authEndpoint: (room) => {
+    const result = authorizationQueue.then(async () => {
+      const response = await fetch("/api/liveblocks-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room }),
+      });
+      if (!response.ok) throw new Error("Unable to authenticate collaboration");
+      return response.json();
+    });
+    authorizationQueue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  },
   throttle: 25,
   resolveUsers: async ({ userIds }) => {
     const missing = userIds.filter(
@@ -30,12 +53,12 @@ const client = createClient({
         throw new Error("Unable to resolve comment authors");
       }
     }
-    return userIds.map(
-      (id) =>
-        knownUsers.get(id) ?? {
-          name: id.startsWith("anon-") ? `Guest ${id.slice(5)}` : "Writer",
-        },
-    );
+    return userIds.map((id) => {
+      const name =
+        knownUsers.get(id)?.name ??
+        (id.startsWith("anon-") ? guestName(id) : "Writer");
+      return { name, avatar: identityAvatar(id, name) };
+    });
   },
   resolveMentionSuggestions: ({ text, roomId }): string[] => {
     const room = client.getRoom(roomId);
@@ -67,18 +90,6 @@ const roomContext = createRoomContext<Presence>(client);
 
 export const { RoomProvider, useRoom, useOthers, useMyPresence, useSelf } =
   roomContext;
-
-/** Neobrutalist-friendly color palette for user cursors and selections. */
-const USER_COLORS = [
-  "#0066FF", // Blue
-  "#FF66B2", // Pink
-  "#00FF66", // Green
-  "#FFE75C", // Yellow
-  "#FF3333", // Red
-  "#9933FF", // Purple
-  "#FF9900", // Orange
-  "#00CCCC", // Teal
-] as const;
 
 const ADJECTIVES = [
   "Swift",
